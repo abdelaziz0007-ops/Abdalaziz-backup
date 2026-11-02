@@ -1,0 +1,11 @@
+{
+  "passed": [
+    "CSV input changes financial outputs",
+    "Independent approval persists through persona change and locks version",
+    "Billing owner cannot read financial reports",
+    "Cedar does not inherit Atlas trial balance",
+    "Real 250 residual blocks submission",
+    "One bank receipt matched to two book receipts without over-allocation"
+  ],
+  "errors": []
+}

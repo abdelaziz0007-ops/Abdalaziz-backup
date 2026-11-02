@@ -1,0 +1,407 @@
+{
+  "version": "2.0",
+  "logicalRoutePolicy": "Preserve actual router strategy; document hash/browser URL mapping. These paths are the logical screen contract.",
+  "entries": [
+    {
+      "prompt": "01",
+      "pageSlug": "sign-in",
+      "routes": [
+        "/auth/sign-in"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Public auth entry; no financial access granted by viewing."
+    },
+    {
+      "prompt": "02",
+      "pageSlug": "mfa",
+      "routes": [
+        "/auth/mfa"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Pending demo MFA challenge; no financial data."
+    },
+    {
+      "prompt": "03",
+      "pageSlug": "password-recovery",
+      "routes": [
+        "/auth/forgot-password",
+        "/auth/reset-password"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Public synthetic token flow; no financial data."
+    },
+    {
+      "prompt": "04",
+      "pageSlug": "invitation",
+      "routes": [
+        "/auth/invitations/:token"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Invitation token with explicit target identity and scope."
+    },
+    {
+      "prompt": "05",
+      "pageSlug": "onboarding",
+      "routes": [
+        "/onboarding"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "New tenant/entity setup within an authorized onboarding context."
+    },
+    {
+      "prompt": "06",
+      "pageSlug": "overview",
+      "routes": [
+        "/app/overview"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Financial overview permission AND current entity scope."
+    },
+    {
+      "prompt": "07",
+      "pageSlug": "entities",
+      "routes": [
+        "/app/entities"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Entity directory scoped to membership; entity administration and financial access are independent."
+    },
+    {
+      "prompt": "08",
+      "pageSlug": "imports",
+      "routes": [
+        "/app/imports"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Import preparation permission AND entity scope."
+    },
+    {
+      "prompt": "09",
+      "pageSlug": "import-preview",
+      "routes": [
+        "/app/imports/:importId/preview"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Import preparation permission AND import/entity scope."
+    },
+    {
+      "prompt": "10",
+      "pageSlug": "data-quality",
+      "routes": [
+        "/app/imports/:importId/quality"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Quality-view permission; corrections/publication require preparation permission and scope."
+    },
+    {
+      "prompt": "11",
+      "pageSlug": "account-mapping",
+      "routes": [
+        "/app/account-mapping"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Mapping-view/edit grants AND entity scope; locked snapshots are read-only."
+    },
+    {
+      "prompt": "12",
+      "pageSlug": "reports-library",
+      "routes": [
+        "/app/reports"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Report-view permission AND entity scope; draft creation requires preparation permission."
+    },
+    {
+      "prompt": "13",
+      "pageSlug": "income-statement",
+      "routes": [
+        "/app/reports/:reportId/income-statement"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Report-view permission AND report/entity/version scope."
+    },
+    {
+      "prompt": "14",
+      "pageSlug": "financial-position",
+      "routes": [
+        "/app/reports/:reportId/financial-position"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Report-view permission AND report/entity/version scope."
+    },
+    {
+      "prompt": "15",
+      "pageSlug": "financial-analysis",
+      "routes": [
+        "/app/analysis"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Financial-analysis/report-view permission AND entity scope."
+    },
+    {
+      "prompt": "16",
+      "pageSlug": "source-inspector",
+      "routes": [
+        "/app/sources/:sourceId"
+      ],
+      "kind": "shared-component-with-optional-route",
+      "optionalSupportingInterface": false,
+      "access": "Underlying source/object and entity/account grants; no blanket source access."
+    },
+    {
+      "prompt": "17",
+      "pageSlug": "reconciliations-list",
+      "routes": [
+        "/app/reconciliations"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Reconciliation-view permission AND entity/account scope."
+    },
+    {
+      "prompt": "18",
+      "pageSlug": "reconciliation-setup",
+      "routes": [
+        "/app/reconciliations/new"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Reconciliation-preparation permission AND entity/account scope."
+    },
+    {
+      "prompt": "19",
+      "pageSlug": "matching-workspace",
+      "routes": [
+        "/app/reconciliations/:reconciliationId/matching"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "View and edit separated; matching requires preparation permission, entity/account scope, and unlocked version."
+    },
+    {
+      "prompt": "20",
+      "pageSlug": "reconciliation-statement",
+      "routes": [
+        "/app/reconciliations/:reconciliationId/statement"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Reconciliation-view; submission requires preparation authority and current readiness."
+    },
+    {
+      "prompt": "21",
+      "pageSlug": "outstanding-items",
+      "routes": [
+        "/app/reconciling-items"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Scoped item view; carry/clear actions require explicit preparation authority and lock checks."
+    },
+    {
+      "prompt": "22",
+      "pageSlug": "proposed-entries",
+      "routes": [
+        "/app/reconciliations/:reconciliationId/proposed-entries"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Scoped proposal view; editing/review require relevant grants; external posting unavailable."
+    },
+    {
+      "prompt": "23",
+      "pageSlug": "review-inbox",
+      "routes": [
+        "/app/reviews"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Review visibility includes authorized approver queue and preparer own submissions; not approver-only access."
+    },
+    {
+      "prompt": "24",
+      "pageSlug": "review-detail",
+      "routes": [
+        "/app/reviews/:reviewId"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Scoped review view; decisions require relevant authority, independent actor, current version, and readiness."
+    },
+    {
+      "prompt": "25",
+      "pageSlug": "audit-trail",
+      "routes": [
+        "/app/audit"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Audit-view permission AND permitted entity/object scope."
+    },
+    {
+      "prompt": "26",
+      "pageSlug": "team-access",
+      "routes": [
+        "/app/settings/team"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Team-administration grant; no financial-view permission inferred from membership or billing."
+    },
+    {
+      "prompt": "27",
+      "pageSlug": "bank-policies",
+      "routes": [
+        "/app/settings/bank-accounts",
+        "/app/settings/matching-rules"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Bank-account/rule administration grant AND entity/account scope."
+    },
+    {
+      "prompt": "28",
+      "pageSlug": "entity-periods",
+      "routes": [
+        "/app/settings/entity",
+        "/app/settings/periods"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Entity/period administration grant; reopening is a separate explicit grant."
+    },
+    {
+      "prompt": "29",
+      "pageSlug": "billing",
+      "routes": [
+        "/app/settings/billing"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Subscription/billing grant; does not grant financial-content access."
+    },
+    {
+      "prompt": "30",
+      "pageSlug": "privacy",
+      "routes": [
+        "/app/settings/privacy"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Data-request authority AND explicit category/entity scope; billing role alone is insufficient for financial export."
+    },
+    {
+      "prompt": "31",
+      "pageSlug": "profile-notifications",
+      "routes": [
+        "/app/profile",
+        "/app/notifications"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Signed-in persona for own profile/notifications; object links still enforce scopes."
+    },
+    {
+      "prompt": "32",
+      "pageSlug": "integrations",
+      "routes": [
+        "/app/settings/integrations"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Integration-administration grant; only local subsequent-release configuration preview."
+    },
+    {
+      "prompt": "33",
+      "pageSlug": "recovery-states",
+      "routes": [
+        "/404",
+        "/403",
+        "/session-expired"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Public recovery states or inline authorized shell boundaries; no foreign-data disclosure."
+    },
+    {
+      "prompt": "34",
+      "pageSlug": "sign-up",
+      "routes": [
+        "/auth/sign-up"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Public demo sign-up; creates an isolated local context only."
+    },
+    {
+      "prompt": "35",
+      "pageSlug": "public-landing",
+      "routes": [
+        "/"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": true,
+      "access": "Public optional marketing page."
+    },
+    {
+      "prompt": "36",
+      "pageSlug": "public-pricing",
+      "routes": [
+        "/pricing"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": true,
+      "access": "Public optional fictional-price preview."
+    },
+    {
+      "prompt": "37",
+      "pageSlug": "legal-center",
+      "routes": [
+        "/legal",
+        "/legal/privacy",
+        "/legal/terms",
+        "/legal/data-processing"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": true,
+      "access": "Public optional draft legal information; private requests remain guarded."
+    },
+    {
+      "prompt": "38",
+      "pageSlug": "help-support",
+      "routes": [
+        "/help",
+        "/help/:articleId",
+        "/app/support"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": true,
+      "access": "Public help articles; signed-in local support requests with no content-access delegation."
+    },
+    {
+      "prompt": "39",
+      "pageSlug": "executive-pack",
+      "routes": [
+        "/app/reports/executive"
+      ],
+      "kind": "screen-or-related-screen-set",
+      "optionalSupportingInterface": false,
+      "access": "Report view and current entity scope; source exports are scoped and remain local."
+    }
+  ]
+}

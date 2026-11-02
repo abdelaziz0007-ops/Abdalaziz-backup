@@ -1,0 +1,779 @@
+{
+  "metadata": {
+    "schemaVersion": "1.0",
+    "synthetic": true,
+    "snapshotDate": "2026-10-29",
+    "periodStart": "2026-10-01",
+    "cutoffDate": "2026-10-31",
+    "note": "Future-dated October cutoff is an intentional synthetic month-end scenario, not live accounting data. Monetary values are decimal strings. All examples are fictional."
+  },
+  "tenant": {
+    "id": "TEN-001",
+    "name": "Atlas Finance Group"
+  },
+  "entities": [
+    {
+      "id": "ENT-ATLAS",
+      "name": {
+        "en": "Atlas Trading LLC",
+        "ar": "شركة أطلس للتجارة"
+      },
+      "currency": "USD",
+      "fiscalYearStart": "01-01",
+      "timezone": "Asia/Hebron",
+      "hasData": true
+    },
+    {
+      "id": "ENT-CEDAR",
+      "name": {
+        "en": "Cedar Services LLC",
+        "ar": "شركة سيدار للخدمات"
+      },
+      "currency": "USD",
+      "fiscalYearStart": "01-01",
+      "timezone": "Asia/Hebron",
+      "hasData": false
+    }
+  ],
+  "users": [
+    {
+      "id": "USR-MAYA",
+      "name": {
+        "en": "Maya Hassan",
+        "ar": "مايا حسن"
+      },
+      "email": "maya@example.com",
+      "roles": [
+        "preparer"
+      ],
+      "entityIds": [
+        "ENT-ATLAS"
+      ]
+    },
+    {
+      "id": "USR-OMAR",
+      "name": {
+        "en": "Omar Ali",
+        "ar": "عمر علي"
+      },
+      "email": "omar@example.com",
+      "roles": [
+        "approver"
+      ],
+      "entityIds": [
+        "ENT-ATLAS"
+      ]
+    },
+    {
+      "id": "USR-LINA",
+      "name": {
+        "en": "Lina Nasser",
+        "ar": "لينا ناصر"
+      },
+      "email": "lina@example.com",
+      "roles": [
+        "subscriptionOwner"
+      ],
+      "entityIds": []
+    },
+    {
+      "id": "USR-NOOR",
+      "name": {
+        "en": "Noor Saleh",
+        "ar": "نور صالح"
+      },
+      "email": "noor@example.com",
+      "roles": [
+        "tenantAdmin",
+        "entityAdmin"
+      ],
+      "entityIds": [
+        "ENT-ATLAS",
+        "ENT-CEDAR"
+      ]
+    }
+  ],
+  "bankAccount": {
+    "id": "BANK-4821",
+    "entityId": "ENT-ATLAS",
+    "displayName": {
+      "en": "Operating account",
+      "ar": "الحساب التشغيلي"
+    },
+    "maskedNumber": "•••• 4821",
+    "currency": "USD",
+    "ledgerAccountCode": "1000"
+  },
+  "trialBalance": [
+    {
+      "accountCode": "1000",
+      "name": {
+        "en": "Cash at bank",
+        "ar": "النقدية لدى البنك"
+      },
+      "classification": "asset.current",
+      "signedDebitBalance": "102200.00",
+      "sourceFile": "trial-balance-oct-2026.xlsx",
+      "sourceSheet": "TB",
+      "sourceRow": 2
+    },
+    {
+      "accountCode": "1100",
+      "name": {
+        "en": "Trade receivables",
+        "ar": "الذمم المدينة التجارية"
+      },
+      "classification": "asset.current",
+      "signedDebitBalance": "48000.00",
+      "sourceFile": "trial-balance-oct-2026.xlsx",
+      "sourceSheet": "TB",
+      "sourceRow": 3
+    },
+    {
+      "accountCode": "1200",
+      "name": {
+        "en": "Inventory",
+        "ar": "المخزون"
+      },
+      "classification": "asset.current",
+      "signedDebitBalance": "62000.00",
+      "sourceFile": "trial-balance-oct-2026.xlsx",
+      "sourceSheet": "TB",
+      "sourceRow": 4
+    },
+    {
+      "accountCode": "1300",
+      "name": {
+        "en": "Prepayments",
+        "ar": "المصروفات المدفوعة مقدماً"
+      },
+      "classification": "asset.current",
+      "signedDebitBalance": "8000.00",
+      "sourceFile": "trial-balance-oct-2026.xlsx",
+      "sourceSheet": "TB",
+      "sourceRow": 5
+    },
+    {
+      "accountCode": "1500",
+      "name": {
+        "en": "Property, plant and equipment — cost",
+        "ar": "تكلفة الممتلكات والآلات والمعدات"
+      },
+      "classification": "asset.noncurrent",
+      "signedDebitBalance": "140000.00",
+      "sourceFile": "trial-balance-oct-2026.xlsx",
+      "sourceSheet": "TB",
+      "sourceRow": 6
+    },
+    {
+      "accountCode": "1590",
+      "name": {
+        "en": "Accumulated depreciation",
+        "ar": "مجمع الإهلاك"
+      },
+      "classification": "asset.contra",
+      "signedDebitBalance": "-28000.00",
+      "sourceFile": "trial-balance-oct-2026.xlsx",
+      "sourceSheet": "TB",
+      "sourceRow": 7
+    },
+    {
+      "accountCode": "2000",
+      "name": {
+        "en": "Trade payables",
+        "ar": "الذمم الدائنة التجارية"
+      },
+      "classification": "liability.current",
+      "signedDebitBalance": "-41000.00",
+      "sourceFile": "trial-balance-oct-2026.xlsx",
+      "sourceSheet": "TB",
+      "sourceRow": 8
+    },
+    {
+      "accountCode": "2100",
+      "name": {
+        "en": "Accrued expenses",
+        "ar": "المصروفات المستحقة"
+      },
+      "classification": "liability.current",
+      "signedDebitBalance": "-12000.00",
+      "sourceFile": "trial-balance-oct-2026.xlsx",
+      "sourceSheet": "TB",
+      "sourceRow": 9
+    },
+    {
+      "accountCode": "2500",
+      "name": {
+        "en": "Long-term loan",
+        "ar": "قرض طويل الأجل"
+      },
+      "classification": "liability.noncurrent",
+      "signedDebitBalance": "-90000.00",
+      "sourceFile": "trial-balance-oct-2026.xlsx",
+      "sourceSheet": "TB",
+      "sourceRow": 10
+    },
+    {
+      "accountCode": "3000",
+      "name": {
+        "en": "Share capital",
+        "ar": "رأس المال"
+      },
+      "classification": "equity",
+      "signedDebitBalance": "-120000.00",
+      "sourceFile": "trial-balance-oct-2026.xlsx",
+      "sourceSheet": "TB",
+      "sourceRow": 11
+    },
+    {
+      "accountCode": "3100",
+      "name": {
+        "en": "Retained earnings excluding current-period result",
+        "ar": "الأرباح المحتجزة دون نتيجة الفترة الحالية"
+      },
+      "classification": "equity",
+      "signedDebitBalance": "-47700.00",
+      "sourceFile": "trial-balance-oct-2026.xlsx",
+      "sourceSheet": "TB",
+      "sourceRow": 12
+    },
+    {
+      "accountCode": "4000",
+      "name": {
+        "en": "Net revenue",
+        "ar": "صافي الإيرادات"
+      },
+      "classification": "income",
+      "signedDebitBalance": "-128000.00",
+      "sourceFile": "trial-balance-oct-2026.xlsx",
+      "sourceSheet": "TB",
+      "sourceRow": 13
+    },
+    {
+      "accountCode": "5000",
+      "name": {
+        "en": "Cost of revenue",
+        "ar": "تكلفة الإيرادات"
+      },
+      "classification": "expense.cost",
+      "signedDebitBalance": "74000.00",
+      "sourceFile": "trial-balance-oct-2026.xlsx",
+      "sourceSheet": "TB",
+      "sourceRow": 14
+    },
+    {
+      "accountCode": "6000",
+      "name": {
+        "en": "Operating expenses",
+        "ar": "المصروفات التشغيلية"
+      },
+      "classification": "expense.operating",
+      "signedDebitBalance": "28500.00",
+      "sourceFile": "trial-balance-oct-2026.xlsx",
+      "sourceSheet": "TB",
+      "sourceRow": 15
+    },
+    {
+      "accountCode": "7000",
+      "name": {
+        "en": "Tax expense",
+        "ar": "مصروف الضريبة"
+      },
+      "classification": "expense.tax",
+      "signedDebitBalance": "4000.00",
+      "sourceFile": "trial-balance-oct-2026.xlsx",
+      "sourceSheet": "TB",
+      "sourceRow": 16
+    }
+  ],
+  "financialReports": {
+    "version": 3,
+    "status": "draft",
+    "basis": "Unadjusted source snapshot; proposed bank fee is not posted and does not alter these figures.",
+    "current": {
+      "netRevenue": "128000.00",
+      "costOfRevenue": "74000.00",
+      "grossProfit": "54000.00",
+      "operatingExpenses": "28500.00",
+      "taxExpense": "4000.00",
+      "netProfit": "21500.00",
+      "netProfitMarginDisplay": "16.80%"
+    },
+    "comparative": {
+      "period": "2026-09",
+      "netRevenue": "120000.00",
+      "costOfRevenue": "70000.00",
+      "grossProfit": "50000.00",
+      "operatingExpenses": "27000.00",
+      "taxExpense": "3500.00",
+      "netProfit": "19500.00"
+    },
+    "position": {
+      "currentAssets": "220200.00",
+      "nonCurrentAssetsNet": "112000.00",
+      "totalAssets": "332200.00",
+      "currentLiabilities": "53000.00",
+      "nonCurrentLiabilities": "90000.00",
+      "totalLiabilities": "143000.00",
+      "shareCapital": "120000.00",
+      "retainedEarningsExcludingCurrentResult": "47700.00",
+      "currentPeriodResult": "21500.00",
+      "totalEquity": "189200.00",
+      "liabilitiesAndEquity": "332200.00"
+    },
+    "revenueTrend": [
+      {
+        "month": "2026-05",
+        "amount": "88000.00"
+      },
+      {
+        "month": "2026-06",
+        "amount": "96000.00"
+      },
+      {
+        "month": "2026-07",
+        "amount": "103000.00"
+      },
+      {
+        "month": "2026-08",
+        "amount": "110000.00"
+      },
+      {
+        "month": "2026-09",
+        "amount": "120000.00"
+      },
+      {
+        "month": "2026-10",
+        "amount": "128000.00"
+      }
+    ],
+    "unavailableMetrics": {
+      "ROA": "No opening asset balance has been supplied. Do not calculate using closing assets as a substitute."
+    }
+  },
+  "reconciliation": {
+    "id": "REC-2026-001",
+    "entityId": "ENT-ATLAS",
+    "bankAccountId": "BANK-4821",
+    "period": "2026-10",
+    "version": 3,
+    "initialStatus": "draft",
+    "preparerId": "USR-MAYA",
+    "approverId": "USR-OMAR",
+    "bankOpeningBalance": "100000.00",
+    "bookOpeningBalance": "100000.00",
+    "bankClosingBalance": "100000.00",
+    "bookClosingBalance": "102200.00",
+    "bankAdjustedBalance": "102000.00",
+    "bookAdjustedBalance": "102000.00",
+    "unexplainedDifference": "0.00",
+    "completeBankDataset": true,
+    "completeBookDataset": true,
+    "bankTransactions": [
+      {
+        "id": "BNK-001",
+        "date": "2026-10-28",
+        "description": {
+          "en": "Customer deposit batch",
+          "ar": "دفعة مقبوضات عملاء"
+        },
+        "reference": "DEP-4821",
+        "amount": "4800.00",
+        "initialStatus": "suggested",
+        "sourceFile": "bank-oct-2026.csv",
+        "sourceRow": 2,
+        "entityId": "ENT-ATLAS",
+        "bankAccountId": "BANK-4821",
+        "currency": "USD"
+      },
+      {
+        "id": "BNK-002",
+        "date": "2026-10-27",
+        "description": {
+          "en": "Supplier payment",
+          "ar": "دفعة مورد"
+        },
+        "reference": "PAY-1084",
+        "amount": "-2100.00",
+        "initialStatus": "confirmed",
+        "sourceFile": "bank-oct-2026.csv",
+        "sourceRow": 3,
+        "entityId": "ENT-ATLAS",
+        "bankAccountId": "BANK-4821",
+        "currency": "USD"
+      },
+      {
+        "id": "BNK-003",
+        "date": "2026-10-26",
+        "description": {
+          "en": "Customer transfer",
+          "ar": "حوالة عميل"
+        },
+        "reference": "TRF-0042",
+        "amount": "1250.00",
+        "initialStatus": "ambiguous",
+        "sourceFile": "bank-oct-2026.csv",
+        "sourceRow": 4,
+        "entityId": "ENT-ATLAS",
+        "bankAccountId": "BANK-4821",
+        "currency": "USD"
+      },
+      {
+        "id": "BNK-004",
+        "date": "2026-10-26",
+        "description": {
+          "en": "Customer transfer",
+          "ar": "حوالة عميل"
+        },
+        "reference": "TRF-0043",
+        "amount": "1250.00",
+        "initialStatus": "ambiguous",
+        "sourceFile": "bank-oct-2026.csv",
+        "sourceRow": 5,
+        "entityId": "ENT-ATLAS",
+        "bankAccountId": "BANK-4821",
+        "currency": "USD"
+      },
+      {
+        "id": "BNK-005",
+        "date": "2026-10-25",
+        "description": {
+          "en": "Supplier settlement",
+          "ar": "تسوية مورد"
+        },
+        "reference": "PAY-1085",
+        "amount": "-5000.00",
+        "initialStatus": "confirmed",
+        "sourceFile": "bank-oct-2026.csv",
+        "sourceRow": 6,
+        "entityId": "ENT-ATLAS",
+        "bankAccountId": "BANK-4821",
+        "currency": "USD"
+      },
+      {
+        "id": "BNK-006",
+        "date": "2026-10-31",
+        "description": {
+          "en": "Bank service fee",
+          "ar": "رسوم خدمة بنكية"
+        },
+        "reference": "FEE-0019",
+        "amount": "-200.00",
+        "initialStatus": "unmatched",
+        "sourceFile": "bank-oct-2026.csv",
+        "sourceRow": 7,
+        "entityId": "ENT-ATLAS",
+        "bankAccountId": "BANK-4821",
+        "currency": "USD"
+      }
+    ],
+    "bookTransactions": [
+      {
+        "id": "LED-001",
+        "date": "2026-10-28",
+        "description": {
+          "en": "Customer receipt A",
+          "ar": "مقبوض عميل أ"
+        },
+        "reference": "REC-0071",
+        "amount": "3000.00",
+        "initialStatus": "suggested",
+        "sourceFile": "book-bank-oct-2026.xlsx",
+        "sourceRow": 2,
+        "entityId": "ENT-ATLAS",
+        "bankAccountId": "BANK-4821",
+        "currency": "USD"
+      },
+      {
+        "id": "LED-002",
+        "date": "2026-10-28",
+        "description": {
+          "en": "Customer receipt B",
+          "ar": "مقبوض عميل ب"
+        },
+        "reference": "REC-0072",
+        "amount": "1800.00",
+        "initialStatus": "suggested",
+        "sourceFile": "book-bank-oct-2026.xlsx",
+        "sourceRow": 3,
+        "entityId": "ENT-ATLAS",
+        "bankAccountId": "BANK-4821",
+        "currency": "USD"
+      },
+      {
+        "id": "LED-003",
+        "date": "2026-10-27",
+        "description": {
+          "en": "Supplier payment",
+          "ar": "دفعة مورد"
+        },
+        "reference": "PAY-1084",
+        "amount": "-2100.00",
+        "initialStatus": "confirmed",
+        "sourceFile": "book-bank-oct-2026.xlsx",
+        "sourceRow": 4,
+        "entityId": "ENT-ATLAS",
+        "bankAccountId": "BANK-4821",
+        "currency": "USD"
+      },
+      {
+        "id": "LED-004",
+        "date": "2026-10-26",
+        "description": {
+          "en": "Customer transfer",
+          "ar": "حوالة عميل"
+        },
+        "reference": "",
+        "amount": "1250.00",
+        "initialStatus": "ambiguous",
+        "sourceFile": "book-bank-oct-2026.xlsx",
+        "sourceRow": 5,
+        "entityId": "ENT-ATLAS",
+        "bankAccountId": "BANK-4821",
+        "currency": "USD"
+      },
+      {
+        "id": "LED-005",
+        "date": "2026-10-26",
+        "description": {
+          "en": "Customer transfer",
+          "ar": "حوالة عميل"
+        },
+        "reference": "",
+        "amount": "1250.00",
+        "initialStatus": "ambiguous",
+        "sourceFile": "book-bank-oct-2026.xlsx",
+        "sourceRow": 6,
+        "entityId": "ENT-ATLAS",
+        "bankAccountId": "BANK-4821",
+        "currency": "USD"
+      },
+      {
+        "id": "LED-006",
+        "date": "2026-10-25",
+        "description": {
+          "en": "Supplier settlement",
+          "ar": "تسوية مورد"
+        },
+        "reference": "PAY-1085",
+        "amount": "-5000.00",
+        "initialStatus": "confirmed",
+        "sourceFile": "book-bank-oct-2026.xlsx",
+        "sourceRow": 7,
+        "entityId": "ENT-ATLAS",
+        "bankAccountId": "BANK-4821",
+        "currency": "USD"
+      },
+      {
+        "id": "LED-007",
+        "date": "2026-10-31",
+        "description": {
+          "en": "Deposit in transit",
+          "ar": "إيداع بالطريق"
+        },
+        "reference": "DIT-0031",
+        "amount": "5000.00",
+        "initialStatus": "outstanding",
+        "sourceFile": "book-bank-oct-2026.xlsx",
+        "sourceRow": 8,
+        "entityId": "ENT-ATLAS",
+        "bankAccountId": "BANK-4821",
+        "currency": "USD"
+      },
+      {
+        "id": "LED-008",
+        "date": "2026-10-31",
+        "description": {
+          "en": "Outstanding check",
+          "ar": "شيك قائم"
+        },
+        "reference": "CHK-0092",
+        "amount": "-3000.00",
+        "initialStatus": "outstanding",
+        "sourceFile": "book-bank-oct-2026.xlsx",
+        "sourceRow": 9,
+        "entityId": "ENT-ATLAS",
+        "bankAccountId": "BANK-4821",
+        "currency": "USD"
+      }
+    ],
+    "initialConfirmedMatches": [
+      {
+        "id": "MATCH-001",
+        "bankIds": [
+          "BNK-002"
+        ],
+        "bookIds": [
+          "LED-003"
+        ],
+        "amount": "2100.00",
+        "rule": "R-01",
+        "ruleVersion": "1.2"
+      },
+      {
+        "id": "MATCH-002",
+        "bankIds": [
+          "BNK-005"
+        ],
+        "bookIds": [
+          "LED-006"
+        ],
+        "amount": "5000.00",
+        "rule": "R-01",
+        "ruleVersion": "1.2"
+      }
+    ],
+    "suggestedGroup": {
+      "bankIds": [
+        "BNK-001"
+      ],
+      "bookIds": [
+        "LED-001",
+        "LED-002"
+      ],
+      "total": "4800.00",
+      "rule": "R-05",
+      "requiresHumanDecision": true
+    },
+    "ambiguousCases": [
+      {
+        "bankId": "BNK-003",
+        "candidateBookIds": [
+          "LED-004",
+          "LED-005"
+        ]
+      },
+      {
+        "bankId": "BNK-004",
+        "candidateBookIds": [
+          "LED-004",
+          "LED-005"
+        ]
+      }
+    ],
+    "reconcilingItems": [
+      {
+        "id": "RI-001",
+        "side": "bank",
+        "kind": "depositInTransit",
+        "sourceId": "LED-007",
+        "signedAdjustment": "5000.00",
+        "originDate": "2026-10-31",
+        "status": "outstanding"
+      },
+      {
+        "id": "RI-002",
+        "side": "bank",
+        "kind": "outstandingCheck",
+        "sourceId": "LED-008",
+        "signedAdjustment": "-3000.00",
+        "originDate": "2026-10-31",
+        "status": "outstanding"
+      },
+      {
+        "id": "RI-003",
+        "side": "books",
+        "kind": "unrecordedBankFee",
+        "sourceId": "BNK-006",
+        "signedAdjustment": "-200.00",
+        "originDate": "2026-10-31",
+        "status": "proposedNotPosted"
+      }
+    ],
+    "initialCoverage": {
+      "bankTransactionCount": 6,
+      "automaticallyConfirmedCount": 2,
+      "automaticallyConfirmedCountDisplay": "33.33%",
+      "bankAbsoluteValue": "14600.00",
+      "automaticallyConfirmedAbsoluteValue": "7100.00",
+      "automaticallyConfirmedValueDisplay": "48.63%"
+    },
+    "partialAllocationScenario": {
+      "bankId": "BNK-001",
+      "bookId": "LED-001",
+      "allocated": "3000.00",
+      "remaining": "1800.00",
+      "note": "Alternative scenario branch of the grouped deposit. Do not activate simultaneously with the full grouped match."
+    }
+  },
+  "proposedJournal": {
+    "id": "PROP-001",
+    "status": "notPosted",
+    "sourceReconcilingItemId": "RI-003",
+    "lines": [
+      {
+        "account": "Bank fees expense",
+        "debit": "200.00",
+        "credit": "0.00"
+      },
+      {
+        "account": "1000 Cash at bank",
+        "debit": "0.00",
+        "credit": "200.00"
+      }
+    ],
+    "note": "No external posting. Current report and source book balance remain unchanged until a separately imported source revision."
+  },
+  "qualityScenario": {
+    "id": "QA-BLOCKED-01",
+    "separateFromValidDataset": true,
+    "file": "invalid-import-example.csv",
+    "issues": [
+      {
+        "id": "ISSUE-001",
+        "severity": "blocking",
+        "row": 18,
+        "field": "postingDate",
+        "originalValue": "",
+        "message": "Transaction date is missing."
+      },
+      {
+        "id": "ISSUE-002",
+        "severity": "warning",
+        "rows": [
+          22,
+          23
+        ],
+        "field": "reference",
+        "message": "Similar references require duplicate review."
+      }
+    ],
+    "note": "Never claim this broken import is the complete, valid bank dataset used for the reconciliation."
+  },
+  "subscription": {
+    "plan": "Professional — demo pricing",
+    "monthlyPrice": "79.00",
+    "currency": "USD",
+    "usageUnit": "Successfully imported transaction rows",
+    "includedMonthlyRows": 100000,
+    "usedRows": 18240,
+    "resetDate": "2026-11-01",
+    "exampleInvoice": {
+      "id": "DEMO-INV-2026-10",
+      "subtotal": "79.00",
+      "tax": "0.00",
+      "total": "79.00",
+      "taxNote": "Synthetic zero-tax illustration, not a jurisdictional tax determination."
+    }
+  },
+  "scenarioBranches": [
+    "baseline",
+    "partialAllocation",
+    "blockedQuality",
+    "staleReviewVersion",
+    "unexplainedDifference250",
+    "lockedReconciliation",
+    "quotaReached",
+    "providerUnavailable",
+    "emptyEntity"
+  ],
+  "rules": [
+    "Never mix entities or currencies.",
+    "Never approve own work.",
+    "Never allocate above transaction availability.",
+    "Never label a suggested or balanced result as approved.",
+    "Never count a proposed bank fee twice.",
+    "Never mutate the baseline trial balance when a journal entry is only proposed.",
+    "Never present synthetic coverage as measured matching precision."
+  ]
+}

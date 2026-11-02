@@ -1,0 +1,9 @@
+node_modules/
+dist/
+work/
+*.log
+.env
+.env.*
+!.env.example
+verification/reference-*.png
+verification/pack-page-*.png

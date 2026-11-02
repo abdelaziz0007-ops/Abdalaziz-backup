@@ -1,0 +1,312 @@
+{
+  "errors": [],
+  "routes": [
+    {
+      "path": "/",
+      "heading": "بياناتك المالية، في صورة أوضح.",
+      "bodyLength": 611
+    },
+    {
+      "path": "/auth/sign-in",
+      "heading": "دقة في الأرقام. ثقة في الخطوة التالية.",
+      "bodyLength": 512
+    },
+    {
+      "path": "/auth/mfa",
+      "heading": "دقة في الأرقام. ثقة في الخطوة التالية.",
+      "bodyLength": 523
+    },
+    {
+      "path": "/auth/forgot-password",
+      "heading": "دقة في الأرقام. ثقة في الخطوة التالية.",
+      "bodyLength": 478
+    },
+    {
+      "path": "/auth/reset-password",
+      "heading": "دقة في الأرقام. ثقة في الخطوة التالية.",
+      "bodyLength": 510
+    },
+    {
+      "path": "/auth/invitations/demo-maya",
+      "heading": "دقة في الأرقام. ثقة في الخطوة التالية.",
+      "bodyLength": 501
+    },
+    {
+      "path": "/onboarding",
+      "heading": "إعداد مساحة العمل",
+      "bodyLength": 265
+    },
+    {
+      "path": "/app/entities",
+      "heading": "مساحة العمل",
+      "bodyLength": 819
+    },
+    {
+      "path": "/app/imports",
+      "heading": "مساحة العمل",
+      "bodyLength": 1561
+    },
+    {
+      "path": "/app/imports/quality",
+      "heading": "مساحة العمل",
+      "bodyLength": 662
+    },
+    {
+      "path": "/app/account-mapping",
+      "heading": "مساحة العمل",
+      "bodyLength": 3607
+    },
+    {
+      "path": "/app/reports",
+      "heading": "مساحة العمل",
+      "bodyLength": 1246
+    },
+    {
+      "path": "/app/analysis",
+      "heading": "مساحة العمل",
+      "bodyLength": 1783
+    },
+    {
+      "path": "/app/reconciling-items",
+      "heading": "مساحة العمل",
+      "bodyLength": 1014
+    },
+    {
+      "path": "/app/reconciliations/new",
+      "heading": "مساحة العمل",
+      "bodyLength": 1130
+    },
+    {
+      "path": "/app/reconciliations/REC-2026-001/proposed-entries",
+      "heading": "مساحة العمل",
+      "bodyLength": 988
+    },
+    {
+      "path": "/app/reviews",
+      "heading": "مساحة العمل",
+      "bodyLength": 762
+    },
+    {
+      "path": "/app/reviews/REC-2026-001",
+      "heading": "مساحة العمل",
+      "bodyLength": 968
+    },
+    {
+      "path": "/app/audit",
+      "heading": "مساحة العمل",
+      "bodyLength": 880
+    },
+    {
+      "path": "/app/settings/team",
+      "heading": "مساحة العمل",
+      "bodyLength": 765
+    },
+    {
+      "path": "/app/settings/bank-accounts",
+      "heading": "مساحة العمل",
+      "bodyLength": 765
+    },
+    {
+      "path": "/app/settings/matching-rules",
+      "heading": "مساحة العمل",
+      "bodyLength": 765
+    },
+    {
+      "path": "/app/settings/entity",
+      "heading": "مساحة العمل",
+      "bodyLength": 765
+    },
+    {
+      "path": "/app/settings/periods",
+      "heading": "مساحة العمل",
+      "bodyLength": 765
+    },
+    {
+      "path": "/app/settings/billing",
+      "heading": "مساحة العمل",
+      "bodyLength": 765
+    },
+    {
+      "path": "/app/settings/privacy",
+      "heading": "مساحة العمل",
+      "bodyLength": 765
+    },
+    {
+      "path": "/app/profile",
+      "heading": "مساحة العمل",
+      "bodyLength": 876
+    },
+    {
+      "path": "/app/notifications",
+      "heading": "مساحة العمل",
+      "bodyLength": 796
+    },
+    {
+      "path": "/app/settings/integrations",
+      "heading": "مساحة العمل",
+      "bodyLength": 1120
+    },
+    {
+      "path": "/pricing",
+      "heading": "خطة تناسب دورة عملك",
+      "bodyLength": 462
+    },
+    {
+      "path": "/legal",
+      "heading": "المركز القانوني",
+      "bodyLength": 518
+    },
+    {
+      "path": "/help",
+      "heading": "كيف يمكننا مساعدتك؟",
+      "bodyLength": 409
+    },
+    {
+      "path": "/403",
+      "heading": "لا تملك صلاحية لهذه الصفحة",
+      "bodyLength": 202
+    },
+    {
+      "path": "/404",
+      "heading": "الصفحة غير موجودة",
+      "bodyLength": 186
+    },
+    {
+      "path": "/session-expired",
+      "heading": "انتهت الجلسة",
+      "bodyLength": 172
+    },
+    {
+      "path": "/auth/sign-up",
+      "heading": "دقة في الأرقام. ثقة في الخطوة التالية.",
+      "bodyLength": 514
+    }
+  ],
+  "responsive": [
+    {
+      "path": "/app/overview",
+      "width": 320,
+      "scrollWidth": 320
+    },
+    {
+      "path": "/app/analysis",
+      "width": 320,
+      "scrollWidth": 320
+    },
+    {
+      "path": "/app/reconciliations/REC-2026-001/matching",
+      "width": 320,
+      "scrollWidth": 320
+    },
+    {
+      "path": "/app/imports",
+      "width": 320,
+      "scrollWidth": 320
+    },
+    {
+      "path": "/auth/sign-in",
+      "width": 320,
+      "scrollWidth": 320
+    },
+    {
+      "path": "/app/overview",
+      "width": 375,
+      "scrollWidth": 375
+    },
+    {
+      "path": "/app/analysis",
+      "width": 375,
+      "scrollWidth": 375
+    },
+    {
+      "path": "/app/reconciliations/REC-2026-001/matching",
+      "width": 375,
+      "scrollWidth": 375
+    },
+    {
+      "path": "/app/imports",
+      "width": 375,
+      "scrollWidth": 375
+    },
+    {
+      "path": "/auth/sign-in",
+      "width": 375,
+      "scrollWidth": 375
+    },
+    {
+      "path": "/app/overview",
+      "width": 768,
+      "scrollWidth": 768
+    },
+    {
+      "path": "/app/analysis",
+      "width": 768,
+      "scrollWidth": 768
+    },
+    {
+      "path": "/app/reconciliations/REC-2026-001/matching",
+      "width": 768,
+      "scrollWidth": 768
+    },
+    {
+      "path": "/app/imports",
+      "width": 768,
+      "scrollWidth": 768
+    },
+    {
+      "path": "/auth/sign-in",
+      "width": 768,
+      "scrollWidth": 768
+    },
+    {
+      "path": "/app/overview",
+      "width": 1024,
+      "scrollWidth": 1024
+    },
+    {
+      "path": "/app/analysis",
+      "width": 1024,
+      "scrollWidth": 1024
+    },
+    {
+      "path": "/app/reconciliations/REC-2026-001/matching",
+      "width": 1024,
+      "scrollWidth": 1024
+    },
+    {
+      "path": "/app/imports",
+      "width": 1024,
+      "scrollWidth": 1024
+    },
+    {
+      "path": "/auth/sign-in",
+      "width": 1024,
+      "scrollWidth": 1024
+    },
+    {
+      "path": "/app/overview",
+      "width": 1440,
+      "scrollWidth": 1440
+    },
+    {
+      "path": "/app/analysis",
+      "width": 1440,
+      "scrollWidth": 1440
+    },
+    {
+      "path": "/app/reconciliations/REC-2026-001/matching",
+      "width": 1440,
+      "scrollWidth": 1440
+    },
+    {
+      "path": "/app/imports",
+      "width": 1440,
+      "scrollWidth": 1440
+    },
+    {
+      "path": "/auth/sign-in",
+      "width": 1440,
+      "scrollWidth": 1440
+    }
+  ]
+}

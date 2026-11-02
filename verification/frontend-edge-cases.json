@@ -1,0 +1,10 @@
+{
+  "passed": [
+    "Partial allocation consumes 3,000 and leaves 1,800",
+    "Over-allocation is rejected with the available balance unchanged",
+    "Negative outgoing payments support positive-magnitude partial allocations",
+    "Evidenced proposed journal displays its own balanced debit/credit lines",
+    "Mobile dialog closes on Escape and returns keyboard focus"
+  ],
+  "errors": []
+}

@@ -1,0 +1,35 @@
+{
+  "passed": [
+    "Operational overview reflects draft readiness and demo tools are in the toolbar",
+    "Desktop number inspector exposes exact revenue inputs and restores focus",
+    "Shared inspector works in analysis and financial-position statements",
+    "Derived 250 residual becomes a blocker and next action; filters work",
+    "Blocking data quality is reflected in the readiness center",
+    "Responsive overview reflows at five widths; mobile inspector uses a native modal",
+    "English and dark theme retain the workflow",
+    "September uses comparative totals without October source rows or reconciliation"
+  ],
+  "responsive": [
+    {
+      "width": 320,
+      "scroll": 320
+    },
+    {
+      "width": 375,
+      "scroll": 375
+    },
+    {
+      "width": 768,
+      "scroll": 768
+    },
+    {
+      "width": 1024,
+      "scroll": 1024
+    },
+    {
+      "width": 1440,
+      "scroll": 1440
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,211 @@
+/* global.css — base layer. Imports the token file; defines element defaults only.
+ * All directional rules use logical properties so RTL mirrors automatically. */
+@import "../design-tokens.css";
+
+:root {
+  --color-primary: var(--action-primary-bg);
+  --color-primary-hover: var(--action-primary-hover);
+  --color-primary-subtle: var(--surface-selected);
+  --color-on-primary: var(--action-primary-fg);
+  --color-success: var(--status-success-fg);
+  --color-success-subtle: var(--status-success-bg);
+  --color-on-success: var(--status-success-fg);
+  --color-warning: var(--status-warning-fg);
+  --color-warning-subtle: var(--status-warning-bg);
+  --color-on-warning: var(--status-warning-fg);
+  --color-danger: var(--status-danger-fg);
+  --color-danger-subtle: var(--status-danger-bg);
+  --color-on-danger: var(--status-danger-fg);
+  --color-accent: var(--status-review-fg);
+  --color-accent-subtle: var(--status-review-bg);
+  --color-on-accent: var(--status-review-fg);
+  --color-info: var(--status-info-fg);
+  --color-info-subtle: var(--status-info-bg);
+  --color-surface-canvas: var(--surface-canvas);
+  --color-surface-raised: var(--surface-panel);
+  --color-surface-sunken: var(--surface-subtle);
+  --color-surface-overlay: var(--overlay);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-inverse: var(--text-inverse);
+  --color-text-link: var(--action-secondary-fg);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-default: var(--border-control);
+  --color-border-strong: var(--border-control);
+  --color-border-focus: var(--focus-ring);
+  --size-sidebar-width: var(--layout-sidebar);
+  --size-topbar-height: var(--layout-topbar);
+  --size-control-height: var(--control-md);
+  --size-row-height: var(--row-comfortable);
+  --density-padding-y: var(--space-3);
+  --density-padding-x: var(--space-4);
+  --font-sans: var(--font-latin);
+  --font-mono: var(--font-numeric);
+  --font-size-xs: var(--type-caption-size);
+  --font-size-sm: var(--type-bodySmall-size);
+  --font-size-md: var(--type-body-size);
+  --font-size-lg: var(--type-h3-size);
+  --font-size-xl: var(--type-h2-size);
+  --font-size-2xl: var(--type-h1-size);
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 600;
+  --duration-fast: var(--motion-fast);
+  --duration-base: var(--motion-normal);
+  --z-sticky: var(--zIndex-sticky);
+  --z-dropdown: var(--zIndex-dropdown);
+  --z-drawer: var(--zIndex-drawer);
+  --shadow-sm: var(--elevation-sm);
+  --shadow-md: var(--elevation-md);
+  --shadow-lg: var(--elevation-lg);
+}
+
+[dir="rtl"] body {
+  font-family: var(--font-arabic);
+}
+
+[data-density="compact"] {
+  --size-control-height: var(--control-sm);
+  --size-row-height: var(--row-compact);
+  --density-padding-y: var(--space-2);
+  --density-padding-x: var(--space-3);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-md);
+  line-height: var(--type-body-lineHeight);
+  color: var(--color-text-primary);
+  background: var(--color-surface-canvas);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  margin: 0;
+  font-weight: var(--type-h1-weight);
+  line-height: var(--type-h1-lineHeight);
+}
+h1 { font-size: var(--type-h1-size); }
+h2 { font-size: var(--type-h2-size); font-weight: var(--type-h2-weight); line-height: var(--type-h2-lineHeight); }
+h3 { font-size: var(--type-h3-size); font-weight: var(--type-h3-weight); line-height: var(--type-h3-lineHeight); }
+
+p { margin: 0 0 var(--space-3); }
+
+a {
+  color: var(--color-text-link);
+  text-decoration: none;
+}
+a:hover { text-decoration: underline; }
+
+ul, ol { margin: 0; padding: 0; list-style: none; }
+
+button, input, select, textarea {
+  font: inherit;
+  color: inherit;
+}
+
+/* Visible focus on everything interactive (WCAG 2.2 — never outline:none alone) */
+:focus-visible {
+  outline: 3px solid var(--color-border-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Numbers, references, dates, codes: isolated LTR so they never mirror in RTL. */
+.num,
+.num-ltr {
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-variant-numeric: tabular-nums;
+}
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Utility layout helpers (logical properties only) */
+.stack { display: flex; flex-direction: column; gap: var(--space-3); }
+.stack-sm { display: flex; flex-direction: column; gap: var(--space-2); }
+.row { display: flex; align-items: center; gap: var(--space-2); }
+.row-wrap { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.spacer { flex: 1 1 auto; }
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Accessible scroll region for wide financial tables */
+.scroll-region {
+  overflow: auto;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-raised);
+}
+.scroll-region:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* Data table */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+.data-table caption {
+  text-align: start;
+  padding: var(--space-3) var(--space-4);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+.data-table th,
+.data-table td {
+  padding: var(--density-padding-y) var(--density-padding-x);
+  border-block-end: 1px solid var(--color-border-subtle);
+  text-align: start;
+  vertical-align: top;
+}
+.data-table thead th {
+  position: sticky;
+  inset-block-start: 0;
+  background: var(--color-surface-sunken);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  z-index: 1;
+}
+.data-table td.align-end,
+.data-table th.align-end {
+  text-align: end;
+}
+.data-table tbody tr:last-child td {
+  border-block-end: none;
+}
+.data-table tbody tr:hover {
+  background: var(--color-primary-subtle);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

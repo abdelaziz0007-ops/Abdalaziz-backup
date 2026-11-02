@@ -1,0 +1,13 @@
+{
+  "passed": [
+    "XLSX multi-period upload publishes balanced historical and current datasets",
+    "Opening assets from imported history unlock average-return metrics",
+    "Budget compares signed accounts with metric-specific favorable/adverse semantics",
+    "Scenario profit updates without mutating actual source balances",
+    "Receivable/payable aging and cash-cycle inputs calculate from supplied evidence",
+    "Downloaded Excel includes live statements/scenarios and all source rows",
+    "Branded report renders to an actual multi-page PDF",
+    "Report reflows at phone, tablet and desktop sizes"
+  ],
+  "errors": []
+}

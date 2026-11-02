@@ -1,0 +1,166 @@
+{
+  "meta": { "version": "0.1.0", "defaultLocale": "ar", "supportedLocales": ["ar", "en"] },
+  "app": {
+    "name": { "ar": "مساحة العمل المالية", "en": "Financial Workspace" },
+    "demoBadge": { "ar": "بيانات اصطناعية — Demo", "en": "Demo — synthetic data" },
+    "demoNotice": {
+      "ar": "عرض توضيحي ببيانات اصطناعية. لا توجد استدعاءات شبكة أو رفع ملفات أو مدفوعات أو ترحيل قيود أو إرسال بريد.",
+      "en": "Prototype with synthetic data. No network calls, file uploads, payments, journal posting, or email delivery."
+    }
+  },
+  "shell": {
+    "mainNav": { "ar": "القائمة الرئيسية", "en": "Main navigation" },
+    "openNav": { "ar": "فتح القائمة", "en": "Open navigation" },
+    "closeNav": { "ar": "إغلاق القائمة", "en": "Close navigation" },
+    "skipToContent": { "ar": "تخطَّ إلى المحتوى الرئيسي", "en": "Skip to main content" },
+    "breadcrumb": { "ar": "مسار التنقل", "en": "Breadcrumb" },
+    "notifications": { "ar": "الإشعارات", "en": "Notifications" },
+    "notificationsEmpty": { "ar": "لا توجد إشعارات جديدة.", "en": "No new notifications." },
+    "userMenu": { "ar": "قائمة المستخدم", "en": "User menu" },
+    "signOutDemo": { "ar": "تسجيل الخروج (غير متاح في العرض)", "en": "Sign out (unavailable in demo)" },
+    "entityContext": { "ar": "الكيان", "en": "Entity" },
+    "periodContext": { "ar": "الفترة", "en": "Period" },
+    "currencyContext": { "ar": "العملة", "en": "Currency" },
+    "theme": { "ar": "المظهر", "en": "Theme" },
+    "themeLight": { "ar": "فاتح", "en": "Light" },
+    "themeDark": { "ar": "داكن", "en": "Dark" },
+    "density": { "ar": "الكثافة", "en": "Density" },
+    "densityComfortable": { "ar": "مريحة", "en": "Comfortable" },
+    "densityCompact": { "ar": "مضغوطة", "en": "Compact" },
+    "language": { "ar": "اللغة", "en": "Language" },
+    "numerals": { "ar": "الأرقام", "en": "Numerals" },
+    "numeralsLatn": { "ar": "لاتينية", "en": "Latin" },
+    "numeralsArab": { "ar": "عربية-هندية", "en": "Arabic-Indic" }
+  },
+  "nav": {
+    "overview": { "ar": "نظرة عامة", "en": "Overview" },
+    "dataImports": { "ar": "البيانات والاستيراد", "en": "Data & Imports" },
+    "reports": { "ar": "التقارير", "en": "Reports" },
+    "reconciliations": { "ar": "التسويات البنكية", "en": "Reconciliations" },
+    "reviews": { "ar": "المراجعات", "en": "Reviews" },
+    "auditTrail": { "ar": "سجل التدقيق", "en": "Audit Trail" },
+    "settings": { "ar": "الإعدادات", "en": "Settings" }
+  },
+  "routes": {
+    "dashboard.title": { "ar": "لوحة الكيان والفترة", "en": "Entity & Period Dashboard" },
+    "imports.title": { "ar": "الملفات المستوردة", "en": "Imports" },
+    "importWizard.title": { "ar": "معالج الاستيراد", "en": "Import Wizard" },
+    "quality.title": { "ar": "مركز جودة البيانات", "en": "Data Quality Center" },
+    "mapping.title": { "ar": "مساحة مطابقة الحسابات", "en": "Account Mapping Workspace" },
+    "reportsList.title": { "ar": "التقارير", "en": "Reports" },
+    "reportDetail.title": { "ar": "تفاصيل التقرير", "en": "Report Detail" },
+    "reconciliationsList.title": { "ar": "التسويات البنكية", "en": "Bank Reconciliations" },
+    "reconciliationDetail.title": { "ar": "مساحة التسوية البنكية", "en": "Reconciliation Workspace" },
+    "reviewsInbox.title": { "ar": "صندوق المراجعة والاعتماد", "en": "Review & Approval Inbox" },
+    "audit.title": { "ar": "سجل التدقيق", "en": "Audit Trail" },
+    "settings.title": { "ar": "الإعدادات", "en": "Settings" },
+    "entities.title": { "ar": "الكيانات والفترات", "en": "Entities & Periods" },
+    "users.title": { "ar": "المستخدمون والصلاحيات", "en": "Users & Permissions" },
+    "subscription.title": { "ar": "الاشتراك والفوترة والاستخدام", "en": "Subscription, Billing & Usage" },
+    "privacy.title": { "ar": "الخصوصية ودورة حياة البيانات", "en": "Privacy & Data Lifecycle" },
+    "integrations.title": { "ar": "التكاملات", "en": "Integrations" },
+    "notFound.title": { "ar": "الصفحة غير موجودة", "en": "Page not found" }
+  },
+  "placeholder": {
+    "badge": { "ar": "واجهة قادمة", "en": "Placeholder" },
+    "description": {
+      "ar": "هذه الواجهة مسجلة في مخطط المسارات وستُبنى في إصدار لاحق. الأساس المشترك (القشرة، التنقل، السياق، البيانات الوهمية) جاهز الآن.",
+      "en": "This screen is registered in the route map and will be built in a later release. The shared foundation (shell, navigation, context, mock data) is ready now."
+    }
+  },
+  "demo": {
+    "title": { "ar": "أدوات العرض التوضيحي", "en": "Demo Controls" },
+    "subtitle": {
+      "ar": "واجهة عرض توضيحي — ليست ميزة إدارية في المنتج النهائي.",
+      "en": "Prototype chrome — not a production admin feature."
+    },
+    "persona": { "ar": "الشخصية", "en": "Persona" },
+    "scenario": { "ar": "السيناريو", "en": "Scenario" },
+    "latency": { "ar": "زمن الاستجابة المحاكى", "en": "Simulated latency" },
+    "latencyNone": { "ar": "فوري", "en": "Instant" },
+    "latencyFast": { "ar": "سريع (٢٠٠ مللي ثانية)", "en": "Fast (200ms)" },
+    "latencySlow": { "ar": "بطيء (١٫٢ ثانية)", "en": "Slow (1.2s)" },
+    "errorMode": { "ar": "خطأ محاكى", "en": "Simulated error" },
+    "errorNone": { "ar": "بدون خطأ", "en": "No error" },
+    "errorRandom": { "ar": "أخطاء عشوائية", "en": "Random failures" },
+    "errorProvider": { "ar": "مزود غير متاح", "en": "Provider unavailable" },
+    "reset": { "ar": "إعادة تعيين العرض", "en": "Reset demo" },
+    "resetHint": {
+      "ar": "تعيد الإعادة تعيين حالة العرض فقط (السيناريو والشخصية والتفضيلات المحلية). لا تمسح بيانات الدخول لأنها غير مخزنة أصلًا.",
+      "en": "Reset restores demo state only (scenario, persona, local preferences). It never touches credentials because none are stored."
+    },
+    "open": { "ar": "فتح أدوات العرض", "en": "Open demo controls" },
+    "close": { "ar": "إغلاق أدوات العرض", "en": "Close demo controls" }
+  },
+  "personas": {
+    "maya": { "ar": "مايا — مُعدّة التقارير", "en": "Maya — Preparer" },
+    "omar": { "ar": "عمر — المعتمِد", "en": "Omar — Approver" },
+    "lina": { "ar": "لينا — مالكة الاشتراك (بلا وصول مالي)", "en": "Lina — Subscription owner (no financial access)" },
+    "noor": { "ar": "نور — مُدارة الكيان (نطاق محدد)", "en": "Noor — Entity administrator (scoped)" }
+  },
+  "scenarios": {
+    "baseline": { "ar": "أساسي", "en": "Baseline" },
+    "partialAllocation": { "ar": "توزيع جزئي", "en": "Partial allocation" },
+    "blockedQuality": { "ar": "أخطاء جودة حرجة", "en": "Blocked on data quality" },
+    "staleReviewVersion": { "ar": "إصدار مراجعة قديم", "en": "Stale review version" },
+    "unexplainedDifference250": { "ar": "فرق غير مفسّر ٢٥٠", "en": "Unexplained difference 250" },
+    "lockedReconciliation": { "ar": "تسوية مقفلة", "en": "Locked reconciliation" },
+    "quotaReached": { "ar": "استنفاد حد الاشتراك", "en": "Subscription quota reached" },
+    "providerUnavailable": { "ar": "مزود خدمة غير متاح", "en": "Provider unavailable" },
+    "emptyEntity": { "ar": "كيان فارغ", "en": "Empty entity" }
+  },
+  "guard": {
+    "restrictedTitle": { "ar": "وصول غير مصرّح به", "en": "Access restricted" },
+    "restrictedBody": {
+      "ar": "لا تملك هذه الشخصية صلاحية الوصول إلى هذا القسم. (عرض وهمي للقيود — التفويض الحقيقي يتم على الخادم.)",
+      "en": "This persona lacks permission for this section. (Mock demonstration of restrictions — real authorization is enforced server-side.)"
+    },
+    "backToOverview": { "ar": "العودة إلى نظرة عامة", "en": "Back to Overview" },
+    "ownerNote": {
+      "ar": "مالك الاشتراك لا يحصل تلقائيًا على وصول إلى المحتوى المالي.",
+      "en": "Subscription ownership does not automatically grant access to financial content."
+    }
+  },
+  "status": {
+    "confirmedMatch": { "ar": "مطابقة مؤكدة", "en": "Confirmed match" },
+    "suggestion": { "ar": "اقتراح", "en": "Suggestion" },
+    "unmatched": { "ar": "غير مطابق", "en": "Unmatched" },
+    "excluded": { "ar": "مستبعد", "en": "Excluded" },
+    "draft": { "ar": "مسودة", "en": "Draft" },
+    "readyForReview": { "ar": "جاهز للمراجعة", "en": "Ready for review" },
+    "underReview": { "ar": "قيد المراجعة", "en": "Under review" },
+    "approvedLocked": { "ar": "معتمد ومقفل", "en": "Approved & locked" },
+    "rejected": { "ar": "مرفوض", "en": "Rejected" },
+    "blocking": { "ar": "حجب", "en": "Blocking" },
+    "warning": { "ar": "تحذير", "en": "Warning" },
+    "unavailable": { "ar": "غير متاح", "en": "Unavailable" }
+  },
+  "common": {
+    "loading": { "ar": "جارٍ التحميل…", "en": "Loading…" },
+    "retry": { "ar": "إعادة المحاولة", "en": "Retry" },
+    "errorTitle": { "ar": "تعذّر تحميل البيانات", "en": "Could not load data" },
+    "errorBody": {
+      "ar": "فشل الطلب المحاكى. غيّر السيناريو أو زمن الاستجابة ثم أعد المحاولة.",
+      "en": "The simulated request failed. Adjust the scenario or latency, then retry."
+    },
+    "emptyTitle": { "ar": "لا توجد بيانات بعد", "en": "No data yet" },
+    "unmappedAccounts": { "ar": "حسابات غير مُسندة", "en": "Unmapped accounts" },
+    "openItems": { "ar": "بنود مفتوحة", "en": "Outstanding items" },
+    "pendingReviews": { "ar": "مراجعات معلّقة", "en": "Pending reviews" },
+    "quotaUsage": { "ar": "استخدام الحصة", "en": "Quota usage" },
+    "jobsTitle": { "ar": "حالة المهام", "en": "Job status" },
+    "viewAll": { "ar": "عرض الكل", "en": "View all" },
+    "version": { "ar": "الإصدار", "en": "Version" },
+    "subsequentRelease": { "ar": "إصدار لاحق", "en": "Subsequent release" },
+    "disabledNotConfigured": {
+      "ar": "معطّل — يتطلب إعدادًا وموافقة قبل التفعيل.",
+      "en": "Disabled — requires configuration and approval before activation."
+    }
+  },
+  "notifications": {
+    "n1": { "ar": "تم نشر دفعة استيراد «ميزان مراجعة أكتوبر» واكتملت فحوصات الجودة.", "en": "Import batch “October trial balance” published; quality checks completed." },
+    "n2": { "ar": "عمود «المرجع» في ملف الحساب البنكي غير مطابق للقالب المعتمد.", "en": "Column “Reference” in the bank ledger file does not match the approved template." },
+    "n3": { "ar": "بندان مفتوحان من سبتمبر ما زالا بانتظار التصنيف.", "en": "Two September outstanding items still await classification." },
+    "n4": { "ar": "نسخة تقرير أكتوبر بانتظار اعتماد مستخدم آخر.", "en": "October report version is waiting for a different approver." }
+  }
+}
