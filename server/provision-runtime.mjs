@@ -43,6 +43,7 @@ try{
       GRANT UPDATE(id) ON mizan.match_groups TO mizan_api_v1;
       GRANT SELECT,INSERT ON mizan.match_decisions,mizan.allocations TO mizan_api_v1;
       GRANT UPDATE(status,decided_by,decided_at,decision_reason) ON mizan.match_groups TO mizan_api_v1;
+      GRANT UPDATE(supervisor_override_by) ON mizan.match_groups TO mizan_api_v1;
       GRANT UPDATE(reversed_at,reversed_by,reversal_reason) ON mizan.allocations TO mizan_api_v1;
       GRANT UPDATE(content_fingerprint) ON mizan.output_versions TO mizan_api_v1;
       GRANT UPDATE(id) ON mizan.bank_transactions,mizan.book_transactions,mizan.accounting_periods TO mizan_api_v1;

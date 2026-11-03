@@ -1,0 +1,16 @@
+{
+  "branch": "codex-backend-completion",
+  "passed": [
+    "One-to-many allocations consume exact amounts once and reuse the original request result",
+    "Grouped withdrawals use positive allocation capacity without changing movement signs",
+    "Partial allocation exposes the exact unallocated balance",
+    "Concurrent partial requests cannot consume the same remaining capacity or exceed available funds",
+    "Reference conflicts require a real scoped override grant and explicit acknowledged supervisor decision",
+    "Original suggestions can be rejected without deleting active partial allocations",
+    "Unmatching reverses every allocation in the group and preserves intake idempotency and history",
+    "Unknown movement identifiers and actor spoofing are rejected; source publication gates remain intact",
+    "Arabic UI creates a partial allocation and displays its history after reload at five widths"
+  ],
+  "errors": [],
+  "fixtures": "Synthetic records confined to disposable completion branch"
+}

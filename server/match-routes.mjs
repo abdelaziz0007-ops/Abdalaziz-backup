@@ -10,7 +10,7 @@ export function mountMatchRoutes(router,{scoped,audit,result,HttpError}){
  const base='/tenants/:tenantId/entities/:entityId/reconciliations/:reconciliationId/matches/:groupId/:action';
  router.post(base,async(req,res,next)=>{
   try{
-   const data=request.parse(req.body),action=z.enum(['confirm','unmatch']).parse(req.params.action),{tenantId:t,entityId:e,reconciliationId:r,groupId:g}=req.params;z.uuid().parse(r);z.uuid().parse(g);
+   const data=request.parse(req.body),action=z.enum(['confirm','unmatch','reject']).parse(req.params.action),{tenantId:t,entityId:e,reconciliationId:r,groupId:g}=req.params;z.uuid().parse(r);z.uuid().parse(g);
    const value=await scoped(req,t,e,null,async c=>{
     await c.query('SELECT pg_advisory_xact_lock(hashtextextended($1,42))',[e]);
     const rec=(await c.query(`SELECT r.id,r.bank_account_id,r.output_version_id,r.bank_dataset_id,r.book_dataset_id,r.currency_code,v.status,v.content_fingerprint,p.status AS period_status,u.minor_units
@@ -38,13 +38,16 @@ export function mountMatchRoutes(router,{scoped,audit,result,HttpError}){
      await c.query("UPDATE mizan.match_groups SET status='confirmed',decided_by=$4,decided_at=$5,decision_reason=$6 WHERE tenant_id=$1 AND entity_id=$2 AND id=$3",[t,e,g,actor,now,data.reason]);
      const signed=bankAmount(bank.signed_amount,rec.minor_units);allocationId=randomUUID();
      await insert(c,'allocations',{...scope,id:allocationId,match_group_id:g,bank_account_id:rec.bank_account_id,currency_code:rec.currency_code,bank_transaction_id:bank.id,book_transaction_id:book.id,amount:money(signed<0n?-signed:signed,rec.minor_units),allocated_by:actor,idempotency_key:data.requestKey});
+    }else if(action==='reject'){
+     if(!['suggested','ambiguous','unmatched'].includes(group.status))throw new HttpError(409,'MATCH_NOT_REJECTABLE','Only an unapplied suggestion can be rejected');
+     await c.query("UPDATE mizan.match_groups SET status='rejected',decided_by=$4,decided_at=$5,decision_reason=$6 WHERE tenant_id=$1 AND entity_id=$2 AND id=$3",[t,e,g,actor,now,data.reason]);
     }else{
      if(group.status!=='confirmed')throw new HttpError(409,'MATCH_NOT_CONFIRMED','Only a confirmed match can be unmatched');
      const reversed=await c.query('UPDATE mizan.allocations SET reversed_at=$4,reversed_by=$5,reversal_reason=$6 WHERE tenant_id=$1 AND entity_id=$2 AND match_group_id=$3 AND reversed_at IS NULL RETURNING id',[t,e,g,now,actor,data.reason]);
      if(!reversed.rows.length)throw new HttpError(409,'ALLOCATION_MISSING','The confirmed match has no active allocation');
      await c.query("UPDATE mizan.match_groups SET status='unmatched',decided_by=$4,decided_at=$5,decision_reason=$6 WHERE tenant_id=$1 AND entity_id=$2 AND id=$3",[t,e,g,actor,now,data.reason]);
     }
-    const response={groupId:g,status:action==='confirm'?'confirmed':'unmatched',decisionVersion:version+1,allocationId,reused:false};
+    const response={groupId:g,status:action==='confirm'?'confirmed':action==='reject'?'rejected':'unmatched',decisionVersion:version+1,allocationId,reused:false};
     const fingerprint=hash(JSON.stringify({prior:rec.content_fingerprint,requestHash,response}));
     await c.query('UPDATE mizan.output_versions SET content_fingerprint=$4 WHERE tenant_id=$1 AND entity_id=$2 AND id=$3',[t,e,rec.output_version_id,fingerprint]);
     await insert(c,'match_decisions',{...scope,id:randomUUID(),created_at:now,match_group_id:g,actor_id:actor,action,reason:data.reason,previous_state:JSON.stringify({status:group.status,decisionVersion:version,fingerprint:rec.content_fingerprint}),new_state:JSON.stringify({requestKey:data.requestKey,requestHash,response,fingerprint,sequence:version+1})});

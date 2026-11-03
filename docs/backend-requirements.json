@@ -1,0 +1,646 @@
+{
+  "scope": "All M and S requirements, explicitly requested by the project owner",
+  "externalConfiguration": "No email, payment, hosting, malware scan, OCR or AI provider has been selected yet. Provider activation is not represented by a mock passing.",
+  "requirements": [
+    {
+      "id": "FR-001",
+      "title": "Authentication, account recovery, invitations, and MFA",
+      "stage": "M",
+      "acceptance": "Invitations expire after a configured period and are single-use; administrative and approval accounts require MFA; recovery does not disclose whether an email exists",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-002",
+      "title": "Manage tenants, entities, and memberships",
+      "stage": "M",
+      "acceptance": "A user cannot access an unauthorized entity, including by changing a request identifier",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-003",
+      "title": "Enforce action and data permissions",
+      "stage": "M",
+      "acceptance": "Unauthorized viewing, downloading, editing, and approval are blocked, with every access path tested",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-004",
+      "title": "Configure fiscal year, currency, calendar, and bank accounts",
+      "stage": "M",
+      "acceptance": "Settings affecting a locked version cannot change without a new version and an impact plan",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-005",
+      "title": "Manage accounting periods and locks",
+      "stage": "M",
+      "acceptance": "A locked period rejects direct changes; reopening requires authorization and a reason and creates a new version",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-006",
+      "title": "Upload XLSX and CSV with type, size, and malware checks",
+      "stage": "M",
+      "acceptance": "Invalid or infected files are rejected; analysis starts only after checks pass; file content is not executed",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-007",
+      "title": "Preview worksheets and rows and map columns",
+      "stage": "M",
+      "acceptance": "The user selects the worksheet, header row, date format, and decimal separator; transformed values are previewed before confirmation",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-008",
+      "title": "Save versioned import templates",
+      "stage": "M",
+      "acceptance": "Reuse detects changes to required columns and requests review instead of silently remapping",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-009",
+      "title": "Import trial balances, general ledgers, and bank-account ledgers",
+      "stage": "M",
+      "acceptance": "Mandatory fields are validated for each file type, and errors identify source row numbers",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-010",
+      "title": "Detect duplicates and overlapping periods",
+      "stage": "M",
+      "acceptance": "Re-uploading the same file does not duplicate data; similar records are flagged without automatically deleting legitimate transactions",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-011",
+      "title": "Produce a data-quality report",
+      "stage": "M",
+      "acceptance": "Blocking errors and warnings are separate; record counts, rejection reasons, and totals before and after exclusions are shown",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-012",
+      "title": "Correct and map data without altering the original",
+      "stage": "M",
+      "acceptance": "Original values, changes, actor, and reason are retained; affected validations and calculations rerun",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-013",
+      "title": "Manage asynchronous processing jobs",
+      "stage": "M",
+      "acceptance": "Progress, failure, and cancellation are visible; retries do not duplicate imports or outputs",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-014",
+      "title": "Extract text PDFs and images through OCR",
+      "stage": "S",
+      "acceptance": "Critical financial fields and low-confidence pages are reviewed; OCR scores alone cannot authorize approval",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-015",
+      "title": "Map accounts to reporting line items",
+      "stage": "M",
+      "acceptance": "Every unmapped account is visible; splitting an account across line items requires a rule that defines totals and prevents duplication",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-016",
+      "title": "Produce an income statement and statement of financial position",
+      "stage": "M",
+      "acceptance": "Results match ground truth; approval is blocked if balance, mapping, or scope validations fail",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-017",
+      "title": "Present comparisons and variances",
+      "stage": "M",
+      "acceptance": "Period, currency, entity scope, and policies are disclosed; zero denominators do not generate misleading percentages",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-018",
+      "title": "Calculate financial metrics",
+      "stage": "M",
+      "acceptance": "Each metric shows its formula, contributing accounts, and period; missing required inputs produce “Unavailable”",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-019",
+      "title": "Trace figures to source data",
+      "stage": "M",
+      "acceptance": "Reviewers can navigate from a line item to available accounts, transactions, or trial-balance rows; the interface does not imply unavailable transaction detail",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-020",
+      "title": "Detect exceptions through explainable rules",
+      "stage": "M",
+      "acceptance": "Alerts show the rule, threshold, and affected data; exceptions are not labeled as proven fraud",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-021",
+      "title": "Generate numerical analysis and rule-based explanations",
+      "stage": "M",
+      "acceptance": "Each quantitative statement links to a calculated metric; arithmetic changes are distinguished from causal explanations",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-022",
+      "title": "Prepare a statement of cash flows",
+      "stage": "S",
+      "acceptance": "Approval requires sufficient supporting data, complete classifications, and reconciliation of cash",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-023",
+      "title": "Provide optional AI-assisted narrative",
+      "stage": "S",
+      "acceptance": "The model cannot alter figures or matches; claims link to sources, and unsupported statements are prevented",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-024",
+      "title": "Compare budgets and cost centers",
+      "stage": "S",
+      "acceptance": "Dimensions, periods, and currencies must be compatible; non-comparable items are disclosed",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-025",
+      "title": "Create a reconciliation for an account, currency, and cutoff date",
+      "stage": "M",
+      "acceptance": "Mixed accounts or currencies are blocked; overlapping reconciliations trigger a warning; opening and closing balance versions are identified",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-026",
+      "title": "Normalize bank and book signs and validate balances",
+      "stage": "M",
+      "acceptance": "Opening balance plus transactions reconciles to closing balance; inconsistent sign interpretation is not accepted",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-027",
+      "title": "Confirm one-to-one matches using approved rules",
+      "stage": "M",
+      "acceptance": "Automatic confirmation requires a unique candidate meeting all rule conditions; the reason and rule version are recorded",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-028",
+      "title": "Suggest matches using date, description, and reference",
+      "stage": "M",
+      "acceptance": "Amounts, dates, evidence, and conflicts are shown; ambiguous cases require review",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-029",
+      "title": "Suggest one-to-many and many-to-one matches",
+      "stage": "M",
+      "acceptance": "Group members, total, and residual are shown; groups are not automatically approved at launch",
+      "status": "partial",
+      "evidence": [
+        "verification/manual-allocation-api.json"
+      ],
+      "remaining": "Manual one-to-many and many-to-one work; bounded rule-driven grouped suggestion search and sum/residual display still need acceptance."
+    },
+    {
+      "id": "FR-030",
+      "title": "Support partial matching and allocation",
+      "stage": "M",
+      "acceptance": "Total allocations cannot exceed a transaction’s amount; the unallocated balance remains visible",
+      "status": "verified",
+      "evidence": [
+        "server/allocation-plan.test.mjs",
+        "verification/manual-allocation-api.json",
+        "verification/matches-api.json"
+      ],
+      "remaining": ""
+    },
+    {
+      "id": "FR-031",
+      "title": "Manually accept, reject, and unmatch",
+      "stage": "M",
+      "acceptance": "User and reason are recorded; overriding a clear reference conflict requires a reason and supervisor permission",
+      "status": "partial",
+      "evidence": [
+        "verification/manual-allocation-api.json"
+      ],
+      "remaining": "Accept/reject/unmatch and supervisor override APIs work; complete administration and review-facing workflow acceptance remains."
+    },
+    {
+      "id": "FR-032",
+      "title": "Classify differences and attach evidence",
+      "stage": "M",
+      "acceptance": "Each item has a type, status, owner, amount, sign, reconciliation effect, and supporting source",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-033",
+      "title": "Prepare the reconciliation statement and proposed entries",
+      "stage": "M",
+      "acceptance": "Both adjusted balances and the residual difference are calculated; no posted entry is created and source records remain unchanged",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-034",
+      "title": "Carry forward outstanding items and track their age",
+      "stage": "M",
+      "acceptance": "Each item retains its identity and origination date; duplicate inclusion and reuse of previously reconciled transactions are prevented",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-035",
+      "title": "Display matching coverage and result quality",
+      "stage": "M",
+      "acceptance": "Counts, absolute values, and denominators are shown; coverage is distinguished from precision, which requires ground truth",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-036",
+      "title": "Support review, approval, and rejection",
+      "stage": "M",
+      "acceptance": "Preparers cannot approve their own version; approval fails if critical validation fails or the version changed after submission",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-037",
+      "title": "Freeze approved versions and document reopening",
+      "stage": "M",
+      "acceptance": "Previous versions remain retrievable; new versions explain their reason and differences",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-038",
+      "title": "Export PDF and XLSX",
+      "stage": "M",
+      "acceptance": "Values match the selected version; entity, period, currency, status, version, and generation date are displayed",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-039",
+      "title": "Support comments, attachments, and notifications",
+      "stage": "M",
+      "acceptance": "Comments link to an object and version; email notifications do not contain financial files or sensitive data by default",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-040",
+      "title": "Provide a searchable, exportable audit trail",
+      "stage": "M",
+      "acceptance": "Imports, edits, matching, approval, downloads, and permission changes are recorded; client users cannot modify the trail",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-041",
+      "title": "Manage plans, billing, and usage quotas",
+      "stage": "M",
+      "acceptance": "Limits are enforced before jobs start; duplicate payment events do not duplicate subscriptions or invoices; capacity rejection reasons are shown",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-042",
+      "title": "Export, delete, and retain client data",
+      "stage": "M",
+      "acceptance": "Request authority and scope are verified; policies cover originals, derivatives, indexes, and providers",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-043",
+      "title": "Manage support requests and temporary access",
+      "stage": "M",
+      "acceptance": "Support cannot access financial content without time-limited, scoped authorization; access is logged",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-044",
+      "title": "Connect accounting systems in read-only mode",
+      "stage": "S",
+      "acceptance": "Permissions are restricted to granted scope; resynchronization does not duplicate records, and source-update conflicts are visible",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    },
+    {
+      "id": "FR-045",
+      "title": "Provide external APIs and webhooks",
+      "stage": "S",
+      "acceptance": "Authentication, scopes, authorization, rate limits, signatures, replay prevention, and idempotency keys are enforced",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+    }
+  ],
+  "nonFunctional": [
+    {
+      "id": "NFR-001",
+      "title": "Availability",
+      "acceptance": "99.9% monthly for core workflow interfaces; the service agreement defines measurement and exclusions",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Requires measured operational acceptance, not a configuration claim."
+    },
+    {
+      "id": "NFR-002",
+      "title": "Response time",
+      "acceptance": "p95 ≤2 seconds for ordinary reads and ≤3 seconds for saves under the workload; upload and background processing excluded",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Requires measured operational acceptance, not a configuration claim."
+    },
+    {
+      "id": "NFR-003",
+      "title": "Report processing",
+      "acceptance": "A standard 100,000-row file reaches draft report within 5 minutes at p95, including queue wait but excluding upload and review",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Requires measured operational acceptance, not a configuration claim."
+    },
+    {
+      "id": "NFR-004",
+      "title": "Reconciliation processing",
+      "acceptance": "One-to-one matching at the workload limit completes within 10 minutes at p95; grouped search has a separate resource budget and discloses unsearched cases",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Requires measured operational acceptance, not a configuration claim."
+    },
+    {
+      "id": "NFR-005",
+      "title": "Calculation correctness",
+      "acceptance": "All mandatory accounting reference cases pass; amounts agree at currency precision, with no hidden unexplained difference",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Requires measured operational acceptance, not a configuration claim."
+    },
+    {
+      "id": "NFR-006",
+      "title": "Matching precision",
+      "acceptance": "≥99.5% on an independent representative dataset, reporting sample size, strata, and confidence interval; zero critical errors under the approved definition",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Requires measured operational acceptance, not a configuration claim."
+    },
+    {
+      "id": "NFR-007",
+      "title": "Isolation",
+      "acceptance": "Zero successful cross-scope access in API, file, export, queue, and cache tests",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Requires measured operational acceptance, not a configuration claim."
+    },
+    {
+      "id": "NFR-008",
+      "title": "Recovery",
+      "acceptance": "RPO ≤15 minutes and RTO ≤4 hours; quarterly recovery test covers databases, files, and keys",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Requires measured operational acceptance, not a configuration claim."
+    },
+    {
+      "id": "NFR-009",
+      "title": "Job reliability",
+      "acceptance": "Redelivery and retry do not duplicate data, allocations, or consumption",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Requires measured operational acceptance, not a configuration claim."
+    },
+    {
+      "id": "NFR-010",
+      "title": "Scalability",
+      "acceptance": "Workers can scale without changing financial logic; quotas prevent one tenant from exhausting shared resources",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Requires measured operational acceptance, not a configuration claim."
+    },
+    {
+      "id": "NFR-011",
+      "title": "Observability",
+      "acceptance": "Trace IDs for requests and jobs; alerts for failed imports and exports, queue delays, and isolation errors",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Requires measured operational acceptance, not a configuration claim."
+    },
+    {
+      "id": "NFR-012",
+      "title": "Maintainability",
+      "acceptance": "Documented interface contracts, testable migrations, and deployment rollback plans",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Requires measured operational acceptance, not a configuration claim."
+    },
+    {
+      "id": "NFR-013",
+      "title": "Security",
+      "acceptance": "No unresolved critical or high vulnerabilities without a formally approved risk exception before launch",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Requires measured operational acceptance, not a configuration claim."
+    },
+    {
+      "id": "NFR-014",
+      "title": "Accessibility and localization",
+      "acceptance": "Core workflows pass the targeted WCAG checks, RTL tests, and Arabic-export tests",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Requires measured operational acceptance, not a configuration claim."
+    },
+    {
+      "id": "NFR-015",
+      "title": "Compatibility",
+      "acceptance": "Latest two stable Chrome, Edge, and Firefox versions at test time; mobile matrix documented",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Requires measured operational acceptance, not a configuration claim."
+    },
+    {
+      "id": "NFR-016",
+      "title": "Reproducibility",
+      "acceptance": "Identical data and versions produce identical numerical outputs and deterministic matches regardless of run time",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Requires measured operational acceptance, not a configuration claim."
+    },
+    {
+      "id": "NFR-017",
+      "title": "Usage fairness",
+      "acceptance": "Limits are disclosed before upload; an otherwise valid job does not lose its data because quota expires during publication",
+      "status": "pending",
+      "evidence": [],
+      "remaining": "Requires measured operational acceptance, not a configuration claim."
+    }
+  ],
+  "dataRules": [
+    {
+      "id": "DR-001",
+      "acceptance": "All client data carries tenant and entity scope where applicable; relationships validate both scopes.",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Recheck across every completed workflow before final acceptance."
+    },
+    {
+      "id": "DR-002",
+      "acceptance": "Monetary values use exact decimal arithmetic with sufficient precision for transformations; floating-point arithmetic is not used for balances.",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Recheck across every completed workflow before final acceptance."
+    },
+    {
+      "id": "DR-003",
+      "acceptance": "Currency-specific precision is respected; two decimal places are not assumed universally.",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Recheck across every completed workflow before final acceptance."
+    },
+    {
+      "id": "DR-004",
+      "acceptance": "Accounting dates are stored as dates; system events use a common time standard and are displayed in the relevant time zone.",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Recheck across every completed workflow before final acceptance."
+    },
+    {
+      "id": "DR-005",
+      "acceptance": "Original files and source values are immutable; corrections form a derived layer.",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Recheck across every completed workflow before final acceptance."
+    },
+    {
+      "id": "DR-006",
+      "acceptance": "Every import and rerun is associated with fingerprints, versions, and idempotency keys.",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Recheck across every completed workflow before final acceptance."
+    },
+    {
+      "id": "DR-007",
+      "acceptance": "Bank identifiers, references, and account codes are text fields preserving leading zeros.",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Recheck across every completed workflow before final acceptance."
+    },
+    {
+      "id": "DR-008",
+      "acceptance": "Missing, zero, and not applicable are distinct states.",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Recheck across every completed workflow before final acceptance."
+    },
+    {
+      "id": "DR-009",
+      "acceptance": "Exclusion does not delete a record; its reason and effect on counts and totals are retained.",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Recheck across every completed workflow before final acceptance."
+    },
+    {
+      "id": "DR-010",
+      "acceptance": "Concurrent allocations exceeding the available amount are prevented through atomic transactions and version checks.",
+      "status": "verified",
+      "evidence": [
+        "verification/manual-allocation-api.json",
+        "verification/matches-api.json"
+      ],
+      "remaining": ""
+    },
+    {
+      "id": "DR-011",
+      "acceptance": "Amounts in different currencies are not aggregated without an approved rate source, date, and conversion policy.",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Recheck across every completed workflow before final acceptance."
+    },
+    {
+      "id": "DR-012",
+      "acceptance": "Templates, formulas, policies, and rules are versioned and do not retrospectively alter locked results.",
+      "status": "partial",
+      "evidence": [],
+      "remaining": "Recheck across every completed workflow before final acceptance."
+    }
+  ]
+}
