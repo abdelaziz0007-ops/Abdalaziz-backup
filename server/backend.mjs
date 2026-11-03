@@ -2,6 +2,8 @@ import express from 'express';
 import { fromNodeHeaders } from 'better-auth/node';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
+import { mountFinancialRoutes } from './financial-routes.mjs';
+import { FinancialInputError } from './financial-core.mjs';
 
 class HttpError extends Error {
   constructor(status,code,message){super(message);this.status=status;this.code=code;}
@@ -116,11 +118,13 @@ export function backendRouter({pool,auth,dataRegion}){
   router.get('/tenants/:tenantId/audit',async(req,res,next)=>{
     try{result(req,res,await scoped(req,req.params.tenantId,null,'members.manage',async(c,context)=>(await c.query('SELECT id,created_at,action,object_type,object_id,event_hash,previous_event_hash,redacted_metadata FROM mizan.audit_events WHERE tenant_id=$1 AND (entity_id IS NULL OR entity_id=ANY($2::uuid[])) ORDER BY created_at DESC LIMIT 50',[req.params.tenantId,context.entityIds])).rows));}catch(e){next(e);}
   });
+  mountFinancialRoutes(router,{scoped,audit,result,HttpError});
   router.use((_req,_res,next)=>next(new HttpError(404,'ROUTE_NOT_FOUND','API route not found')));
   router.use((error,req,res,_next)=>{
     const code=error instanceof z.ZodError?'INVALID_INPUT':error.code;
     const status=error instanceof z.ZodError?422:error.status??({'23505':409,'23503':422,'23514':422,'42501':403,'P0002':401,'55P03':409,'57014':503}[code]??500);
-    const known=error instanceof HttpError;
+    const known=error instanceof HttpError||error instanceof FinancialInputError;
+    if(code==='42501'&&!known){const object=/permission denied for (?:table|schema|function) ([a-zA-Z0-9_]+)/.exec(error.message)?.[1];console.error('Runtime privilege missing',{requestId:req.requestId,object:object??'unspecified'});}
     const message=known?error.message:error instanceof z.ZodError?'Check the submitted fields':status===409?'The resource conflicts with an existing record':status===422?'The submitted data violates a database constraint':status===403?'Access denied':status===401?'Sign in again':'The request could not be completed';
     if(status>=500)console.error('Backend request failed',{requestId:req.requestId,code:typeof code==='string'?code:'INTERNAL_ERROR'});
     res.status(status).json({error:{code:known?code:status===500?'INTERNAL_ERROR':code??'REQUEST_FAILED',message,...(error instanceof z.ZodError?{fields:error.issues.map(i=>({path:i.path.join('.'),message:i.message}))}: {})},requestId:req.requestId});

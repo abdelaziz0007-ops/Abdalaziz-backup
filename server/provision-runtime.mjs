@@ -32,6 +32,13 @@ try{
       mizan.roles,mizan.permissions,mizan.role_permissions,mizan.currencies,mizan.legal_entities,mizan.entity_settings_versions,
       mizan.accounting_periods,mizan.audit_events TO mizan_api_v1;
       GRANT SELECT ON mizan.output_versions,mizan.reconciliations TO mizan_api_v1;
+      GRANT SELECT,INSERT ON mizan.source_files,mizan.import_templates,mizan.import_batches,mizan.source_rows,
+      mizan.row_dispositions,mizan.quality_runs,mizan.quality_issues,mizan.dataset_versions,mizan.dataset_imports,
+      mizan.accounts,mizan.trial_balance_rows,mizan.mapping_versions,mizan.report_line_items,mizan.account_mappings,
+      mizan.formula_versions,mizan.output_versions,mizan.output_datasets,mizan.report_lines,mizan.report_line_sources,
+      mizan.metric_results,mizan.validation_results TO mizan_api_v1;
+      -- Trigger row locks require UPDATE privilege; identity guards prohibit changing these IDs.
+      GRANT UPDATE(id) ON mizan.import_batches,mizan.dataset_versions,mizan.mapping_versions,mizan.output_versions TO mizan_api_v1;
       GRANT INSERT ON mizan.legal_entities,mizan.entity_settings_versions,mizan.accounting_periods,mizan.membership_roles TO mizan_api_v1;
       GRANT EXECUTE ON FUNCTION mizan.has_permission(uuid,uuid,uuid,text,uuid) TO mizan_api_v1;
       GRANT EXECUTE ON FUNCTION mizan_private.sync_identity_session(text,text),mizan_private.workspaces_for_user(uuid),
@@ -41,6 +48,7 @@ try{
     await c.query('COMMIT');
   }catch(e){await c.query('ROLLBACK');throw e;}finally{c.release();}
   if(!env.BETTER_AUTH_SECRET)changes.BETTER_AUTH_SECRET=randomBytes(48).toString('hex');
+  if(!env.SOURCE_ENCRYPTION_KEY)changes.SOURCE_ENCRYPTION_KEY=randomBytes(32).toString('hex');
   if(!env.APP_ORIGIN)changes.APP_ORIGIN='http://localhost:5174';
   let updated=text;
   for(const [key,value] of Object.entries(changes)){

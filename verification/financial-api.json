@@ -1,0 +1,18 @@
+{
+  "branch": "codex-financial-v2",
+  "passed": [
+    "CSV persists normalized accounts, trial-balance rows, classifications, quality evidence and three unapproved outputs",
+    "Server calculates exact statements and ratios; missing opening inputs remain unavailable",
+    "Statement drilldown links exact contributions to original row numbers and source SHA-256",
+    "Identical retry creates no duplicate; changed source creates a new version and retains earlier output",
+    "Unbalanced, ambiguous YTD and actor-spoofing requests are rejected before persistence",
+    "Second authenticated MFA identity cannot read or write another entity",
+    "Entity administration alone grants no financial import access",
+    "Actual private object upload/download decrypts with matching hash; anonymous download is denied",
+    "Application role cannot mark sources clean and sees no financial rows without RLS context",
+    "Arabic connected UI displays persisted statements, source drilldown and reload at five responsive widths",
+    "Actual CSV file selection, explicit period confirmation and save button complete the browser-to-database flow"
+  ],
+  "errors": [],
+  "fixtures": "Synthetic records only on disposable branch; originals stay encrypted and quarantined"
+}

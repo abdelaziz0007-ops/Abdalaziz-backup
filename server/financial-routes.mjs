@@ -1,0 +1,128 @@
+import { randomUUID } from 'node:crypto';
+import { z } from 'zod';
+import { calculateFinancials,coefficient,hash,money,parseTrialBalance } from './financial-core.mjs';
+import { sourceStorage } from './financial-storage.mjs';
+
+const input=z.object({periodId:z.uuid(),fileName:z.string().min(1).max(200).regex(/^[^/\\\u0000-\u001f]+\.csv$/i),csv:z.string().max(524288),basis:z.literal('period'),confirmation:z.literal(true)}).strict();
+const algorithm='classified-tb-draft-v1';
+const types={income_statement:['revenue','cost','gross_profit','operating_expenses','tax','net_profit'],financial_position:['assets','liabilities','equity','current_assets','current_liabilities','working_capital'],analysis:[]};
+
+// Only static, code-owned table/column identifiers enter this helper; values are parameters.
+async function insert(c,table,record){
+  const columns=Object.keys(record),values=Object.values(record);
+  await c.query(`INSERT INTO mizan.${table}(${columns.join(',')}) VALUES(${columns.map((_,i)=>'$'+(i+1)).join(',')})`,values);
+  return record.id;
+}
+async function bulk(c,table,records){
+  if(!records.length)return;
+  const columns=Object.keys(records[0]);
+  await c.query(`INSERT INTO mizan.${table}(${columns.join(',')}) SELECT ${columns.join(',')} FROM jsonb_populate_recordset(NULL::mizan.${table},$1::jsonb)`,[JSON.stringify(records)]);
+}
+export function mountFinancialRoutes(router,{scoped,audit,result,HttpError}){
+  const base='/tenants/:tenantId/entities/:entityId';
+  const storage=sourceStorage();
+  const notFound=()=>new HttpError(404,'RESOURCE_NOT_FOUND','Financial record not found');
+  router.get(base+'/datasets',async(req,res,next)=>{
+    try{const {tenantId:t,entityId:e}=req.params;result(req,res,await scoped(req,t,e,'reports.view',async c=>(await c.query(`SELECT d.id,d.period_id,d.currency_code,d.version,d.status,d.created_at,count(r.id)::int AS account_count
+      FROM mizan.dataset_versions d LEFT JOIN mizan.trial_balance_rows r ON (r.tenant_id,r.entity_id,r.dataset_id)=(d.tenant_id,d.entity_id,d.id)
+      WHERE d.tenant_id=$1 AND d.entity_id=$2 AND d.data_type='trial_balance' GROUP BY d.id ORDER BY d.created_at DESC LIMIT 50`,[t,e])).rows));}catch(error){next(error);}
+  });
+  router.post(base+'/imports/trial-balance',async(req,res,next)=>{
+    try{
+      const data=input.parse(req.body),{tenantId:t,entityId:e}=req.params;
+      const value=await scoped(req,t,e,'imports.manage',async c=>{
+        if(!(await c.query("SELECT mizan.has_permission($1,$2,$3,'outputs.prepare') AS ok",[t,e,req.principal.id])).rows[0].ok)throw new HttpError(403,'PERMISSION_DENIED','Financial preparation permission is required');
+        if(!storage)throw new HttpError(503,'SOURCE_STORAGE_UNAVAILABLE','Private source storage is not configured');
+        await c.query('SELECT pg_advisory_xact_lock(hashtextextended($1,42))',[e]);
+        const scope={tenant_id:t,entity_id:e},actor=req.principal.id;
+        const period=(await c.query(`SELECT p.id,p.status,p.settings_version_id,p.start_date::text,p.end_date::text,s.currency_code,s.effective_from::text,c.minor_units
+          FROM mizan.accounting_periods p JOIN mizan.entity_settings_versions s ON (s.tenant_id,s.entity_id,s.id)=(p.tenant_id,p.entity_id,p.settings_version_id)
+          JOIN mizan.currencies c ON c.code=s.currency_code WHERE p.tenant_id=$1 AND p.entity_id=$2 AND p.id=$3`,[t,e,data.periodId])).rows[0];
+        if(!period)throw notFound();
+        if(period.status!=='open')throw new HttpError(409,'PERIOD_NOT_OPEN','Import requires an open accounting period');
+        if(period.effective_from>period.start_date)throw new HttpError(422,'SETTINGS_NOT_EFFECTIVE','Entity settings must be effective before the period starts');
+        const rows=parseTrialBalance(data.csv,period.minor_units),calculated=calculateFinancials(rows,period.minor_units);
+        const digest=hash(Buffer.from(data.csv,'utf8')),idempotency=hash(algorithm+':'+period.id+':'+digest);
+        const prior=(await c.query('SELECT id FROM mizan.dataset_versions WHERE tenant_id=$1 AND entity_id=$2 AND idempotency_key=$3',[t,e,idempotency])).rows[0];
+        async function response(id,reused){return {datasetId:id,reused,outputs:(await c.query(`SELECT v.id,v.output_type,v.status FROM mizan.output_versions v JOIN mizan.output_datasets d ON (d.tenant_id,d.entity_id,d.output_version_id)=(v.tenant_id,v.entity_id,v.id) WHERE d.tenant_id=$1 AND d.entity_id=$2 AND d.dataset_id=$3 ORDER BY v.output_type`,[t,e,id])).rows};}
+        if(prior)return response(prior.id,true);
+        const fingerprint=hash(JSON.stringify({algorithm,period:period.id,settings:period.settings_version_id,digest}));
+        let source=(await c.query('SELECT id,deleted_at,scan_status FROM mizan.source_files WHERE tenant_id=$1 AND entity_id=$2 AND sha256=$3',[t,e,digest])).rows[0];
+        if(source&&(source.deleted_at||['infected','rejected'].includes(source.scan_status)))throw new HttpError(409,'SOURCE_UNAVAILABLE','This source cannot be reused');
+        if(!source){
+          source={id:randomUUID()};const key=`${t}/${e}/${source.id}.mzn`;
+          await storage.put(key,Buffer.from(data.csv,'utf8'));
+          await storage.verify(key,digest);
+          await insert(c,'source_files',{...scope,id:source.id,sha256:digest,original_name:data.fileName,media_type:'text/csv',byte_size:Buffer.byteLength(data.csv,'utf8'),object_key:key,object_version:'1',encryption_key_reference:'source-v1',uploaded_by:actor,scan_status:'quarantined'});
+        }
+        const template=randomUUID(),batch=randomUUID(),dataset=randomUUID(),mapping=randomUUID(),quality=randomUUID();
+        await insert(c,'import_templates',{...scope,id:template,version:1,name:algorithm,required_columns:JSON.stringify(['accountCode','name','classification','signedDebitBalance']),column_mapping:JSON.stringify({account:'accountCode',amount:'signedDebitBalance'}),header_row:1,worksheet_name:'CSV',date_format:'ISO-8601',decimal_separator:'.',created_by:actor});
+        await insert(c,'import_batches',{...scope,id:batch,source_file_id:source.id,template_id:template,period_id:period.id,parser_version:algorithm,data_type:'trial_balance',balance_basis:'period',range_start:period.start_date,range_end:period.end_date,idempotency_key:idempotency,status:'needs_review',complete_dataset:false});
+        const previous=(await c.query("SELECT id,logical_dataset_id,version FROM mizan.dataset_versions WHERE tenant_id=$1 AND entity_id=$2 AND period_id=$3 AND data_type='trial_balance' ORDER BY version DESC,created_at DESC LIMIT 1",[t,e,period.id])).rows[0];
+        await insert(c,'dataset_versions',{...scope,id:dataset,logical_dataset_id:previous?.logical_dataset_id??randomUUID(),version:(previous?.version??0)+1,predecessor_id:previous?.id??null,period_id:period.id,currency_code:period.currency_code,data_type:'trial_balance',content_fingerprint:fingerprint,status:'draft',complete_dataset:false,idempotency_key:idempotency});
+        await insert(c,'dataset_imports',{...scope,id:randomUUID(),dataset_id:dataset,import_batch_id:batch});
+        const now=new Date().toISOString();
+        const existing=(await c.query('SELECT id,code,account_type FROM mizan.accounts WHERE tenant_id=$1 AND entity_id=$2 AND code=ANY($3::text[])',[t,e,rows.map(r=>r.code)])).rows;
+        const accounts=new Map(existing.map(a=>[a.code,a]));
+        const fresh=[];
+        for(const row of rows){const type=row.classification.split('.')[0],account=accounts.get(row.code);if(account&&account.account_type!==type)throw new HttpError(409,'ACCOUNT_TYPE_CONFLICT','An existing account has a different account type');if(!account){const a={...scope,id:randomUUID(),created_at:now,code:row.code,name:row.name,account_type:type,active:true};accounts.set(row.code,a);fresh.push(a);}row.accountId=accounts.get(row.code).id;row.sourceId=randomUUID();}
+        await bulk(c,'accounts',fresh);
+        await bulk(c,'source_rows',rows.map(r=>({...scope,id:r.sourceId,created_at:now,import_batch_id:batch,worksheet:'CSV',row_number:r.rowNumber,original_values:{accountCode:r.code,name:r.name,classification:r.classification,signedDebitBalance:r.amount},row_fingerprint:hash(JSON.stringify([r.code,r.name,r.classification,r.amount]))})));
+        await bulk(c,'row_dispositions',rows.map(r=>({...scope,id:randomUUID(),created_at:now,source_row_id:r.sourceId,version:1,disposition:'accepted',reason:'Structurally valid typed row; source remains quarantined',signed_effect:r.amount,actor_id:actor})));
+        await bulk(c,'trial_balance_rows',rows.map(r=>({...scope,id:randomUUID(),created_at:now,dataset_id:dataset,source_row_id:r.sourceId,account_id:r.accountId,currency_code:period.currency_code,balance_type:'period',closing_balance:r.amount})));
+        await insert(c,'quality_runs',{...scope,id:quality,import_batch_id:batch,rule_version:algorithm,content_fingerprint:fingerprint,records_read:rows.length,accepted:rows.length,rejected:0,excluded:0,totals_before:JSON.stringify({signedBalance:'0'}),totals_after:JSON.stringify({signedBalance:'0'})});
+        await insert(c,'quality_issues',{...scope,id:randomUUID(),quality_run_id:quality,severity:'blocking',code:'MALWARE_SCAN_PENDING',message:'Structural CSV validation passed; antivirus scanning is not configured. Source remains quarantined.'});
+        await insert(c,'mapping_versions',{...scope,id:mapping,version:1,created_by:actor,content_fingerprint:hash(JSON.stringify(rows.map(r=>[r.code,r.classification]))),status:'draft'});
+        const lineDefinitions=[...new Set([...rows.map(r=>r.classification),...Object.values(types).flat()])];
+        // Definitions have algorithm-versioned codes; no mutable report label is trusted for historical inputs.
+        const wanted=lineDefinitions.map(code=>`${algorithm}:${code}`);
+        const known=(await c.query('SELECT id,code FROM mizan.report_line_items WHERE tenant_id=$1 AND entity_id=$2 AND code=ANY($3::text[])',[t,e,wanted])).rows;
+        const items=new Map(known.map(item=>[item.code.slice(algorithm.length+1),item.id]));
+        await bulk(c,'report_line_items',lineDefinitions.filter(code=>!items.has(code)).map((code,index)=>{const id=randomUUID();items.set(code,id);return {...scope,id,created_at:now,code:`${algorithm}:${code}`,name:code,statement_type:'classified_trial_balance',display_order:index};}));
+        await bulk(c,'account_mappings',rows.map(r=>({...scope,id:randomUUID(),created_at:now,mapping_version_id:mapping,account_id:r.accountId,line_item_id:items.get(r.classification),weight:'1'})));
+        const formulas=[];
+        for(const metric of calculated.metrics){const code=algorithm+':'+metric.code;let f=(await c.query('SELECT id FROM mizan.formula_versions WHERE tenant_id=$1 AND entity_id=$2 AND formula_code=$3 AND version=1',[t,e,code])).rows[0];if(!f){f={id:randomUUID()};await insert(c,'formula_versions',{...scope,id:f.id,formula_code:code,version:1,name:metric.name,expression:metric.expression,required_inputs:JSON.stringify({basis:'Explicit period-specific balances; no automatic YTD conversion'}),unit:metric.unit,limitations:'Draft calculation; positive denominator required; no comparatives or cash-flow derivation'});}formulas.push({...metric,id:f.id});}
+        for(const [type,lines] of Object.entries(types)){
+          const id=randomUUID(),outputFingerprint=hash(fingerprint+':'+type);
+          const prev=(await c.query('SELECT id,logical_output_id,version,status FROM mizan.output_versions WHERE tenant_id=$1 AND entity_id=$2 AND period_id=$3 AND output_type=$4 ORDER BY version DESC,created_at DESC LIMIT 1',[t,e,period.id,type])).rows[0];
+          await insert(c,'output_versions',{...scope,id,logical_output_id:prev?.logical_output_id??randomUUID(),version:(prev?.version??0)+1,predecessor_id:prev?.status==='approved_locked'?prev.id:null,reopen_reason:prev?.status==='approved_locked'?'New source import; earlier approved output retained':null,output_type:type,period_id:period.id,currency_code:period.currency_code,settings_version_id:period.settings_version_id,mapping_version_id:mapping,preparer_id:actor,content_fingerprint:outputFingerprint,status:'draft'});
+          await insert(c,'output_datasets',{...scope,id:randomUUID(),output_version_id:id,dataset_id:dataset,source_role:'primary'});
+          const reportLines=lines.map((line,index)=>({...scope,id:randomUUID(),created_at:now,output_version_id:id,line_item_id:items.get(line),currency_code:period.currency_code,value:calculated.values[line],value_state:'available',display_order:index}));
+          await bulk(c,'report_lines',reportLines);
+          await bulk(c,'report_line_sources',reportLines.flatMap((line,index)=>rows.filter(r=>coefficient(lines[index],r.classification)!==0).map(r=>({...scope,id:randomUUID(),created_at:now,report_line_id:line.id,source_row_id:r.sourceId,account_id:r.accountId,contribution:money(r.units*BigInt(coefficient(lines[index],r.classification)),period.minor_units)}))));
+          if(type==='analysis')await bulk(c,'metric_results',formulas.map(f=>({...scope,id:randomUUID(),created_at:now,output_version_id:id,formula_version_id:f.id,value:f.value,value_state:f.value===null?'missing':'available',unavailable_reason:f.value===null?f.reason??'Denominator is zero or negative':null,input_references:{datasetId:dataset,sourceRows:rows.map(r=>r.sourceId),totals:calculated.values,algorithm}})));
+          await bulk(c,'validation_results',[
+            {code:'scope',passed:true,message:'Authenticated entity and currency scope'},
+            {code:'balance',passed:calculated.balanced,message:'Signed trial balance and financial position reconcile'},
+            {code:'mapping',passed:true,message:'Every account has one explicit classification'},
+            {code:'completeness',passed:false,message:'Draft dataset; source inspection and independent completeness review are pending'},
+            {code:'malware_scan',passed:false,message:'Source quarantined; antivirus scanning is not configured'},
+          ].map(v=>({...scope,id:randomUUID(),created_at:now,output_version_id:id,validated_fingerprint:outputFingerprint,severity:'blocking',evidence:{datasetId:dataset,algorithm},...v})));
+        }
+        await audit(c,req,t,e,'trial_balance.imported','dataset',dataset,'Explicit period-specific classified CSV; draft outputs only',{rows:rows.length,sourceId:source.id,sha256:digest,algorithm});
+        return response(dataset,false);
+      });result(req,res,value,201);
+    }catch(error){next(error);}
+  });
+  router.get(base+'/reports/:reportId',async(req,res,next)=>{
+    try{
+      z.uuid().parse(req.params.reportId);const {tenantId:t,entityId:e,reportId:id}=req.params;
+      result(req,res,await scoped(req,t,e,'reports.view',async c=>{
+        const report=(await c.query("SELECT v.id,v.output_type,v.version,v.status,v.currency_code,v.period_id,v.content_fingerprint,p.start_date::text,p.end_date::text FROM mizan.output_versions v JOIN mizan.accounting_periods p ON (p.tenant_id,p.entity_id,p.id)=(v.tenant_id,v.entity_id,v.period_id) WHERE v.tenant_id=$1 AND v.entity_id=$2 AND v.id=$3 AND v.output_type IN ('analysis','income_statement','financial_position')",[t,e,id])).rows[0];if(!report)throw notFound();
+        const args=[t,e,id];
+        const lines=(await c.query('SELECT r.id,i.name AS code,r.value::text,r.value_state FROM mizan.report_lines r JOIN mizan.report_line_items i ON (i.tenant_id,i.entity_id,i.id)=(r.tenant_id,r.entity_id,r.line_item_id) WHERE r.tenant_id=$1 AND r.entity_id=$2 AND r.output_version_id=$3 ORDER BY r.display_order',args)).rows;
+        const metrics=(await c.query('SELECT r.id,f.name,f.unit,f.expression,r.value::text,r.value_state,r.unavailable_reason,r.input_references FROM mizan.metric_results r JOIN mizan.formula_versions f ON (f.tenant_id,f.entity_id,f.id)=(r.tenant_id,r.entity_id,r.formula_version_id) WHERE r.tenant_id=$1 AND r.entity_id=$2 AND r.output_version_id=$3 ORDER BY f.formula_code',args)).rows;
+        const validations=(await c.query('SELECT code,passed,message FROM mizan.validation_results WHERE tenant_id=$1 AND entity_id=$2 AND output_version_id=$3 ORDER BY code',args)).rows;
+        return {...report,lines,metrics,validations};
+      }));
+    }catch(error){next(error);}
+  });
+  router.get(base+'/reports/:reportId/lines/:lineId/sources',async(req,res,next)=>{
+    try{const {tenantId:t,entityId:e,reportId:id,lineId}=req.params;z.uuid().parse(id);z.uuid().parse(lineId);result(req,res,await scoped(req,t,e,'reports.view',async c=>(await c.query(`SELECT s.id,s.row_number,s.original_values,l.contribution::text,b.id AS import_id,f.sha256,f.original_name,f.scan_status
+      FROM mizan.report_line_sources l JOIN mizan.report_lines r ON (r.tenant_id,r.entity_id,r.id)=(l.tenant_id,l.entity_id,l.report_line_id)
+      JOIN mizan.source_rows s ON (s.tenant_id,s.entity_id,s.id)=(l.tenant_id,l.entity_id,l.source_row_id)
+      JOIN mizan.import_batches b ON (b.tenant_id,b.entity_id,b.id)=(s.tenant_id,s.entity_id,s.import_batch_id)
+      JOIN mizan.source_files f ON (f.tenant_id,f.entity_id,f.id)=(b.tenant_id,b.entity_id,b.source_file_id)
+      WHERE r.tenant_id=$1 AND r.entity_id=$2 AND r.output_version_id=$3 AND r.id=$4 ORDER BY s.row_number LIMIT 1000`,[t,e,id,lineId])).rows));}catch(error){next(error);}
+  });
+}
