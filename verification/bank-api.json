@@ -1,0 +1,16 @@
+{
+  "branch": "codex-bank-v3",
+  "passed": [
+    "Bank enrollment uses asset ledger, encrypted identifier and masked read response",
+    "Two normalized source datasets and rollforwards persist; repeated references remain ambiguous and residual is explicit",
+    "Identical retries reuse a draft; changed sources preserve both output versions",
+    "Invalid closing balances, cutoff and unacknowledged sign conventions cannot be saved",
+    "No-activity sources need no invented transactions; equal balances do not imply approval",
+    "Second MFA identity cannot read or write another tenant",
+    "Bank-specific grants work and cannot be reused for a second bank inside the same entity",
+    "Originals round-trip encrypted in private storage; reference/description fields are encrypted and suggestions allocate nothing",
+    "Arabic browser uploads both real CSV files, saves, reloads and displays ambiguity and source evidence at five widths"
+  ],
+  "errors": [],
+  "fixtures": "Synthetic fixtures only on disposable branch; no confirmed matches or allocations"
+}

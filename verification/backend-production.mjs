@@ -13,8 +13,8 @@ for(const path of ['/api/v1/me','/api/v1/tenants'])assert.equal((await fetch(bas
 const pool=database(env.APP_DATABASE_URL);
 try{
  const role=(await pool.query('SELECT rolsuper,rolbypassrls,rolcreatedb,rolcreaterole FROM pg_roles WHERE rolname=current_user')).rows[0];assert(Object.values(role).every(v=>v===false));
- for(const table of ['accounting_periods','dataset_versions','trial_balance_rows','report_lines','metric_results','source_files'])assert.equal((await pool.query(`SELECT count(*)::int AS n FROM mizan.${table}`)).rows[0].n,0);
- passed.push('Production application role is limited and RLS hides all periods without verified context');
+ for(const table of ['accounting_periods','dataset_versions','trial_balance_rows','report_lines','metric_results','source_files','bank_accounts','bank_transactions','book_transactions','reconciliations','match_groups','match_group_members'])assert.equal((await pool.query(`SELECT count(*)::int AS n FROM mizan.${table}`)).rows[0].n,0);
+ passed.push('Production application role is limited and RLS hides financial and bank rows without verified context');
 }finally{await pool.end();}
 const files=new Files({adapter:neon({bucket:'financial-sources'})});
 await files.list({prefix:'__mizan_read_only_probe__/'});

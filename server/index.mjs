@@ -82,7 +82,11 @@ app.get('/api/snapshots/:id',async(req,res,next)=>{
   }catch(e){next(e);}
 });
 app.use('/api',(_req,res)=>res.status(404).json({error:'Unknown API route'}));
-app.use((error,_req,res,_next)=>{console.error('API request failed:',error.code || error.type || 'internal');res.status(error.type==='entity.too.large'?413:500).json({error:'Request failed; check server logs'});});
+app.use((error,_req,res,_next)=>{
+  const kind=/timeout/i.test(error.message??'')?'timeout':/connect|terminated/i.test(error.message??'')?'connection':'internal';
+  console.error('API request failed',{code:error.code||error.type||'internal',kind,name:error.name});
+  res.status(error.type==='entity.too.large'?413:500).json({error:'Request failed; check server logs'});
+});
 let vite;
 if(process.argv.includes('--dev')){
   const {createServer}=await import('vite');

@@ -3,6 +3,17 @@ import { Files } from 'files-sdk';
 import { neon } from 'files-sdk/neon';
 import { hash } from './financial-core.mjs';
 
+export function encryptField(value,context){
+  const key=process.env.SOURCE_ENCRYPTION_KEY;if(!/^[0-9a-f]{64}$/.test(key??''))throw Error('Source encryption is not configured');
+  const iv=randomBytes(12),cipher=createCipheriv('aes-256-gcm',Buffer.from(key,'hex'),iv);cipher.setAAD(Buffer.from(context));
+  return Buffer.concat([iv,cipher.update(value,'utf8'),cipher.final(),cipher.getAuthTag()]).toString('base64');
+}
+export function decryptField(value,context){
+  const bytes=Buffer.from(value,'base64'),decipher=createDecipheriv('aes-256-gcm',Buffer.from(process.env.SOURCE_ENCRYPTION_KEY,'hex'),bytes.subarray(0,12));
+  decipher.setAAD(Buffer.from(context));decipher.setAuthTag(bytes.subarray(-16));
+  return Buffer.concat([decipher.update(bytes.subarray(12,-16)),decipher.final()]).toString('utf8');
+}
+
 export function sourceStorage(){
   const key=process.env.SOURCE_ENCRYPTION_KEY;
   if(!/^[0-9a-f]{64}$/.test(key??'')||!['AWS_ACCESS_KEY_ID','AWS_SECRET_ACCESS_KEY','AWS_ENDPOINT_URL_S3','AWS_REGION'].every(k=>process.env[k]))return null;

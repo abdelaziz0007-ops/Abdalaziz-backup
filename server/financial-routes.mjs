@@ -8,12 +8,12 @@ const algorithm='classified-tb-draft-v1';
 const types={income_statement:['revenue','cost','gross_profit','operating_expenses','tax','net_profit'],financial_position:['assets','liabilities','equity','current_assets','current_liabilities','working_capital'],analysis:[]};
 
 // Only static, code-owned table/column identifiers enter this helper; values are parameters.
-async function insert(c,table,record){
+export async function insert(c,table,record){
   const columns=Object.keys(record),values=Object.values(record);
   await c.query(`INSERT INTO mizan.${table}(${columns.join(',')}) VALUES(${columns.map((_,i)=>'$'+(i+1)).join(',')})`,values);
   return record.id;
 }
-async function bulk(c,table,records){
+export async function bulk(c,table,records){
   if(!records.length)return;
   const columns=Object.keys(records[0]);
   await c.query(`INSERT INTO mizan.${table}(${columns.join(',')}) SELECT ${columns.join(',')} FROM jsonb_populate_recordset(NULL::mizan.${table},$1::jsonb)`,[JSON.stringify(records)]);

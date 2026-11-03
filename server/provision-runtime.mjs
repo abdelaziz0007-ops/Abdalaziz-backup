@@ -37,6 +37,10 @@ try{
       mizan.accounts,mizan.trial_balance_rows,mizan.mapping_versions,mizan.report_line_items,mizan.account_mappings,
       mizan.formula_versions,mizan.output_versions,mizan.output_datasets,mizan.report_lines,mizan.report_line_sources,
       mizan.metric_results,mizan.validation_results TO mizan_api_v1;
+      GRANT SELECT,INSERT ON mizan.bank_accounts,mizan.bank_transactions,mizan.book_transactions,
+      mizan.reconciliations,mizan.match_groups,mizan.match_group_members TO mizan_api_v1;
+      GRANT SELECT ON mizan.allocations,mizan.matching_rule_versions TO mizan_api_v1;
+      GRANT UPDATE(id) ON mizan.match_groups TO mizan_api_v1;
       -- Trigger row locks require UPDATE privilege; identity guards prohibit changing these IDs.
       GRANT UPDATE(id) ON mizan.import_batches,mizan.dataset_versions,mizan.mapping_versions,mizan.output_versions TO mizan_api_v1;
       GRANT INSERT ON mizan.legal_entities,mizan.entity_settings_versions,mizan.accounting_periods,mizan.membership_roles TO mizan_api_v1;
