@@ -32,7 +32,7 @@ export function PeriodStorage(){
     let active=true;setConnected(false);setItems([]);setError('');setMessage('');setBusy(true);
     (async()=>{try{
       const response=await fetch('/api/storage/status');const status=await response.json();
-      if(!response.ok)throw new Error(status.error);
+      if(!response.ok)throw new Error(response.status===503?l('أرشيف العرض التجريبي غير مفعّل. لحفظ البيانات الفعلية، افتح مساحة العمل المتصلة وسجّل الدخول.','The demonstration archive is disabled. Open the connected workspace and sign in to save real data.'):status.error);
       if(!active)return;csrf.current=status.csrf;setConnected(true);
       const saved=await request('/api/snapshots?'+scope);if(active)setItems(saved);
     }catch(e){if(active)setError(e instanceof Error?e.message:String(e));}finally{if(active)setBusy(false);}})();
@@ -65,7 +65,8 @@ export function PeriodStorage(){
   return <><button className="icon-button" aria-label={l('الحفظ والاسترجاع','Save & restore')} title={l('الحفظ والاسترجاع','Save & restore')} onClick={()=>setOpen(true)}><Icon name="file"/></button>{open&&<Dialog title={l('الحفظ في قاعدة البيانات','Database storage')} onClose={()=>setOpen(false)}>
     <p>{l('احفظ نسخة من ميزان المراجعة والفترات المستوردة والموازنة والذمم وافتراضات وملاحظات الفترة. الاسترجاع يستبدل هذه المدخلات في الجلسة الحالية.','Save trial balances, imported periods, budget, trade items, and period assumptions and notes. Restoring replaces these inputs in the current session.')}</p>
     <Notice>{l('الحفظ يدوي. المطابقات البنكية وقرارات الاعتماد وسجل الجلسة لا تشملها هذه النسخة. الخادم محلي لمستخدم واحد؛ الأدوار المعروضة تجريبية.','Saving is manual. Bank matches, approvals and session history are excluded. This is a local single-operator server; displayed roles are demonstrations.')}</Notice>
-    <p role="status">{connected?l('Postgres متصل','Postgres connected'):l('التحقق من الاتصال…','Checking connection…')}</p>
+    <p role="status">{connected?l('أرشيف العرض التجريبي متصل','Demonstration archive connected'):busy?l('التحقق من الاتصال…','Checking connection…'):l('أرشيف العرض التجريبي غير متاح','Demonstration archive unavailable')}</p>
+    {!connected&&!busy&&<a href="#/workspace">{l('فتح مساحة العمل المتصلة','Open connected workspace')}</a>}
     {error&&<Notice tone="danger">{error}</Notice>}{message&&<p role="status">{message}</p>}
     <Button onClick={save} disabled={!connected||busy||!canSave}>{l('حفظ نسخة جديدة','Save new snapshot')}</Button>
     {!canSave&&<p>{l('اختر فترة بميزان كامل وبصلاحية إدخال البيانات للحفظ.','Select a period with a full trial balance and import permission to save.')}</p>}

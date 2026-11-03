@@ -1,0 +1,11 @@
+{
+  "branch": "codex-backend-completion",
+  "passed": [
+    "Administrator creates scoped invitation in the Arabic browser",
+    "Authenticated addressee accepts the actual single-use link",
+    "Preparer chooses an independent authorized reviewer and submits a fixed version",
+    "Reviewer cannot approve quarantined data and requests changes with a saved reason",
+    "Persisted review history survives reload at five widths; no invitation token in screenshot"
+  ],
+  "errors": []
+}

@@ -44,6 +44,14 @@ try{
       GRANT SELECT,INSERT ON mizan.match_decisions,mizan.allocations TO mizan_api_v1;
       GRANT UPDATE(status,decided_by,decided_at,decision_reason) ON mizan.match_groups TO mizan_api_v1;
       GRANT UPDATE(supervisor_override_by) ON mizan.match_groups TO mizan_api_v1;
+      GRANT SELECT ON mizan.invitations,mizan.invitation_grants,mizan.review_submissions,mizan.review_decisions TO mizan_api_v1;
+      GRANT EXECUTE ON FUNCTION mizan_private.create_invitation(uuid,uuid,uuid,text,integer,jsonb,text,text,uuid,uuid),
+      mizan_private.accept_invitation(uuid,uuid,text,uuid),mizan_private.member_directory(uuid,uuid,uuid,uuid,uuid),
+      mizan_private.revoke_membership(uuid,uuid,uuid,uuid,text,uuid,uuid),mizan_private.reviewer_directory(uuid,uuid,uuid,uuid,uuid),
+      mizan_private.review_action(uuid,uuid,uuid,uuid,uuid,text,uuid,uuid,text,text,uuid,uuid) TO mizan_api_v1;
+      GRANT EXECUTE ON FUNCTION mizan_private.revoke_invitation(uuid,uuid,uuid,uuid,text,uuid,uuid),
+      mizan_private.revoke_scoped_access(uuid,uuid,uuid,text,uuid,text,uuid,uuid) TO mizan_api_v1;
+      GRANT EXECUTE ON FUNCTION mizan_private.restore_membership(uuid,uuid,uuid,uuid,text,uuid,uuid) TO mizan_api_v1;
       GRANT UPDATE(reversed_at,reversed_by,reversal_reason) ON mizan.allocations TO mizan_api_v1;
       GRANT UPDATE(content_fingerprint) ON mizan.output_versions TO mizan_api_v1;
       GRANT UPDATE(id) ON mizan.bank_transactions,mizan.book_transactions,mizan.accounting_periods TO mizan_api_v1;

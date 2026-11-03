@@ -3,6 +3,7 @@
   "passed": [
     "Real production-backed API and identity endpoints respond successfully",
     "Production protected endpoints reject signed-out access",
+    "Unscoped demonstration archive is disabled by default",
     "Production application role is limited and RLS hides financial and bank rows without verified context",
     "Production decision request index is unique/valid; runtime cannot approve outputs or mark sources clean",
     "Production private bucket accepts authenticated read-only listing and denies anonymous access",

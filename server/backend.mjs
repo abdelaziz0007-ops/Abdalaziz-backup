@@ -7,6 +7,8 @@ import { FinancialInputError } from './financial-core.mjs';
 import { mountBankRoutes } from './bank-routes.mjs';
 import { mountMatchRoutes } from './match-routes.mjs';
 import { mountManualMatchRoutes } from './manual-match-routes.mjs';
+import { mountAdministrationRoutes } from './administration-routes.mjs';
+import { mountReviewRoutes } from './review-routes.mjs';
 
 class HttpError extends Error {
   constructor(status,code,message){super(message);this.status=status;this.code=code;}
@@ -125,12 +127,14 @@ export function backendRouter({pool,auth,dataRegion}){
   mountBankRoutes(router,{scoped,audit,result,HttpError});
   mountMatchRoutes(router,{scoped,audit,result,HttpError});
   mountManualMatchRoutes(router,{scoped,audit,result,HttpError});
+  mountAdministrationRoutes(router,{pool,scoped,result,HttpError});
+  mountReviewRoutes(router,{scoped,result,HttpError});
   router.use((_req,_res,next)=>next(new HttpError(404,'ROUTE_NOT_FOUND','API route not found')));
   router.use((error,req,res,_next)=>{
     const code=error instanceof z.ZodError?'INVALID_INPUT':error.code;
-    const status=error instanceof z.ZodError?422:error.status??({'23505':409,'23503':422,'23514':422,'42501':403,'P0002':401,'55P03':409,'57014':503}[code]??500);
+    const status=error instanceof z.ZodError?422:error.status??({'23505':409,'23503':422,'23514':422,'42501':403,'P0002':401,'P0401':401,'40001':409,'55000':409,'55P03':409,'57014':503}[code]??500);
     const known=error instanceof HttpError||error instanceof FinancialInputError;
-    if(code==='42501'&&!known){const object=/permission denied for (?:table|schema|function) ([a-zA-Z0-9_]+)/.exec(error.message)?.[1];console.error('Runtime privilege missing',{requestId:req.requestId,object:object??'unspecified'});}
+    if(code==='42501'&&!known){const object=/permission denied for (?:table|schema|function) ([a-zA-Z0-9_]+)/.exec(error.message)?.[1];if(object)console.error('Runtime privilege missing',{requestId:req.requestId,object});}
     const message=known?error.message:error instanceof z.ZodError?'Check the submitted fields':status===409?'The resource conflicts with an existing record':status===422?'The submitted data violates a database constraint':status===403?'Access denied':status===401?'Sign in again':'The request could not be completed';
     if(status>=500)console.error('Backend request failed',{requestId:req.requestId,code:typeof code==='string'?code:'INTERNAL_ERROR'});
     res.status(status).json({error:{code:known?code:status===500?'INTERNAL_ERROR':code??'REQUEST_FAILED',message,...(error instanceof z.ZodError?{fields:error.issues.map(i=>({path:i.path.join('.'),message:i.message}))}: {})},requestId:req.requestId});

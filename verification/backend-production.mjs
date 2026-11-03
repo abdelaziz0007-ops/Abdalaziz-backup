@@ -10,6 +10,7 @@ for(const [key,value] of Object.entries(env))if(process.env[key]===undefined)pro
 const health=await fetch(base+'/api/v1/health');assert.equal(health.status,200);assert.equal((await health.json()).data.status,'ok');
 const auth=await fetch(base+'/api/auth/ok');assert.equal(auth.status,200);passed.push('Real production-backed API and identity endpoints respond successfully');
 for(const path of ['/api/v1/me','/api/v1/tenants'])assert.equal((await fetch(base+path)).status,401);passed.push('Production protected endpoints reject signed-out access');
+for(const path of ['/api/storage/status','/api/snapshots'])assert.equal((await fetch(base+path)).status,503);passed.push('Unscoped demonstration archive is disabled by default');
 const pool=database(env.APP_DATABASE_URL);
 try{
  const role=(await pool.query('SELECT rolsuper,rolbypassrls,rolcreatedb,rolcreaterole FROM pg_roles WHERE rolname=current_user')).rows[0];assert(Object.values(role).every(v=>v===false));

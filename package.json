@@ -17,6 +17,7 @@
     "backend:test:matches": "node verification/matches-api.mjs",
     "backend:readiness": "node verification/backend-readiness.mjs --release",
     "backend:test:manual": "node verification/manual-allocation-api.mjs",
+    "backend:test:review": "node verification/review-membership-api.mjs",
     "db:verify": "node verification/srs-database.mjs",
     "db:verify:production": "node verification/srs-database.mjs --production",
     "build": "tsc --noEmit && vite build",

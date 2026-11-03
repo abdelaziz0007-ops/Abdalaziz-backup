@@ -1,0 +1,12 @@
+{
+  "branch": "codex-backend-completion",
+  "passed": [
+    "Revoking one scope immediately removes its effective viewing permission without revoking unrelated identity access",
+    "Role revocation is entity-specific and cannot remove the current or owner administration through the wrong workflow",
+    "Locked-period review rejection is atomic and returns the correct frozen-state conflict",
+    "Fresh-key removal of an inactive member and idempotent replay cannot revoke the user’s later reauthenticated session",
+    "Explicit reactivation restores no former financial or administrative permissions"
+  ],
+  "errors": [],
+  "fixtures": "Controlled synthetic output/lock solely for state guards, not financial/source acceptance"
+}

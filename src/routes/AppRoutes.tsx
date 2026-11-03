@@ -9,6 +9,7 @@ const ExecutiveReport=lazy(()=>import('@/routes/pages/ExecutiveReport').then(mod
 const ConnectedAuth=lazy(()=>import('@/routes/pages/ConnectedPages').then(module=>({default:module.ConnectedAuth})));
 const ConnectedWorkspace=lazy(()=>import('@/routes/pages/ConnectedPages').then(module=>({default:module.ConnectedWorkspace})));
 import { OperationalOverview } from '@/routes/pages/OperationalOverview';
+import {InvitationPage} from '@/routes/pages/InvitationPage';
 import { ImportsPage,ImportPreview,QualityPage,MappingPage } from '@/routes/pages/DataPages';
 import { MatchingPage,OutstandingPage,ProposedEntriesPage,ReconciliationSetup,ReconciliationStatement,ReconciliationsList,ReviewPage } from '@/routes/pages/ReconciliationPages';
 import { AuditPage,BillingPage,EntitiesPage,NotificationsPage,PolicyPage,ProfilePage,TeamPage } from '@/routes/pages/SupportPages';
@@ -37,6 +38,7 @@ export function AppRoutes() {
     <HashRouter>
       <Routes>
         <Route path="/workspace" element={<Suspense fallback={<p role="status">جارٍ التحميل…</p>}><ConnectedWorkspace/></Suspense>}/>
+        <Route path="/invitation/:token" element={<InvitationPage/>}/>
         {outerRoutes.map((route) => (
           <Route
             key={route.id}

@@ -1,0 +1,18 @@
+{
+  "branch": "codex-backend-completion",
+  "passed": [
+    "Invitation is private to its authenticated addressee, scoped, expiring and single-use",
+    "Only an actual membership administrator can read member identity details",
+    "Revoking an unused invitation makes its private link immediately unusable",
+    "Expired invitation fails without changing membership or revealing the addressee",
+    "Explicit role combination does not remove the self-approval prohibition",
+    "Preparer submits an exact fingerprint to a distinct authorized reviewer, with retry idempotency",
+    "Self approval, outsider reads and approval of quarantined/incomplete sources are blocked",
+    "Independent reviewer can request changes with an immutable decision and reason",
+    "Withdrawal preserves the old review and starts a new explicit fingerprint before resubmission",
+    "Membership revocation immediately invalidates financial sessions and all old scopes",
+    "Review services preserve non-owner runtime limits and cannot read native password credentials"
+  ],
+  "errors": [],
+  "fixtures": "Synthetic identities and intentionally quarantined sources on disposable branch; no claim of successful scanning or approval"
+}

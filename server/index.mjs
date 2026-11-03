@@ -12,7 +12,11 @@ import { backendRouter } from './backend.mjs';
 const env=loadEnv('development',process.cwd(),'');
 for (const [key,value] of Object.entries(env)) if (process.env[key]===undefined) process.env[key]=value;
 const port=Number(process.env.PORT || 5174);
-const pool=process.env.DATABASE_URL ? database() : null;
+const profile=process.env.APP_PROFILE||'development';
+if(!['development','production'].includes(profile))throw new Error('Unsupported APP_PROFILE');
+if(profile==='production'&&process.env.LOCAL_DEMO_ARCHIVE==='1')throw new Error('The single-operator demonstration archive cannot run in production');
+const legacyArchive=profile==='development'&&process.env.LOCAL_DEMO_ARCHIVE==='1';
+const pool=legacyArchive&&process.env.DATABASE_URL ? database() : null;
 pool?.on('error',()=>console.error('Postgres idle connection error'));
 const session=randomBytes(32).toString('hex');
 const app=express();
@@ -46,6 +50,10 @@ if(backendReady){
 }else{
   app.use(['/api/auth','/api/v1'],(_req,res)=>res.status(503).json({error:{code:'BACKEND_NOT_CONFIGURED',message:'Run npm run backend:setup'}}));
 }
+app.use(['/api/storage/status','/api/snapshots'],(_req,res,next)=>{
+  if(!legacyArchive)return res.status(503).json({error:'Single-operator demonstration archive is disabled; use the authenticated workspace'});
+  next();
+});
 app.get('/api/storage/status',async(_req,res)=>{
   if (!pool) return res.status(503).json({error:'Run neon deploy to configure Postgres'});
   try {
@@ -96,6 +104,6 @@ if(process.argv.includes('--dev')){
   app.use(express.static(resolve('dist')));
   app.use((_req,res)=>res.sendFile(resolve('dist/index.html')));
 }
-const server=app.listen(port,'127.0.0.1',()=>console.log(`Mizan ${vite?'development':'built app'}: http://localhost:${port} (local only); Postgres ${pool?'configured':'not configured'}`));
+const server=app.listen(port,'127.0.0.1',()=>console.log(`Mizan ${vite?'development':'built app'}: http://localhost:${port} (local only); ${appPool?'Authenticated backend configured':pool?'Demonstration archive configured':'Database not configured'}`));
 async function close(){server.close();await vite?.close();await Promise.all([pool?.end(),appPool?.end(),identityPool?.end()]);process.exit(0);}
 process.on('SIGTERM',close);process.on('SIGINT',close);
