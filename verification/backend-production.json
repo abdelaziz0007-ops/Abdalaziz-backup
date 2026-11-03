@@ -6,6 +6,7 @@
     "Unscoped demonstration archive is disabled by default",
     "Production application role is limited and RLS hides financial and bank rows without verified context",
     "Production decision request index is unique/valid; runtime cannot approve outputs or mark sources clean",
+    "Current source/evidence approval and classified-capacity guards are installed; original difference items cannot be rewritten by runtime",
     "Production private bucket accepts authenticated read-only listing and denies anonymous access",
     "No database URLs or auth secret in 9 built JS/CSS assets"
   ],

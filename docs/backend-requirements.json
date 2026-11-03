@@ -304,36 +304,48 @@
       "title": "Classify differences and attach evidence",
       "stage": "M",
       "acceptance": "Each item has a type, status, owner, amount, sign, reconciliation effect, and supporting source",
-      "status": "pending",
-      "evidence": [],
-      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+      "status": "partial",
+      "evidence": [
+        "server/reconciliation-statement.test.mjs",
+        "verification/reconciliation-items-api.json"
+      ],
+      "remaining": "Independent scanned evidence upload/download and full item correction/ownership lifecycle remain pending."
     },
     {
       "id": "FR-033",
       "title": "Prepare the reconciliation statement and proposed entries",
       "stage": "M",
       "acceptance": "Both adjusted balances and the residual difference are calculated; no posted entry is created and source records remain unchanged",
-      "status": "pending",
-      "evidence": [],
-      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+      "status": "partial",
+      "evidence": [
+        "server/reconciliation-statement.test.mjs",
+        "verification/reconciliation-items-api.json"
+      ],
+      "remaining": "Imported-entry linking, full proposal lifecycle and independently validated published reconciliation acceptance remain pending."
     },
     {
       "id": "FR-034",
       "title": "Carry forward outstanding items and track their age",
       "stage": "M",
       "acceptance": "Each item retains its identity and origination date; duplicate inclusion and reuse of previously reconciled transactions are prevented",
-      "status": "pending",
-      "evidence": [],
-      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+      "status": "partial",
+      "evidence": [
+        "server/reconciliation-statement.test.mjs",
+        "verification/reconciliation-items-api.json"
+      ],
+      "remaining": "Guarded carry-forward is implemented; successful real scanned/approved prior-period carry-forward and imported-entry double-count prevention require end-to-end acceptance."
     },
     {
       "id": "FR-035",
       "title": "Display matching coverage and result quality",
       "stage": "M",
       "acceptance": "Counts, absolute values, and denominators are shown; coverage is distinguished from precision, which requires ground truth",
-      "status": "pending",
-      "evidence": [],
-      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+      "status": "partial",
+      "evidence": [
+        "server/reconciliation-statement.test.mjs",
+        "verification/reconciliation-items-api.json"
+      ],
+      "remaining": "Exact count/absolute-value coverage and unavailable precision are implemented; independent ground truth, sample methodology, confidence intervals and quality-report acceptance remain pending."
     },
     {
       "id": "FR-036",

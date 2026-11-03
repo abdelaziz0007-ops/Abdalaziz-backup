@@ -19,6 +19,8 @@ try{
  const index=(await pool.query("SELECT indisunique,indisvalid FROM pg_index WHERE indexrelid='mizan.match_decision_request_once'::regclass")).rows[0];assert(index?.indisunique&&index.indisvalid);
  const locked=(await pool.query("SELECT has_column_privilege(current_user,'mizan.output_versions','status','UPDATE') AS approve,has_column_privilege(current_user,'mizan.source_files','scan_status','UPDATE') AS scan")).rows[0];assert.equal(locked.approve,false);assert.equal(locked.scan,false);
  passed.push('Production decision request index is unique/valid; runtime cannot approve outputs or mark sources clean');
+ const guards=(await pool.query("SELECT tgname,tgenabled FROM pg_trigger WHERE tgname IN ('aa_current_approval_sources','z_classified_allocation_capacity') AND NOT tgisinternal")).rows;assert.equal(guards.length,2);assert(guards.every(g=>g.tgenabled==='O'));assert.equal((await pool.query("SELECT has_table_privilege(current_user,'mizan.reconciling_items','UPDATE') AS rewrite")).rows[0].rewrite,false);
+ passed.push('Current source/evidence approval and classified-capacity guards are installed; original difference items cannot be rewritten by runtime');
 }finally{await pool.end();}
 const files=new Files({adapter:neon({bucket:'financial-sources'})});
 await files.list({prefix:'__mizan_read_only_probe__/'});

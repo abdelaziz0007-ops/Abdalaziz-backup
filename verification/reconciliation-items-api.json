@@ -1,0 +1,15 @@
+{
+  "branch": "codex-backend-completion",
+  "passed": [
+    "Classified signed items adjust the correct side exactly, preserve age and evidence, and retry without duplicate creation",
+    "Duplicate source classification, unavailable evidence, foreign rows and future origination are rejected atomically",
+    "Proposed entries are balanced, match the bank-ledger effect, retry once and never post ledger records",
+    "Database capacity guard prevents matching movement capacity already assigned to an outstanding difference",
+    "Clearance requires a distinct matching movement on the adjustment side and removes the adjustment without changing the original item",
+    "Carry-forward refuses unapproved, cleared or non-earlier origins; successful scanned/approved carry-forward remains a separate acceptance gate",
+    "Arithmetic equality does not bypass quarantined source, completeness or independent approval gates",
+    "Arabic adjusted statement, coverage, item creation, cleared state and unposted proposal persist after reload across five widths"
+  ],
+  "errors": [],
+  "fixtures": "Native MFA and synthetic sources on isolated completion branch; expense account is a controlled fixture; no successful scan/approval claimed"
+}

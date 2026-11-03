@@ -3,7 +3,7 @@ import {randomUUID} from 'node:crypto';
 import {bulk} from './financial-routes.mjs';
 export async function lockedReconciliation(c,req,t,e,id,HttpError){
  await c.query('SELECT pg_advisory_xact_lock(hashtextextended($1,42))',[e]);
- const rec=(await c.query(`SELECT r.*,v.status AS output_status,v.content_fingerprint,p.status AS period_status,u.minor_units
+ const rec=(await c.query(`SELECT r.*,r.cutoff_date::text AS cutoff_text,v.status AS output_status,v.content_fingerprint,p.status AS period_status,u.minor_units
  FROM mizan.reconciliations r JOIN mizan.output_versions v ON (v.tenant_id,v.entity_id,v.id)=(r.tenant_id,r.entity_id,r.output_version_id)
  JOIN mizan.accounting_periods p ON (p.tenant_id,p.entity_id,p.id)=(v.tenant_id,v.entity_id,v.period_id) JOIN mizan.currencies u ON u.code=r.currency_code
  WHERE r.tenant_id=$1 AND r.entity_id=$2 AND r.id=$3 AND mizan.has_permission($1,$2,$4,'outputs.prepare',r.bank_account_id) FOR UPDATE OF v,p`,[t,e,id,req.principal.id])).rows[0];

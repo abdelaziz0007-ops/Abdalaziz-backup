@@ -40,6 +40,8 @@ try{
       GRANT SELECT,INSERT ON mizan.bank_accounts,mizan.bank_transactions,mizan.book_transactions,
       mizan.reconciliations,mizan.match_groups,mizan.match_group_members TO mizan_api_v1;
       GRANT SELECT ON mizan.allocations,mizan.matching_rule_versions TO mizan_api_v1;
+      GRANT SELECT,INSERT ON mizan.reconciling_items,mizan.reconciliation_items,mizan.attachments,mizan.proposed_entries,mizan.proposed_entry_lines TO mizan_api_v1;
+      GRANT UPDATE(status,clearance_source_row_id,decision_reason) ON mizan.reconciliation_items TO mizan_api_v1;
       GRANT UPDATE(id) ON mizan.match_groups TO mizan_api_v1;
       GRANT SELECT,INSERT ON mizan.match_decisions,mizan.allocations TO mizan_api_v1;
       GRANT UPDATE(status,decided_by,decided_at,decision_reason) ON mizan.match_groups TO mizan_api_v1;
