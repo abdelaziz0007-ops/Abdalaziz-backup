@@ -14,6 +14,7 @@
     "backend:test:browser": "node verification/backend-browser.mjs",
     "backend:test:financial": "node verification/financial-api.mjs",
     "backend:test:bank": "node verification/bank-api.mjs",
+    "backend:test:matches": "node verification/matches-api.mjs",
     "db:verify": "node verification/srs-database.mjs",
     "db:verify:production": "node verification/srs-database.mjs --production",
     "build": "tsc --noEmit && vite build",

@@ -1,6 +1,6 @@
 # SRS database implementation — 3 November 2026
 
-The schema implements the **relational storage model** for SRS-FIN-001 version 1.0. It covers the 45 FR entries, including subsequent-release storage structures. It does **not** claim that every workflow, security control, integration or non-functional acceptance criterion has been implemented. The existing app continues to use the single-operator snapshot API; these normalized tables have not yet replaced that API.
+The schema implements the **relational storage model** for SRS-FIN-001 version 1.0. It covers the 45 FR entries, including subsequent-release storage structures. It does **not** claim that every workflow, security control, integration or non-functional acceptance criterion has been implemented. Normalized tables now back the real authenticated workspace, classified trial-balance drafts, paired bank-source intake and [documented one-to-one matching decisions](BACKEND-MATCHES-V4.md). The demonstration's single-operator snapshot archive remains separate; the complete review, scanning and integration lifecycle is still unfinished.
 
 ## Deliverables
 
@@ -9,6 +9,7 @@ The schema implements the **relational storage model** for SRS-FIN-001 version 1
 - `migrations/002_srs_relational_model.sql` and `003_srs_integrity_guards.sql`: additive generated SQL. Existing migration 001 and its `financial_snapshots` data are preserved.
 - `migrations/004_access_lifecycle_guards.sql`: reviewed additive hardening for bank-scoped approval, supervisor override permission and one-way provider-approval revocation. This migration is maintained directly, outside the schema generator.
 - `migrations/005_required_workflow_evidence.sql`: explicit non-null reasons and fingerprints for reopening, reversals, cleared/excluded items and review withdrawals; maintained directly. These additional constraints refine the generated dictionary's base definitions.
+- `migrations/009_match_request_idempotency.sql`: additive unique index on scoped matching decision request keys. No business columns or tables are changed; this index supplements the generated catalog and is maintained directly.
 - [Field dictionary](DATABASE-FIELDS.md): every business table, field type, nullability, check and declared relationship; scope keys and FK indexes are generated consistently.
 - [Machine-readable inventory](database-tables.json).
 - [Applied database catalog](DATABASE-CATALOG.md): actual final columns, constraints and triggers introspected from Postgres, including the additional guards in migrations 003–005. `npm run db:catalog` reads schema metadata only.

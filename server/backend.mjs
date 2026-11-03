@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { mountFinancialRoutes } from './financial-routes.mjs';
 import { FinancialInputError } from './financial-core.mjs';
 import { mountBankRoutes } from './bank-routes.mjs';
+import { mountMatchRoutes } from './match-routes.mjs';
 
 class HttpError extends Error {
   constructor(status,code,message){super(message);this.status=status;this.code=code;}
@@ -121,6 +122,7 @@ export function backendRouter({pool,auth,dataRegion}){
   });
   mountFinancialRoutes(router,{scoped,audit,result,HttpError});
   mountBankRoutes(router,{scoped,audit,result,HttpError});
+  mountMatchRoutes(router,{scoped,audit,result,HttpError});
   router.use((_req,_res,next)=>next(new HttpError(404,'ROUTE_NOT_FOUND','API route not found')));
   router.use((error,req,res,_next)=>{
     const code=error instanceof z.ZodError?'INVALID_INPUT':error.code;

@@ -1,0 +1,18 @@
+{
+  "branch": "codex-matches-v4",
+  "passed": [
+    "Unique exact match creates a full allocation, records actor/reason and changes the draft fingerprint",
+    "Retry idempotency, stale-state protection, actor spoofing denial and intake reuse survive matching decisions",
+    "Concurrent unmatch requests reverse once and preserve the original allocation and decision history",
+    "Concurrent confirmation creates one active allocation and rejects the stale competitor",
+    "A competing group cannot allocate an already allocated movement",
+    "Frozen review-stage outputs reject matching mutations",
+    "Bank-scoped permissions isolate banks; negative movements allocate absolute value and retain the real actor",
+    "Current-fingerprint checks replace stale display while preserving old checks; matching does not fabricate adjusted balances or approval",
+    "Arabic UI confirms/unmatches with reasons, shows remaining balances and history, survives reload and five widths",
+    "Locked accounting periods prohibit further matching decisions",
+    "Runtime RLS hides allocations and decision history without authenticated tenant context"
+  ],
+  "errors": [],
+  "fixtures": "Synthetic fixtures and lock tests only on disposable branch; output remains unapproved"
+}

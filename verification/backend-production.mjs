@@ -13,8 +13,11 @@ for(const path of ['/api/v1/me','/api/v1/tenants'])assert.equal((await fetch(bas
 const pool=database(env.APP_DATABASE_URL);
 try{
  const role=(await pool.query('SELECT rolsuper,rolbypassrls,rolcreatedb,rolcreaterole FROM pg_roles WHERE rolname=current_user')).rows[0];assert(Object.values(role).every(v=>v===false));
- for(const table of ['accounting_periods','dataset_versions','trial_balance_rows','report_lines','metric_results','source_files','bank_accounts','bank_transactions','book_transactions','reconciliations','match_groups','match_group_members'])assert.equal((await pool.query(`SELECT count(*)::int AS n FROM mizan.${table}`)).rows[0].n,0);
+ for(const table of ['accounting_periods','dataset_versions','trial_balance_rows','report_lines','metric_results','source_files','bank_accounts','bank_transactions','book_transactions','reconciliations','match_groups','match_group_members','allocations','match_decisions'])assert.equal((await pool.query(`SELECT count(*)::int AS n FROM mizan.${table}`)).rows[0].n,0);
  passed.push('Production application role is limited and RLS hides financial and bank rows without verified context');
+ const index=(await pool.query("SELECT indisunique,indisvalid FROM pg_index WHERE indexrelid='mizan.match_decision_request_once'::regclass")).rows[0];assert(index?.indisunique&&index.indisvalid);
+ const locked=(await pool.query("SELECT has_column_privilege(current_user,'mizan.output_versions','status','UPDATE') AS approve,has_column_privilege(current_user,'mizan.source_files','scan_status','UPDATE') AS scan")).rows[0];assert.equal(locked.approve,false);assert.equal(locked.scan,false);
+ passed.push('Production decision request index is unique/valid; runtime cannot approve outputs or mark sources clean');
 }finally{await pool.end();}
 const files=new Files({adapter:neon({bucket:'financial-sources'})});
 await files.list({prefix:'__mizan_read_only_probe__/'});

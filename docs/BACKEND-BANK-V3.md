@@ -2,6 +2,8 @@
 
 Extends the real authenticated `/#/workspace`, alongside [financial intake](BACKEND-FINANCIAL-V2.md). This is a persisted bank reconciliation **draft** workflow, not completion of the SRS bank matching/review lifecycle.
 
+Follow-up: [matching decisions v4](BACKEND-MATCHES-V4.md) adds documented one-to-one confirmation/reversal. The boundaries below describe the original intake delivery; imported suggestions still begin unconfirmed.
+
 ## Delivered
 
 - Enroll a bank account against an asset ledger code in the entity's functional currency. Enrollment requires both entity administration and entity-level import permission with recent MFA. An existing ledger of another type is rejected; a ledger already attached to a bank cannot be enrolled twice. The identifier is AES-256-GCM encrypted; account listing returns its last four characters only.
