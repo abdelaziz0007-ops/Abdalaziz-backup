@@ -1,0 +1,12 @@
+{
+  "branch": "production",
+  "passed": [
+    "Real production-backed API and identity endpoints respond successfully",
+    "Production protected endpoints reject signed-out access",
+    "Production application role is limited and RLS hides all periods without verified context",
+    "No database URLs or auth secret in 9 built JS/CSS assets"
+  ],
+  "errors": [],
+  "readOnly": true,
+  "testAccountsSeeded": false
+}

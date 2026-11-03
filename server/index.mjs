@@ -4,6 +4,9 @@ import { resolve } from 'node:path';
 import { loadEnv } from 'vite';
 import { database } from './database.mjs';
 import { snapshotSchema } from './snapshot-schema.mjs';
+import { createIdentity } from './auth.mjs';
+import { toNodeHandler } from 'better-auth/node';
+import { backendRouter } from './backend.mjs';
 
 // Postgres credentials are loaded only here, never into VITE_* or client code.
 const env=loadEnv('development',process.cwd(),'');
@@ -22,6 +25,27 @@ app.use((req,res,next)=>{
   next();
 });
 app.use('/api',(req,res,next)=>{res.setHeader('Cache-Control','no-store');next();});
+const backendReady=Boolean(process.env.APP_DATABASE_URL&&process.env.AUTH_DATABASE_URL&&process.env.BETTER_AUTH_SECRET&&process.env.APP_DATA_REGION);
+if(backendReady){
+  const target=value=>{try{const url=new URL(value);return url.hostname.replace('-pooler','')+url.pathname;}catch{throw new Error('Invalid backend database URL configuration');}};
+  const expected=target(process.env.APP_DATABASE_URL);
+  if(target(process.env.AUTH_DATABASE_URL)!==expected||process.env.DATABASE_URL&&target(process.env.DATABASE_URL)!==expected)throw new Error('Backend database branches differ; run npm run backend:setup after switching Neon branch');
+}
+const appPool=backendReady?database(process.env.APP_DATABASE_URL):null;
+const identityPool=backendReady?database(process.env.AUTH_DATABASE_URL):null;
+appPool?.on('error',()=>console.error('Application database connection error'));
+identityPool?.on('error',()=>console.error('Identity database connection error'));
+if(backendReady){
+  const origin=process.env.APP_ORIGIN||`http://localhost:${port}`;
+  const auth=createIdentity(identityPool,origin,process.env.BETTER_AUTH_SECRET);
+  app.all('/api/auth/*splat',(req,res,next)=>{
+    if(['/api/auth/request-password-reset','/api/auth/send-verification-email'].includes(req.path))return res.status(503).json({error:'Email delivery is not configured; no message was sent'});
+    return toNodeHandler(auth)(req,res,next);
+  });
+  app.use('/api/v1',backendRouter({pool:appPool,auth,dataRegion:process.env.APP_DATA_REGION}));
+}else{
+  app.use(['/api/auth','/api/v1'],(_req,res)=>res.status(503).json({error:{code:'BACKEND_NOT_CONFIGURED',message:'Run npm run backend:setup'}}));
+}
 app.get('/api/storage/status',async(_req,res)=>{
   if (!pool) return res.status(503).json({error:'Run neon deploy to configure Postgres'});
   try {
@@ -69,5 +93,5 @@ if(process.argv.includes('--dev')){
   app.use((_req,res)=>res.sendFile(resolve('dist/index.html')));
 }
 const server=app.listen(port,'127.0.0.1',()=>console.log(`Mizan ${vite?'development':'built app'}: http://localhost:${port} (local only); Postgres ${pool?'configured':'not configured'}`));
-async function close(){server.close();await vite?.close();await pool?.end();process.exit(0);}
+async function close(){server.close();await vite?.close();await Promise.all([pool?.end(),appPool?.end(),identityPool?.end()]);process.exit(0);}
 process.on('SIGTERM',close);process.on('SIGINT',close);

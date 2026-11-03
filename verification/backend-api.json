@@ -1,0 +1,21 @@
+{
+  "branch": "codex-backend-v1",
+  "passed": [
+    "Unauthenticated API access rejected",
+    "Real signup, password hashing, MFA enrollment and session rotation verified; pre-MFA writes rejected",
+    "Retried workspace provisioning is idempotent and does not duplicate memberships or audit events",
+    "Workspace, entity configuration and accounting period persist in normalized SRS tables",
+    "Permissioned report and reconciliation reads use real scoped SRS tables, with no demo fixtures",
+    "Overlapping accounting periods rejected",
+    "Client-supplied identity and unknown mutation fields rejected",
+    "Cross-origin mutations rejected",
+    "Second real identity cannot access another tenant or entity by changing identifiers",
+    "Successful mutations write a serialized, linked audit chain",
+    "Malformed JSON returns a bounded client error",
+    "Sign-out revokes the session; sign-in requires MFA and restores real persisted workspace access",
+    "A one-time recovery code restores an MFA-verified session",
+    "Application role has no owner/bypass privileges, sees no tenant rows without context, and cannot read password hashes"
+  ],
+  "errors": [],
+  "fixtures": "Synthetic records retained only on disposable test branch"
+}

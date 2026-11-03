@@ -6,6 +6,8 @@ import { ReportsLibrary,StatementPage,SourceInspector } from '@/routes/pages/Fin
 import { lazy, Suspense } from 'react';
 const FinancialStudio=lazy(()=>import('@/routes/pages/FinancialStudio').then(module=>({default:module.FinancialStudio})));
 const ExecutiveReport=lazy(()=>import('@/routes/pages/ExecutiveReport').then(module=>({default:module.ExecutiveReport})));
+const ConnectedAuth=lazy(()=>import('@/routes/pages/ConnectedPages').then(module=>({default:module.ConnectedAuth})));
+const ConnectedWorkspace=lazy(()=>import('@/routes/pages/ConnectedPages').then(module=>({default:module.ConnectedWorkspace})));
 import { OperationalOverview } from '@/routes/pages/OperationalOverview';
 import { ImportsPage,ImportPreview,QualityPage,MappingPage } from '@/routes/pages/DataPages';
 import { MatchingPage,OutstandingPage,ProposedEntriesPage,ReconciliationSetup,ReconciliationStatement,ReconciliationsList,ReviewPage } from '@/routes/pages/ReconciliationPages';
@@ -15,7 +17,7 @@ import { NotFoundPage } from "@/routes/pages/NotFoundPage";
 
 function routeElement(route: (typeof ROUTES)[number]) {
   const pages:Record<string,React.ReactNode>={overview:<OperationalOverview/>, 'financial-analysis':<FinancialStudio/>, 'executive-pack':<ExecutiveReport/>, 'reports-library':<ReportsLibrary/>, 'income-statement':<StatementPage/>, 'financial-position':<StatementPage position/>, 'source-inspector':<SourceInspector/>, imports:<ImportsPage/>, 'import-preview':<ImportPreview/>, 'data-quality':<QualityPage/>, 'account-mapping':<MappingPage/>, 'reconciliations-list':<ReconciliationsList/>, 'reconciliation-setup':<ReconciliationSetup/>, 'matching-workspace':<MatchingPage/>, 'reconciliation-statement':<ReconciliationStatement/>, 'outstanding-items':<OutstandingPage/>, 'proposed-entries':<ProposedEntriesPage/>, 'review-inbox':<ReviewPage/>, 'review-detail':<ReviewPage detail/>, 'audit-trail':<AuditPage/>, entities:<EntitiesPage/>, 'team-access':<TeamPage/>, billing:<BillingPage/>, 'profile-notifications':route.path.endsWith('notifications')?<NotificationsPage/>:<ProfilePage/>, 'public-landing':<LandingPage/>, 'public-pricing':<PricingPage/>, 'legal-center':<LegalPage/>, 'help-support':<HelpPage/>, onboarding:<OnboardingPage/>, 'recovery-states':<RecoveryPage/>};
-  const page=pages[route.pageSlug]??(['bank-policies','entity-periods','privacy','integrations'].includes(route.pageSlug)?<PolicyPage kind={route.pageSlug}/>:<AuthPage kind={route.pageSlug}/>);
+  const page=pages[route.pageSlug]??(['sign-in','sign-up','mfa','password-recovery'].includes(route.pageSlug)?<ConnectedAuth kind={route.pageSlug}/>:['bank-policies','entity-periods','privacy','integrations'].includes(route.pageSlug)?<PolicyPage kind={route.pageSlug}/>:<AuthPage kind={route.pageSlug}/>);
   return (
     <RequirePermission access={route.access} permissions={route.requiredPermissions} scope={route.scope}>
       <Suspense fallback={<p role="status">جارٍ تحميل الواجهة / Loading…</p>}>{page}</Suspense>
@@ -34,6 +36,7 @@ export function AppRoutes() {
   return (
     <HashRouter>
       <Routes>
+        <Route path="/workspace" element={<Suspense fallback={<p role="status">جارٍ التحميل…</p>}><ConnectedWorkspace/></Suspense>}/>
         {outerRoutes.map((route) => (
           <Route
             key={route.id}

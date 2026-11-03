@@ -26,7 +26,7 @@ export interface DataTableProps<T> {
 export function DataTable<T>({ label, caption, columns, rows, rowKey }: DataTableProps<T>) {
   return (
     <div className="scroll-region" role="region" aria-label={label} tabIndex={0}>
-      <table className="data-table">
+      <table className="data-table" aria-label={label}>
         {caption && <caption>{caption}</caption>}
         <thead>
           <tr>

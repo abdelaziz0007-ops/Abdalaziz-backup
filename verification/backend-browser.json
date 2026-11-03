@@ -1,0 +1,13 @@
+{
+  "branch": "codex-backend-v1",
+  "passed": [
+    "A signed-out browser is redirected from the real workspace to sign in",
+    "Browser signup and QR/TOTP enrollment lead to a real MFA-verified session",
+    "Arabic forms create a real workspace, scoped entity and accounting period",
+    "Reload restores the authenticated session and persisted period from the backend",
+    "Real workspace fits five phone, tablet and desktop widths",
+    "Sign out prevents protected workspace access"
+  ],
+  "errors": [],
+  "fixtures": "Synthetic accounts and organizations only on disposable test branch"
+}
