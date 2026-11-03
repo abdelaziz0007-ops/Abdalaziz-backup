@@ -2,6 +2,8 @@
 
 The existing React/Vite app now has a local Node/Express server and a real Postgres financial snapshot archive. This is a single-operator setup, not a public multi-user deployment. The API and frontend listen on loopback only; demo personas are not production identities.
 
+The subsequent SRS schema phase adds 107 normalized business tables, with versioned migrations and database constraints. See [DATABASE-SRS.md](docs/DATABASE-SRS.md) for the full field dictionary, FR-001–045 storage mapping, verification and remaining service work. The snapshot API remains separate from this normalized schema.
+
 ## Infrastructure
 
 - Organization: `org-polished-night-45641130`

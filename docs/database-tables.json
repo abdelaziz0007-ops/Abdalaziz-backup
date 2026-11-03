@@ -1,0 +1,537 @@
+[
+  {
+    "name": "currencies",
+    "scope": "catalog",
+    "requirements": "DR-002, DR-003"
+  },
+  {
+    "name": "app_users",
+    "scope": "identity",
+    "requirements": "FR-001"
+  },
+  {
+    "name": "user_sessions",
+    "scope": "identity",
+    "requirements": "FR-001"
+  },
+  {
+    "name": "security_events",
+    "scope": "identity",
+    "requirements": "FR-001, NFR-011"
+  },
+  {
+    "name": "permissions",
+    "scope": "catalog",
+    "requirements": "FR-003"
+  },
+  {
+    "name": "roles",
+    "scope": "catalog",
+    "requirements": "FR-003"
+  },
+  {
+    "name": "role_permissions",
+    "scope": "catalog",
+    "requirements": "FR-003"
+  },
+  {
+    "name": "tenants",
+    "scope": "tenantRoot",
+    "requirements": "FR-002, FR-041"
+  },
+  {
+    "name": "memberships",
+    "scope": "tenant",
+    "requirements": "FR-001–003"
+  },
+  {
+    "name": "legal_entities",
+    "scope": "tenant",
+    "requirements": "FR-002, FR-004"
+  },
+  {
+    "name": "entity_settings_versions",
+    "scope": "entity",
+    "requirements": "FR-004, DR-012"
+  },
+  {
+    "name": "accounting_periods",
+    "scope": "entity",
+    "requirements": "FR-005"
+  },
+  {
+    "name": "accounts",
+    "scope": "entity",
+    "requirements": "FR-009, FR-015"
+  },
+  {
+    "name": "bank_accounts",
+    "scope": "entity",
+    "requirements": "FR-004, FR-025"
+  },
+  {
+    "name": "membership_roles",
+    "scope": "tenant",
+    "requirements": "FR-002–003"
+  },
+  {
+    "name": "access_grants",
+    "scope": "tenant",
+    "requirements": "FR-003"
+  },
+  {
+    "name": "invitations",
+    "scope": "tenant",
+    "requirements": "FR-001"
+  },
+  {
+    "name": "invitation_grants",
+    "scope": "tenant",
+    "requirements": "FR-001–003"
+  },
+  {
+    "name": "processing_jobs",
+    "scope": "entity",
+    "requirements": "FR-013, NFR-009"
+  },
+  {
+    "name": "job_attempts",
+    "scope": "entity",
+    "requirements": "FR-013, NFR-009"
+  },
+  {
+    "name": "source_files",
+    "scope": "entity",
+    "requirements": "FR-006, FR-010, DR-005"
+  },
+  {
+    "name": "import_templates",
+    "scope": "entity",
+    "requirements": "FR-007–008"
+  },
+  {
+    "name": "import_batches",
+    "scope": "entity",
+    "requirements": "FR-006–013"
+  },
+  {
+    "name": "source_rows",
+    "scope": "entity",
+    "requirements": "FR-007, FR-009, FR-012, DR-005"
+  },
+  {
+    "name": "row_transformations",
+    "scope": "entity",
+    "requirements": "FR-012"
+  },
+  {
+    "name": "row_dispositions",
+    "scope": "entity",
+    "requirements": "FR-011–012, DR-009"
+  },
+  {
+    "name": "quality_runs",
+    "scope": "entity",
+    "requirements": "FR-011"
+  },
+  {
+    "name": "quality_issues",
+    "scope": "entity",
+    "requirements": "FR-011"
+  },
+  {
+    "name": "duplicate_candidates",
+    "scope": "entity",
+    "requirements": "FR-010"
+  },
+  {
+    "name": "dataset_versions",
+    "scope": "entity",
+    "requirements": "FR-009–012, DR-006"
+  },
+  {
+    "name": "dataset_imports",
+    "scope": "entity",
+    "requirements": "FR-009–010"
+  },
+  {
+    "name": "dimensions",
+    "scope": "entity",
+    "requirements": "FR-024"
+  },
+  {
+    "name": "dimension_values",
+    "scope": "entity",
+    "requirements": "FR-024"
+  },
+  {
+    "name": "ledger_entries",
+    "scope": "entity",
+    "requirements": "FR-009, DR-002–008"
+  },
+  {
+    "name": "ledger_dimensions",
+    "scope": "entity",
+    "requirements": "FR-024"
+  },
+  {
+    "name": "trial_balance_rows",
+    "scope": "entity",
+    "requirements": "FR-009, FR-016, DR-002–008"
+  },
+  {
+    "name": "report_line_items",
+    "scope": "entity",
+    "requirements": "FR-015"
+  },
+  {
+    "name": "mapping_versions",
+    "scope": "entity",
+    "requirements": "FR-015, DR-012"
+  },
+  {
+    "name": "account_mappings",
+    "scope": "entity",
+    "requirements": "FR-015"
+  },
+  {
+    "name": "formula_versions",
+    "scope": "entity",
+    "requirements": "FR-018, DR-012"
+  },
+  {
+    "name": "exception_rule_versions",
+    "scope": "entity",
+    "requirements": "FR-020"
+  },
+  {
+    "name": "matching_rule_versions",
+    "scope": "entity",
+    "requirements": "FR-027–029, DR-012"
+  },
+  {
+    "name": "exchange_rates",
+    "scope": "entity",
+    "requirements": "DR-011"
+  },
+  {
+    "name": "output_versions",
+    "scope": "entity",
+    "requirements": "FR-016–019, FR-025, FR-036–037"
+  },
+  {
+    "name": "output_datasets",
+    "scope": "entity",
+    "requirements": "FR-019, DR-012"
+  },
+  {
+    "name": "report_lines",
+    "scope": "entity",
+    "requirements": "FR-016–019"
+  },
+  {
+    "name": "report_line_sources",
+    "scope": "entity",
+    "requirements": "FR-019"
+  },
+  {
+    "name": "metric_results",
+    "scope": "entity",
+    "requirements": "FR-017–018"
+  },
+  {
+    "name": "exception_results",
+    "scope": "entity",
+    "requirements": "FR-020"
+  },
+  {
+    "name": "analysis_narratives",
+    "scope": "entity",
+    "requirements": "FR-021, FR-023"
+  },
+  {
+    "name": "validation_results",
+    "scope": "entity",
+    "requirements": "FR-016, FR-026, FR-036"
+  },
+  {
+    "name": "budget_versions",
+    "scope": "entity",
+    "requirements": "FR-024"
+  },
+  {
+    "name": "budget_lines",
+    "scope": "entity",
+    "requirements": "FR-024"
+  },
+  {
+    "name": "trade_items",
+    "scope": "entity",
+    "requirements": "FR-018, FR-024"
+  },
+  {
+    "name": "trade_settlements",
+    "scope": "entity",
+    "requirements": "FR-018, FR-024"
+  },
+  {
+    "name": "planning_versions",
+    "scope": "entity",
+    "requirements": "FR-024"
+  },
+  {
+    "name": "bank_transactions",
+    "scope": "entity",
+    "requirements": "FR-025–026, FR-034"
+  },
+  {
+    "name": "book_transactions",
+    "scope": "entity",
+    "requirements": "FR-009, FR-025–026"
+  },
+  {
+    "name": "reconciliations",
+    "scope": "entity",
+    "requirements": "FR-025–026, FR-033"
+  },
+  {
+    "name": "reconciliation_rule_bindings",
+    "scope": "entity",
+    "requirements": "FR-027–029"
+  },
+  {
+    "name": "match_groups",
+    "scope": "entity",
+    "requirements": "FR-027–031"
+  },
+  {
+    "name": "match_group_members",
+    "scope": "entity",
+    "requirements": "FR-028–029"
+  },
+  {
+    "name": "allocations",
+    "scope": "entity",
+    "requirements": "FR-030–031, DR-010"
+  },
+  {
+    "name": "match_decisions",
+    "scope": "entity",
+    "requirements": "FR-031"
+  },
+  {
+    "name": "reconciling_items",
+    "scope": "entity",
+    "requirements": "FR-032–034"
+  },
+  {
+    "name": "reconciliation_items",
+    "scope": "entity",
+    "requirements": "FR-032–034"
+  },
+  {
+    "name": "proposed_entries",
+    "scope": "entity",
+    "requirements": "FR-033–034"
+  },
+  {
+    "name": "proposed_entry_lines",
+    "scope": "entity",
+    "requirements": "FR-033"
+  },
+  {
+    "name": "matching_quality_runs",
+    "scope": "entity",
+    "requirements": "FR-035, NFR-006"
+  },
+  {
+    "name": "review_submissions",
+    "scope": "entity",
+    "requirements": "FR-036"
+  },
+  {
+    "name": "review_decisions",
+    "scope": "entity",
+    "requirements": "FR-036–037"
+  },
+  {
+    "name": "reopen_events",
+    "scope": "entity",
+    "requirements": "FR-005, FR-037"
+  },
+  {
+    "name": "export_artifacts",
+    "scope": "entity",
+    "requirements": "FR-038"
+  },
+  {
+    "name": "comments",
+    "scope": "entity",
+    "requirements": "FR-039"
+  },
+  {
+    "name": "attachments",
+    "scope": "entity",
+    "requirements": "FR-032, FR-039"
+  },
+  {
+    "name": "notifications",
+    "scope": "tenant",
+    "requirements": "FR-039"
+  },
+  {
+    "name": "notification_deliveries",
+    "scope": "tenant",
+    "requirements": "FR-039"
+  },
+  {
+    "name": "audit_events",
+    "scope": "tenant",
+    "requirements": "FR-040"
+  },
+  {
+    "name": "plan_versions",
+    "scope": "catalog",
+    "requirements": "FR-041"
+  },
+  {
+    "name": "subscriptions",
+    "scope": "tenant",
+    "requirements": "FR-041"
+  },
+  {
+    "name": "invoices",
+    "scope": "tenant",
+    "requirements": "FR-041"
+  },
+  {
+    "name": "payment_events",
+    "scope": "tenant",
+    "requirements": "FR-041"
+  },
+  {
+    "name": "usage_buckets",
+    "scope": "tenant",
+    "requirements": "FR-041, NFR-017"
+  },
+  {
+    "name": "usage_events",
+    "scope": "tenant",
+    "requirements": "FR-041, NFR-009"
+  },
+  {
+    "name": "retention_policy_versions",
+    "scope": "tenant",
+    "requirements": "FR-042"
+  },
+  {
+    "name": "data_lifecycle_requests",
+    "scope": "tenant",
+    "requirements": "FR-042"
+  },
+  {
+    "name": "legal_holds",
+    "scope": "tenant",
+    "requirements": "FR-042"
+  },
+  {
+    "name": "deletion_manifest",
+    "scope": "tenant",
+    "requirements": "FR-042, T-13"
+  },
+  {
+    "name": "backup_restore_runs",
+    "scope": "tenant",
+    "requirements": "NFR-008, T-13"
+  },
+  {
+    "name": "support_requests",
+    "scope": "tenant",
+    "requirements": "FR-043"
+  },
+  {
+    "name": "support_access_grants",
+    "scope": "tenant",
+    "requirements": "FR-043"
+  },
+  {
+    "name": "support_access_events",
+    "scope": "tenant",
+    "requirements": "FR-043"
+  },
+  {
+    "name": "integration_connections",
+    "scope": "entity",
+    "requirements": "FR-044"
+  },
+  {
+    "name": "sync_runs",
+    "scope": "entity",
+    "requirements": "FR-044"
+  },
+  {
+    "name": "external_record_versions",
+    "scope": "entity",
+    "requirements": "FR-044"
+  },
+  {
+    "name": "api_clients",
+    "scope": "tenant",
+    "requirements": "FR-045"
+  },
+  {
+    "name": "api_client_entities",
+    "scope": "entity",
+    "requirements": "FR-045"
+  },
+  {
+    "name": "api_idempotency_keys",
+    "scope": "tenant",
+    "requirements": "FR-045"
+  },
+  {
+    "name": "webhook_endpoints",
+    "scope": "tenant",
+    "requirements": "FR-045"
+  },
+  {
+    "name": "webhook_deliveries",
+    "scope": "tenant",
+    "requirements": "FR-045"
+  },
+  {
+    "name": "webhook_receipts",
+    "scope": "tenant",
+    "requirements": "FR-045"
+  },
+  {
+    "name": "provider_approvals",
+    "scope": "tenant",
+    "requirements": "FR-014, FR-023"
+  },
+  {
+    "name": "ocr_runs",
+    "scope": "entity",
+    "requirements": "FR-014"
+  },
+  {
+    "name": "ocr_fields",
+    "scope": "entity",
+    "requirements": "FR-014"
+  },
+  {
+    "name": "ai_narrative_runs",
+    "scope": "entity",
+    "requirements": "FR-023"
+  },
+  {
+    "name": "output_budget_versions",
+    "scope": "entity",
+    "requirements": "FR-024, DR-012"
+  },
+  {
+    "name": "output_planning_versions",
+    "scope": "entity",
+    "requirements": "FR-024, DR-012"
+  }
+]

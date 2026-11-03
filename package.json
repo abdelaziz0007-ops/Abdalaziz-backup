@@ -7,6 +7,10 @@
     "dev": "node server/index.mjs --dev",
     "start": "node server/index.mjs",
     "db:migrate": "node server/migrate.mjs",
+    "db:generate": "node database/generate.mjs",
+    "db:catalog": "node database/inspect.mjs",
+    "db:verify": "node verification/srs-database.mjs",
+    "db:verify:production": "node verification/srs-database.mjs --production",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run"
