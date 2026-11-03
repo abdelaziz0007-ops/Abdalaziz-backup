@@ -7,3 +7,4 @@ work/
 !.env.example
 verification/reference-*.png
 verification/pack-page-*.png
+.neon

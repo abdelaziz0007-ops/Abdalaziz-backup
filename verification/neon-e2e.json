@@ -1,0 +1,12 @@
+{
+  "service": "Postgres",
+  "branch": "production",
+  "passed": [
+    "Browser publishes two periods and saves a real Postgres snapshot with management notes",
+    "Reload clears memory; restore recovers November, both source periods, exact revenue and notes from Postgres",
+    "API rejects missing session, foreign origin, invalid payload and a snapshot requested under another entity",
+    "Storage control and restored report fit mobile, tablet and desktop"
+  ],
+  "errors": [],
+  "syntheticSnapshotsRemoved": true
+}
