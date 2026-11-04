@@ -23,6 +23,13 @@ try{
  passed.push('Current source/evidence approval and classified-capacity guards are installed; original difference items cannot be rewritten by runtime');
 }finally{await pool.end();}
 const files=new Files({adapter:neon({bucket:'financial-sources'})});
+const scanner=database(env.SCANNER_DATABASE_URL);
+try{
+ const role=(await scanner.query('SELECT rolsuper,rolbypassrls,rolcreatedb,rolcreaterole FROM pg_roles WHERE rolname=current_user')).rows[0];assert(Object.values(role).every(v=>v===false));
+ await assert.rejects(scanner.query('SELECT id FROM mizan.app_users LIMIT 1'),e=>e.code==='42501');await assert.rejects(scanner.query('SELECT id FROM public.mizan_auth_accounts LIMIT 1'),e=>e.code==='42501');
+ const permission=(await scanner.query("SELECT has_function_privilege(current_user,'mizan_private.claim_scan_job(text)','EXECUTE') AS claim,has_function_privilege(current_user,'mizan_private.sync_identity_session(text,text)','EXECUTE') AS identity")).rows[0];assert.equal(permission.claim,true);assert.equal(permission.identity,false);
+ passed.push('Dedicated production scanner role is non-owner/non-BYPASSRLS and cannot read financial identities or native credentials');
+}finally{await scanner.end();}
 await files.list({prefix:'__mizan_read_only_probe__/'});
 const anonymousStorage=await fetch(env.AWS_ENDPOINT_URL_S3+'/financial-sources/');assert([401,403].includes(anonymousStorage.status));
 passed.push('Production private bucket accepts authenticated read-only listing and denies anonymous access');
@@ -30,7 +37,7 @@ let assets=0;
 for(const name of await readdir('dist/assets')){
  if(!/\.(js|css)$/.test(name))continue;
  const text=await readFile('dist/assets/'+name,'utf8');
- for(const key of ['DATABASE_URL','DATABASE_URL_UNPOOLED','APP_DATABASE_URL','AUTH_DATABASE_URL','BETTER_AUTH_SECRET','SOURCE_ENCRYPTION_KEY','AWS_SECRET_ACCESS_KEY','AWS_ACCESS_KEY_ID'])assert(!env[key]||!text.includes(env[key]),'Server-only configuration leaked to built assets');assets++;
+ for(const key of ['DATABASE_URL','DATABASE_URL_UNPOOLED','APP_DATABASE_URL','AUTH_DATABASE_URL','SCANNER_DATABASE_URL','BETTER_AUTH_SECRET','SOURCE_ENCRYPTION_KEY','AWS_SECRET_ACCESS_KEY','AWS_ACCESS_KEY_ID'])assert(!env[key]||!text.includes(env[key]),'Server-only configuration leaked to built assets');assets++;
 }
 passed.push(`No database URLs or auth secret in ${assets} built JS/CSS assets`);
 await writeFile('verification/backend-production.json',JSON.stringify({branch:linked.branch,passed,errors:[],readOnly:true,testAccountsSeeded:false},null,2)+'\n');

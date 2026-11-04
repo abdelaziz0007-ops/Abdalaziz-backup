@@ -1,0 +1,9 @@
+{
+  "branch": "codex-backend-completion",
+  "passed": [
+    "Real native MFA workspace displays stored quarantined sources and cancelled job state",
+    "Source/job panel remains within viewport at five widths and stored sources survive reload"
+  ],
+  "errors": [],
+  "liveScannerAcceptance": false
+}

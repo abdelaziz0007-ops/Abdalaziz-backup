@@ -1,0 +1,36 @@
+import {useEffect,useRef,useState} from 'react';
+import {backend,BackendError} from '@/lib/backend-client';
+import {Button} from '@/components/ui/Button';
+import {DataTable} from '@/components/ui/DataTable';
+import {Notice,useLanguage} from '@/components/WorkspaceUI';
+interface Source{id:string;original_name:string;media_type:string;byte_size:string;scan_status:string;scan_job_id:string|null}
+interface Job{id:string;status:string;progress:string;attempt_count:number;error_code:string|null;cancel_requested_at:string|null;attempts:{attempt_number:number;error_code:string|null;finished_at:string}[]}
+export function SourceJobsPanel({tenant,entity}:{tenant:string;entity:string}){
+ const l=useLanguage(),base=`/tenants/${tenant}/entities/${entity}`,[sources,setSources]=useState<Source[]>([]),[selected,setSelected]=useState(''),[job,setJob]=useState<Job|null>(null),[file,setFile]=useState<File|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState(''),[revision,setRevision]=useState(0),[reason,setReason]=useState('');
+ const nonce=useRef<{signature:string;key:string}|null>(null),[allowed,setAllowed]=useState(true);
+ const state=(value:string)=>({quarantined:l('محجور بانتظار الفحص','Quarantined pending scan'),clean:l('فحص ناجح','Scan passed'),infected:l('ملف مصاب','Infected file'),rejected:l('مرفوض','Rejected'),queued:l('في الانتظار','Queued'),running:l('قيد الفحص','Scanning'),succeeded:l('اكتملت المهمة','Completed'),failed:l('تعذّرت المهمة','Failed'),cancelled:l('أُلغيت المهمة','Cancelled')}[value]??value);
+ useEffect(()=>{setSelected('');setJob(null);setAllowed(true);setError('');},[base]);
+ useEffect(()=>{let live=true;setSources([]);backend<Source[]>(base+'/source-files').then(v=>{if(live){setSources(v);setAllowed(true);}}).catch(e=>{if(live){if(e instanceof BackendError&&[403,404].includes(e.status))setAllowed(false);else setError(e.message);}});return()=>{live=false;};},[base,revision]);
+ useEffect(()=>{if(!selected){setJob(null);return;}let live=true,timer:ReturnType<typeof setTimeout>;const load=async()=>{try{const value=await backend<Job>(base+'/jobs/'+selected);if(live){setJob(value);if(['queued','running'].includes(value.status))timer=setTimeout(()=>void load(),5000);}}catch(e){if(live)setError(e instanceof Error?e.message:String(e));}};void load();return()=>{live=false;clearTimeout(timer);};},[base,selected,revision]);
+ async function upload(){
+  if(!file)return;setBusy(true);setError('');setMessage('');try{
+   if(file.size<1||file.size>50*1024*1024||!(/\.(csv|xlsx)$/i.test(file.name)))throw Error(l('اختر CSV أو XLSX بين بايت واحد و50 ميجابايت.','Choose CSV or XLSX between 1 byte and 50 MiB.'));
+   const response=await fetch('/api/v1'+base+'/source-files',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/octet-stream','X-Upload-Name':encodeURIComponent(file.name)},body:file}),value=await response.json();if(!response.ok)throw Error(value.error?.message??l('تعذّر رفع المصدر','Upload failed'));
+   setFile(null);setRevision(v=>v+1);setMessage(l('حُفظ المصدر مشفرًا. الفحص لا يعني نشر البيانات أو اعتمادها.','Encrypted source saved. Scanning does not publish or approve data.'));setSelected(value.data.jobId??'');
+  }catch(e){setError(e instanceof Error?e.message:String(e));}finally{setBusy(false);}
+ }
+ async function control(action:'cancel'|'retry'){
+  if(!job)return;setBusy(true);setError('');try{const signature=JSON.stringify([job.id,action,reason]);if(nonce.current?.signature!==signature)nonce.current={signature,key:crypto.randomUUID()};await backend(base+'/jobs/'+job.id+'/'+action,{reason,requestKey:nonce.current.key});setRevision(v=>v+1);setSelected(job.id);}catch(e){setError(e instanceof Error?e.message:String(e));}finally{setBusy(false);}
+ }
+ if(!allowed)return null;
+ return <section className="stack" aria-label={l('المصادر ومهام الفحص','Sources and scan jobs')}><h3>{l('المصادر ومهام الفحص','Sources and scan jobs')}</h3><Notice>{l('تُحفظ الملفات مشفرة وفي الحجر. لن تصبح نظيفة دون فحص فعلي بتواقيع حديثة. معاينة الجداول والنشر والاستيراد خطوات مستقلة بعد الفحص.','Files are encrypted and quarantined. Only a real scan with current signatures can mark them clean. Worksheet preview, publication and import are separate later steps.')}</Notice>
+  <form className="stack" onSubmit={e=>{e.preventDefault();void upload();}}><label className="form-field">{l('مصدر CSV أو XLSX للفحص','CSV or XLSX source for scanning')}<input aria-label={l('مصدر CSV أو XLSX للفحص','CSV or XLSX source for scanning')} type="file" accept=".csv,.xlsx" disabled={busy} onChange={e=>setFile(e.target.files?.[0]??null)}/></label><Button type="submit" disabled={busy||!file}>{l('رفع المصدر للفحص','Upload source for scanning')}</Button></form>
+  {error&&<Notice tone="danger">{error}</Notice>}{message&&<p role="status">{message}</p>}
+  <DataTable label={l('المصادر المحفوظة وحالة الفحص','Saved sources and scanning state')} rows={sources} rowKey={r=>r.id} columns={[{key:'name',header:l('اسم الملف','File name'),render:r=><span style={{overflowWrap:'anywhere'}}>{r.original_name}</span>},{key:'size',header:l('الحجم بالبايت','Size in bytes'),render:r=><bdi>{r.byte_size}</bdi>},{key:'state',header:l('حالة المصدر','Source state'),render:r=>state(r.scan_status)},{key:'job',header:l('مهمة الفحص','Scanning job'),render:r=>r.scan_job_id?<Button variant="ghost" onClick={()=>setSelected(r.scan_job_id!)}>{l('عرض المهمة','View job')}</Button>:l('لم تُطلب مهمة فحص','No scan requested')}]}/>
+  {job&&<div className="stack" aria-label={l('تفاصيل مهمة الفحص','Scan job details')}><p role="status">{state(job.status)} · {l('المحاولات','Attempts')}: <bdi>{job.attempt_count} / 3</bdi></p>{job.error_code&&job.status==='failed'&&<Notice tone="danger">{job.error_code==='SCANNER_NOT_CONFIGURED'?l('خدمة فحص الملفات غير مهيأة. بقي المصدر في الحجر ولم يبدأ تحليل الملف.','File scanning is not configured. The source remains quarantined; file analysis has not started.'):job.error_code==='MALWARE_DETECTED'?l('اكتُشف محتوى ضار. لا يمكن استخدام هذا المصدر.','Malware was detected. This source cannot be used.'):l('تعذّر إكمال المهمة. راجع إعدادات الخدمة قبل إعادة المحاولة.','The job could not complete. Check the service configuration before retrying.')}</Notice>}
+   {job.cancel_requested_at&&job.status==='running'&&<p>{l('طُلب الإلغاء؛ لن تُقبل نتيجة متأخرة للنشر.','Cancellation requested; a late result cannot publish the source.')}</p>}
+   {(['queued','running'].includes(job.status)||job.status==='failed'&&job.attempt_count<3&& !['MALWARE_DETECTED','SOURCE_UNAVAILABLE'].includes(job.error_code??''))&&<><label className="form-field">{l('سبب إجراء مهمة الفحص','Scan job action reason')}<input aria-label={l('سبب إجراء مهمة الفحص','Scan job action reason')} minLength={8} maxLength={500} value={reason} onChange={e=>setReason(e.target.value)}/></label><Button disabled={busy||reason.trim().length<8} onClick={()=>void control(job.status==='failed'?'retry':'cancel')}>{job.status==='failed'?l('إعادة محاولة الفحص','Retry scan'):l('إلغاء مهمة الفحص','Cancel scan job')}</Button></>}
+   <p>{l('تقدّم المهمة','Job progress')}: <bdi>{Math.round(Number(job.progress)*100)}%</bdi></p><Button variant="ghost" onClick={()=>setRevision(v=>v+1)}>{l('تحديث حالة المصادر','Refresh source state')}</Button>
+  </div>}
+ </section>;
+}

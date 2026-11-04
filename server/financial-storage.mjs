@@ -24,13 +24,14 @@ export function sourceStorage(){
       const ciphertext=Buffer.concat([Buffer.from('MZN1'),iv,cipher.update(plain),cipher.final(),cipher.getAuthTag()]);
       await files.upload(objectKey,ciphertext,{contentType:'application/octet-stream'});
     },
-    async verify(objectKey,expectedHash){
+    async read(objectKey,expectedHash,expectedSize){
       const file=await files.download(objectKey),bytes=Buffer.from(await file.arrayBuffer());
       if(bytes.subarray(0,4).toString()!=='MZN1')throw Error('Invalid source envelope');
       const decipher=createDecipheriv('aes-256-gcm',Buffer.from(key,'hex'),bytes.subarray(4,16));
       decipher.setAAD(Buffer.from(objectKey));decipher.setAuthTag(bytes.subarray(-16));
       const plain=Buffer.concat([decipher.update(bytes.subarray(16,-16)),decipher.final()]);
-      if(hash(plain)!==expectedHash)throw Error('Source integrity mismatch');return true;
+      if(hash(plain)!==expectedHash||expectedSize!==undefined&&plain.length!==expectedSize)throw Error('Source integrity mismatch');return plain;
     },
+    async verify(objectKey,expectedHash){await this.read(objectKey,expectedHash);return true;},
   };
 }

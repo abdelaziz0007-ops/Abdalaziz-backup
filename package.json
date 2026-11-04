@@ -19,6 +19,8 @@
     "backend:test:manual": "node verification/manual-allocation-api.mjs",
     "backend:test:review": "node verification/review-membership-api.mjs",
     "backend:test:items": "node verification/reconciliation-items-api.mjs",
+    "worker:scan": "node server/scan-worker.mjs",
+    "backend:test:scan": "node verification/scan-jobs-api.mjs",
     "db:verify": "node verification/srs-database.mjs",
     "db:verify:production": "node verification/srs-database.mjs --production",
     "build": "tsc --noEmit && vite build",

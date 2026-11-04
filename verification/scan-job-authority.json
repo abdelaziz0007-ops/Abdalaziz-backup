@@ -1,0 +1,11 @@
+{
+  "branch": "codex-backend-completion",
+  "passed": [
+    "Global suspension overrides retained tenant grants",
+    "Queued work from a suspended requester is cancelled before storage access",
+    "Controlled suspension/job fixture is completely rolled back"
+  ],
+  "errors": [],
+  "rolledBack": true,
+  "providerScanSimulated": false
+}

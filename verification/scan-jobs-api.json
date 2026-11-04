@@ -1,0 +1,15 @@
+{
+  "branch": "codex-backend-completion",
+  "passed": [
+    "Authenticated typed uploads preserve an encrypted quarantined original and enqueue one idempotent job; invalid formats are rejected",
+    "Dedicated scanner credentials cannot read identity/financial tables; API credentials cannot claim jobs or mark files clean",
+    "Actual worker decrypts/verifies the stored original, records a failed attempt when no real scanner exists and leaves the source quarantined",
+    "Retry reuses the original job and immutable attempts; queued cancellation prevents dispatch without duplicated source/job creation",
+    "Concurrent workers claim a job once; lease expiry records a crashed attempt and fences out stale completion tokens",
+    "Running cancellation wins over a late result and retains both immutable attempts without publishing or cleaning the source",
+    "Job status and source metadata remain within the actual authorized entity scope"
+  ],
+  "errors": [],
+  "liveScannerAcceptance": false,
+  "fixtures": "Real encrypted storage/native MFA; controlled lease clock expiry; no clean scan or live provider success simulated"
+}

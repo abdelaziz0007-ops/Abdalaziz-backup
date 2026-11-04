@@ -10,7 +10,7 @@ try{
   const c=await pool.connect();
   try{
     await c.query('BEGIN');
-    for(const [role,key] of [['mizan_api_v1','APP_DATABASE_URL'],['mizan_identity_v1','AUTH_DATABASE_URL']]){
+    for(const [role,key] of [['mizan_api_v1','APP_DATABASE_URL'],['mizan_identity_v1','AUTH_DATABASE_URL'],['mizan_scanner_v1','SCANNER_DATABASE_URL']]){
       const previous=(await c.query('SELECT rolbypassrls,rolsuper,rolcreaterole,rolcreatedb FROM pg_roles WHERE rolname=$1',[role])).rows[0];
       let password;
       if(previous){
@@ -32,6 +32,10 @@ try{
       mizan.roles,mizan.permissions,mizan.role_permissions,mizan.currencies,mizan.legal_entities,mizan.entity_settings_versions,
       mizan.accounting_periods,mizan.audit_events TO mizan_api_v1;
       GRANT SELECT ON mizan.output_versions,mizan.reconciliations TO mizan_api_v1;
+      GRANT SELECT ON mizan.processing_jobs,mizan.job_attempts TO mizan_api_v1;
+      GRANT EXECUTE ON FUNCTION mizan_private.enqueue_source_scan(uuid,uuid,uuid,uuid,uuid,uuid),mizan_private.control_scan_job(uuid,uuid,uuid,uuid,uuid,text,text,uuid,uuid) TO mizan_api_v1;
+      GRANT USAGE ON SCHEMA mizan_private TO mizan_scanner_v1;
+      GRANT EXECUTE ON FUNCTION mizan_private.claim_scan_job(text),mizan_private.finish_scan_job(uuid,text,text,text,text) TO mizan_scanner_v1;
       GRANT SELECT,INSERT ON mizan.source_files,mizan.import_templates,mizan.import_batches,mizan.source_rows,
       mizan.row_dispositions,mizan.quality_runs,mizan.quality_issues,mizan.dataset_versions,mizan.dataset_imports,
       mizan.accounts,mizan.trial_balance_rows,mizan.mapping_versions,mizan.report_line_items,mizan.account_mappings,
@@ -76,5 +80,5 @@ try{
     updated=pattern.test(updated)?updated.replace(pattern,()=>line):updated.replace(/\s*$/,'')+'\n'+line+'\n';
   }
   await writeFile(path,updated);
-  console.log('Backend runtime configured: separate non-owner, non-BYPASSRLS application and identity roles; secrets written only to .env.local');
+  console.log('Backend runtime configured: separate non-owner, non-BYPASSRLS application, identity and scanner roles; secrets written only to .env.local');
 }finally{await pool.end();}

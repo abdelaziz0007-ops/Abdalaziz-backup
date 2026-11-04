@@ -10,6 +10,7 @@ import { mountManualMatchRoutes } from './manual-match-routes.mjs';
 import { mountAdministrationRoutes } from './administration-routes.mjs';
 import { mountReviewRoutes } from './review-routes.mjs';
 import { mountReconcilingItemRoutes } from './reconciling-item-routes.mjs';
+import { mountSourceJobRoutes } from './source-job-routes.mjs';
 
 class HttpError extends Error {
   constructor(status,code,message){super(message);this.status=status;this.code=code;}
@@ -131,6 +132,7 @@ export function backendRouter({pool,auth,dataRegion}){
   mountAdministrationRoutes(router,{pool,scoped,result,HttpError});
   mountReviewRoutes(router,{scoped,result,HttpError});
   mountReconcilingItemRoutes(router,{scoped,audit,result,HttpError});
+  mountSourceJobRoutes(router,{scoped,audit,result,HttpError});
   router.use((_req,_res,next)=>next(new HttpError(404,'ROUTE_NOT_FOUND','API route not found')));
   router.use((error,req,res,_next)=>{
     const code=error instanceof z.ZodError?'INVALID_INPUT':error.code;
