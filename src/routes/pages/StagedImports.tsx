@@ -11,11 +11,46 @@ interface Batch {id: string; original_name: string; range_start: string; range_e
 interface Row {id: string; rowNumber: number; version: number; values: Values; originalValues: Values; disposition: string}
 interface BatchDetails {
   editable: boolean;
+  publishable: boolean;
+  status: string;
+  dataType: string;
   currencyCode: string;
   fields: string[];
   rows: Row[];
-  quality: {records_read: number; accepted: number; rejected: number; excluded: number; totals_before: Totals; totals_after: Totals};
+  quality: {id: string; records_read: number; accepted: number; rejected: number; excluded: number; totals_before: Totals; totals_after: Totals};
   issues: {severity: string; code: string; message: string; evidence: {rowNumber: number | null}}[];
+}
+
+function PublishImport({path, details, onPublished}: {path: string; details: BatchDetails; onPublished: () => void}) {
+  const l = useLanguage();
+  const [reason, setReason] = useState('');
+  const [confirmed, setConfirmed] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const trialBalance = details.dataType === 'trial_balance';
+  async function publish() {
+    setBusy(true);setError('');
+    try {
+      await backend(path, {qualityRunId: details.quality.id, confirmation: true, reason,
+        balanceBasis: trialBalance ? 'period' : undefined});
+      onPublished();
+    } catch (error) {
+      setError(error instanceof Error ? error.message : String(error));
+    } finally {setBusy(false);}
+  }
+  return <form className="stack" onSubmit={event=>{event.preventDefault();void publish();}}>
+    <h5>{l('نشر مجموعة البيانات','Publish dataset')}</h5>
+    <label className="row"><input type="checkbox" checked={confirmed} disabled={busy} onChange={event=>setConfirmed(event.target.checked)}/>
+      {trialBalance
+        ? l('أؤكد اكتمال صفوف ميزان المراجعة للفترة المختارة.','I confirm these are the complete trial-balance rows for the selected period.')
+        : l('أؤكد اكتمال قيود دفتر الأستاذ للفترة المختارة.','I confirm these are the complete general-ledger entries for the selected period.')}
+    </label>
+    <label className="form-field">{l('سبب النشر','Publication reason')}
+      <input minLength={8} maxLength={500} required disabled={busy} value={reason} onChange={event=>setReason(event.target.value)}/>
+    </label>
+    {error && <Notice tone="danger">{error}</Notice>}
+    <Button type="submit" disabled={busy || !confirmed || reason.trim().length < 8}>{l('نشر الإصدار وتثبيته','Publish and lock version')}</Button>
+  </form>;
 }
 
 function RowCorrection({path, row, fields, onSaved}: {path: string; row: Row; fields: string[]; onSaved: () => void}) {
@@ -108,6 +143,7 @@ export function StagedImports({path, selected, onSelect, revision}: {
     {error && <Notice tone="danger">{error}</Notice>}
     {selected && !details && !error && <p role="status">{l('جارٍ تحميل الدفعة…','Loading batch…')}</p>}
     {details && quality && <>
+      {details.status === 'published' && <p role="status">{l('نُشرت مجموعة البيانات وثُبّت الإصدار.','The dataset was published and the version was locked.')}</p>}
       <p>{l('الصفوف المقروءة','Rows read')} {quality.records_read} · {l('المقبولة للمراجعة','Accepted for review')} {quality.accepted} · {l('المرفوضة','Rejected')} {quality.rejected} · {l('المستبعدة','Excluded')} {quality.excluded}</p>
       <DataTable label={l('إجماليات التحقق','Validation totals')} rows={Object.keys(quality.totals_before)} rowKey={field=>field}
         columns={[{key:'field',header:l('الحقل','Field'),render:field=>fieldLabel(field)},
@@ -131,6 +167,8 @@ export function StagedImports({path, selected, onSelect, revision}: {
       </div>
       {row && details.editable && <RowCorrection key={row.id+':'+row.version} path={path+'/'+selected+'/corrections'}
         row={row} fields={details.fields} onSaved={()=>{setSelectedRow('');setReload(value=>value+1);}}/>}
+      {details.publishable && <PublishImport key={quality.id} path={path+'/'+selected+'/publish'} details={details}
+        onPublished={()=>{setSelectedRow('');setReload(value=>value+1);}}/>}
     </>}
   </section>;
 }

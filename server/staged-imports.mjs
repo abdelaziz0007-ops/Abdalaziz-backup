@@ -10,12 +10,14 @@ export const rowContext = (tenant, entity, id, version = 0) => `staged-row:${ten
 export async function writeQuality(connection, scope, batchId, rows, dataType, period) {
   const quality = checkImportRows(rows, dataType, period);
   const runId = randomUUID();
-  await insert(connection, 'quality_runs', {
-    ...scope, id: runId, import_batch_id: batchId, rule_version: stagedVersion,
-    content_fingerprint: hash(JSON.stringify(rows.map(row => [row.id, row.values, Boolean(row.excluded)]))),
-    records_read: quality.recordsRead, accepted: quality.accepted, rejected: quality.rejected, excluded: quality.excluded,
-    totals_before: JSON.stringify(quality.totalsBefore), totals_after: JSON.stringify(quality.totalsAfter),
-  });
+  await connection.query(`
+    INSERT INTO mizan.quality_runs
+      (id,tenant_id,entity_id,import_batch_id,rule_version,content_fingerprint,records_read,accepted,rejected,
+       excluded,totals_before,totals_after,created_at)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,clock_timestamp())
+  `, [runId, scope.tenant_id, scope.entity_id, batchId, stagedVersion,
+    hash(JSON.stringify(rows.map(row => [row.id, row.values, Boolean(row.excluded)]))),
+    quality.recordsRead, quality.accepted, quality.rejected, quality.excluded, quality.totalsBefore, quality.totalsAfter]);
   const byNumber = new Map(rows.map(row => [row.rowNumber, row.id]));
   const created_at = new Date().toISOString();
   for (let offset = 0; offset < quality.issues.length; offset += 250) {

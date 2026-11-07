@@ -106,7 +106,7 @@
         "server/parser/field-mapping.test.mjs",
         "verification/staged-imports-api.json"
       ],
-      "remaining": "Complete selected sheets can be staged with mapped row values and journal validation. Typed dataset publication and live scan-to-import acceptance remain pending."
+      "remaining": "Complete selected sheets can be staged and validated. Trial balance and general ledger publish into immutable typed datasets. Bank dataset publication and live scan-to-import acceptance remain pending."
     },
     {
       "id": "FR-010",

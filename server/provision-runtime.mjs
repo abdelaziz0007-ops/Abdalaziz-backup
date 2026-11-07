@@ -38,13 +38,14 @@ try{
       GRANT EXECUTE ON FUNCTION mizan_private.claim_scan_job(text),mizan_private.finish_scan_job(uuid,text,text,text,text) TO mizan_scanner_v1;
       GRANT SELECT,INSERT ON mizan.source_files,mizan.import_templates,mizan.import_batches,mizan.source_rows,
       mizan.row_dispositions,mizan.row_transformations,mizan.quality_runs,mizan.quality_issues,mizan.dataset_versions,mizan.dataset_imports,
-      mizan.accounts,mizan.trial_balance_rows,mizan.mapping_versions,mizan.report_line_items,mizan.account_mappings,
+      mizan.accounts,mizan.trial_balance_rows,mizan.ledger_entries,mizan.mapping_versions,mizan.report_line_items,mizan.account_mappings,
       mizan.formula_versions,mizan.output_versions,mizan.output_datasets,mizan.report_lines,mizan.report_line_sources,
       mizan.metric_results,mizan.validation_results TO mizan_api_v1;
       GRANT SELECT,INSERT ON mizan.bank_accounts,mizan.bank_transactions,mizan.book_transactions,
       mizan.reconciliations,mizan.match_groups,mizan.match_group_members TO mizan_api_v1;
       GRANT SELECT ON mizan.allocations,mizan.matching_rule_versions TO mizan_api_v1;
       GRANT SELECT,INSERT ON mizan.reconciling_items,mizan.reconciliation_items,mizan.attachments,mizan.proposed_entries,mizan.proposed_entry_lines TO mizan_api_v1;
+      GRANT EXECUTE ON FUNCTION mizan_private.publish_staged_dataset(uuid,uuid,uuid,uuid,uuid,uuid,uuid,text) TO mizan_api_v1;
       GRANT UPDATE(status,clearance_source_row_id,decision_reason) ON mizan.reconciliation_items TO mizan_api_v1;
       GRANT UPDATE(id) ON mizan.match_groups TO mizan_api_v1;
       GRANT SELECT,INSERT ON mizan.match_decisions,mizan.allocations TO mizan_api_v1;

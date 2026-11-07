@@ -5,6 +5,7 @@ import {decryptField, encryptField} from './financial-storage.mjs';
 import {bulk, insert} from './financial-routes.mjs';
 import {previewMapping} from './parser/field-mapping.mjs';
 import {rowContext, stagedVersion, writeQuality} from './staged-imports.mjs';
+import {assertPublishable, materializeImport} from './import-publication.mjs';
 
 const correctionSchema = z.object({
   rowId: z.uuid(), requestKey: z.uuid(), expectedVersion: z.number().int().min(0),
@@ -12,6 +13,10 @@ const correctionSchema = z.object({
   change: z.object({field: z.string().regex(/^[a-zA-Z][a-zA-Z0-9]{0,40}$/), value: z.string().max(500)}).strict().optional(),
   excluded: z.boolean().optional(),
 }).strict().refine(value => value.change || value.excluded !== undefined, {message: 'Provide a correction or an exclusion decision'});
+const publicationSchema = z.object({
+  qualityRunId: z.uuid(), confirmation: z.literal(true), balanceBasis: z.literal('period').optional(),
+  reason: z.string().trim().min(8).max(500),
+}).strict();
 
 async function batchAccess(connection, tenant, entity, id, HttpError, lock = false) {
   const {rows: [batch]} = await connection.query(`
@@ -109,9 +114,11 @@ export function mountStagedImportRoutes(router, {scoped, audit, result, HttpErro
         await connection.query('SELECT pg_advisory_xact_lock_shared(hashtextextended($1,42))', [e]);
         const batch = await batchAccess(connection, t, e, batchId, HttpError);
         const {rows: [quality]} = await connection.query(`
-          SELECT id, records_read::int, accepted::int, rejected::int, excluded::int, totals_before, totals_after
-          FROM mizan.quality_runs WHERE tenant_id=$1 AND entity_id=$2 AND import_batch_id=$3
-          ORDER BY created_at DESC,id DESC LIMIT 1
+          SELECT q.id, records_read::int, accepted::int, rejected::int, excluded::int, totals_before, totals_after,
+            EXISTS (SELECT 1 FROM mizan.quality_issues i WHERE
+              (i.tenant_id,i.entity_id,i.quality_run_id)=(q.tenant_id,q.entity_id,q.id) AND severity='blocking') AS has_blockers
+          FROM mizan.quality_runs q WHERE tenant_id=$1 AND entity_id=$2 AND import_batch_id=$3
+          ORDER BY created_at DESC,q.id DESC LIMIT 1
         `, [t, e, batchId]);
         const {rows: issues} = await connection.query(`
           SELECT severity,code,message,evidence FROM mizan.quality_issues
@@ -121,11 +128,54 @@ export function mountStagedImportRoutes(router, {scoped, audit, result, HttpErro
         const rows = await rowsFor(connection, t, e, batchId, 25, offset);
         return {
           id: batchId, currencyCode: batch.currency_code, editable: batch.status === 'needs_review' && batch.period_status === 'open',
+          status: batch.status, dataType: batch.data_type,
+          publishable: batch.status === 'needs_review' && batch.period_status === 'open'
+            && ['trial_balance','general_ledger'].includes(batch.data_type) && quality.records_read > 0
+            && quality.records_read === quality.accepted && !quality.has_blockers,
           fields: batch.required_columns.map(item => item.field), quality, issues,
           rows: rows.map(row => ({id: row.id, rowNumber: row.rowNumber, values: row.values,
             originalValues: row.originalValues, version: row.version, disposition: row.disposition})),
         };
       }));
+    } catch (error) { next(error); }
+  });
+  router.post(root + '/:batchId/publish', async (req, res, next) => {
+    try {
+      const {tenantId: t, entityId: e, batchId} = req.params;
+      z.uuid().parse(batchId);
+      const data = publicationSchema.parse(req.body);
+      result(req, res, await scoped(req, t, e, 'imports.manage', async connection => {
+        await connection.query('SELECT pg_advisory_xact_lock(hashtextextended($1,42))', [e]);
+        const batch = await batchAccess(connection, t, e, batchId, HttpError, true);
+        const {rows: [quality]} = await connection.query(`
+          SELECT id, content_fingerprint FROM mizan.quality_runs
+          WHERE tenant_id=$1 AND entity_id=$2 AND import_batch_id=$3 ORDER BY created_at DESC,id DESC LIMIT 1
+        `, [t, e, batchId]);
+        if (!quality || quality.id !== data.qualityRunId) {
+          throw new HttpError(409, 'IMPORT_VALIDATION_CHANGED', 'Reload the latest validation before publishing');
+        }
+        if (batch.status === 'published') {
+          const {rows: [existing]} = await connection.query(`
+            SELECT id FROM mizan.dataset_versions WHERE tenant_id=$1 AND entity_id=$2 AND idempotency_key=$3 AND status='published'
+          `, [t, e, hash('publish-staged:' + batchId)]);
+          if (existing) return {datasetId: existing.id, reused: true};
+        }
+        if (batch.status !== 'needs_review' || batch.period_status !== 'open') {
+          throw new HttpError(409, 'IMPORT_NOT_EDITABLE', 'Publication requires a review batch in an open period');
+        }
+        if ((batch.data_type === 'trial_balance') !== (data.balanceBasis === 'period')) {
+          throw new HttpError(422, 'IMPORT_BASIS_REQUIRED', 'Confirm period-specific balances for trial-balance publication');
+        }
+        const rows = await rowsFor(connection, t, e, batchId, 5000, 0);
+        assertPublishable(batch, rows, quality, HttpError);
+        const datasetId = await materializeImport(connection, {
+          scope: {tenant_id: t, entity_id: e}, batch, rows, quality, actor: req.principal.id,
+          session: req.principal.sessionId, basis: data.balanceBasis ?? 'not_applicable', HttpError,
+        });
+        await audit(connection, req, t, e, 'import.published', 'dataset', datasetId, data.reason,
+          {batchId, qualityRunId: quality.id, rows: rows.length, dataType: batch.data_type});
+        return {datasetId, reused: false};
+      }, {fresh: true}));
     } catch (error) { next(error); }
   });
   router.post(root + '/:batchId/corrections', async (req, res, next) => {

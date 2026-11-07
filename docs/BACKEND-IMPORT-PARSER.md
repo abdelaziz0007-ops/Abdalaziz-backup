@@ -35,11 +35,17 @@ The template selector lists the latest version of each template in the current e
 
 ## Staging and row review
 
-After a template preview, **Stage all worksheet rows for review** reads every data row after the selected header. The import uses the same scan and permission gates as preview and requires an open period. This first staging path supports up to 5,000 physical rows per selected sheet, 512 Ki characters of source text and the existing 8 MiB parser response bound. Requests outside those limits return an error. The batch stays in review until a separate publication workflow is available.
+After a template preview, **Stage all worksheet rows for review** reads every data row after the selected header. The import uses the same scan and permission gates as preview and requires an open period. This first staging path supports up to 5,000 physical rows per selected sheet, 512 Ki characters of source text and the existing 8 MiB parser response bound. Requests outside those limits return an error.
 
 The source bytes remain in encrypted object storage. Original row cells and mapped values are encrypted in the database. A repeat request for the same source, template version and period returns the existing batch. The review panel displays original and current mapped values, blocking issues, warning messages, record counts, and exact before and after totals. Missing amounts are counted separately.
 
 Corrections use the selected template's input format and record the actor, reason and row version. A user can also exclude or reinstate a row. All these actions append a transformation and a fresh quality run. The checks cover duplicate row identities, posting dates outside the period, classifications, trial-balance totals, and the balance of each general-ledger journal. A stale edit asks the user to reload. Apply migration `018_staged_import_corrections.sql` before serving the review endpoints.
+
+## Dataset publication
+
+The review panel can publish complete period trial balances and general ledgers after the user confirms completeness and supplies a reason. Publication requires recent MFA, an open period, current scan evidence, and the exact latest validation reviewed by the user. The first publication policy requires every source data row to be accepted. An exclusion therefore keeps the batch in review. An existing ledger account must be active, and a trial-balance account must agree with the recorded account type.
+
+Publication creates typed rows and links them to their source rows, then publishes the dataset and freezes the import and row history in one database transaction. Retrying returns the existing dataset. Prior quality runs remain available in the database. The published dataset can feed financial reporting once the report-generation workflow is connected. Apply migration `019_staged_dataset_publication.sql` before enabling publication.
 
 ## Evidence and remaining work
 
@@ -49,6 +55,6 @@ Existing `saxes@5.0.1` is now declared as a direct runtime dependency and existi
 
 `server/source-preview-routes.test.mjs` exercises the HTTP scan gate, permission revocation during processing, period currency precision, and the parser process protocol. It also covers idempotent template saves, appended versions, stale-version conflicts and column drift. These checks use a fixture for database and scanner state. All eight preview and template SQL statements were also prepared and planned with application credentials in a read-only transaction on the Neon test branch. The production path requires Docker and a successful real scan. Docker was unavailable on the development host, so container build and live scan-to-preview acceptance remain pending.
 
-The rollback-only Neon test in `verification/staged-imports-api.mjs` covers whole-sheet staging, retry, versioned corrections, preserved originals, exact revalidation and exclusions. It uses synthetic scan evidence and source bytes inside the transaction.
+The rollback-only Neon test in `verification/staged-imports-api.mjs` covers whole-sheet staging, retry, versioned corrections, preserved originals, exact revalidation, exclusions, stale publication requests and typed trial-balance and ledger publication. It uses synthetic scan evidence, MFA session state and source bytes inside the transaction.
 
-Remaining work includes live scan-to-import verification, publication into typed datasets, bank opening and closing reconciliation, asynchronous cancellation and retry, and large-file, concurrency, and security acceptance.
+Remaining work includes live scan-to-import verification, bank account and opening and closing balance reconciliation for bank datasets, generation of financial outputs from published datasets, asynchronous cancellation and retry, and large-file, concurrency, and security acceptance.

@@ -4,8 +4,10 @@
     "Whole worksheet saved once through the scoped preview route",
     "Versioned correction preserves the original, rejects stale changes and revalidates exact totals",
     "Explicit exclusion records counts and reopens balance validation",
-    "Synthetic records completely rolled back"
+    "Publication rejects stale or incomplete reviews and locks a corrected typed dataset exactly once",
+    "Balanced ledger publishes typed debit and credit rows with encrypted descriptions",
+    "Synthetic records completely rolled back and publication uses a restricted database function"
   ],
   "rolledBack": true,
-  "fixture": "Synthetic scan evidence, source bytes and parser in a rollback-only transaction. Live Docker and antivirus not exercised."
+  "fixture": "Synthetic scan evidence, verified-session fixture, source bytes and parser in a rollback-only transaction. Live Docker and antivirus not exercised."
 }

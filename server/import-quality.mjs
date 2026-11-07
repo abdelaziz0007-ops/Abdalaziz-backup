@@ -35,6 +35,15 @@ export function checkImportRows(rows, dataType, period) {
     if (dataType === 'trial_balance' && !classifications.includes(values.classification)) {
       flag(row, 'CLASSIFICATION_REQUIRED', 'A supported account classification is required');
     }
+    if (dataType === 'trial_balance') {
+      const opening = units(row, 'openingBalance'), closing = units(row, 'closingBalance');
+      const debit = units(row, 'debitMovement'), credit = units(row, 'creditMovement');
+      if ((debit !== null && debit < 0n) || (credit !== null && credit < 0n)) {
+        flag(row, 'MOVEMENT_SIGN_INVALID', 'Trial-balance debit and credit movements must be nonnegative');
+      } else if ([opening, closing, debit, credit].every(value => value !== null) && opening + debit - credit !== closing) {
+        flag(row, 'MOVEMENT_BALANCE_MISMATCH', 'Opening balance plus net movement must equal closing balance');
+      }
+    }
     if (dataType === 'general_ledger' && values.journalReference) {
       const journal = journals.get(values.journalReference) ?? {rows: [], net: 0n, complete: true};
       journal.rows.push(row);
