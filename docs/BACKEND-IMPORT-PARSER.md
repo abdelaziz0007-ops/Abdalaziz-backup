@@ -47,6 +47,10 @@ The review panel can publish complete period trial balances and general ledgers 
 
 Publication creates typed rows and links them to their source rows, then publishes the dataset and freezes the import and row history in one database transaction. Retrying returns the existing dataset. Prior quality runs remain available in the database. The published dataset can feed financial reporting once the report-generation workflow is connected. Apply migration `019_staged_dataset_publication.sql` before enabling publication.
 
+Bank statements and bank ledgers also require an active bank account in the period currency, explicit opening and closing balances, and confirmation of cash-increase-positive signs. The service checks each supplied running balance and the exact period roll-forward. The database repeats these checks before publication and rejects overlapping periods for the same account and source type. Each side is limited to 1,000 movements, in line with the connected reconciliation workspace. Migration `020_staged_bank_publication.sql` adds the immutable balance records.
+
+In **Connected bank reconciliation**, choose **Create reconciliation from published datasets** to pair published versions for the same account, currency, period and sign policy. The workflow creates a draft at the period end with matching suggestions. The exact pair reopens its existing reconciliation when retried. It retains the separate matching and review steps.
+
 ## Evidence and remaining work
 
 `server/parser/tabular-core.test.mjs` and `field-mapping.test.mjs` exercise real generated XLSX ZIP/XML fixtures and raw CSV sources: exact numeric text, scientific notation, locale grouping, multiline source coordinates, calendar/date-system cases, template drift, duplicates, blocking ledger errors, formulas beyond the visible preview, external/active content, malformed XML/ZIP, CRC corruption, lying inflation metadata and preview limits.
@@ -55,6 +59,6 @@ Existing `saxes@5.0.1` is now declared as a direct runtime dependency and existi
 
 `server/source-preview-routes.test.mjs` exercises the HTTP scan gate, permission revocation during processing, period currency precision, and the parser process protocol. It also covers idempotent template saves, appended versions, stale-version conflicts and column drift. These checks use a fixture for database and scanner state. All eight preview and template SQL statements were also prepared and planned with application credentials in a read-only transaction on the Neon test branch. The production path requires Docker and a successful real scan. Docker was unavailable on the development host, so container build and live scan-to-preview acceptance remain pending.
 
-The rollback-only Neon test in `verification/staged-imports-api.mjs` covers whole-sheet staging, retry, versioned corrections, preserved originals, exact revalidation, exclusions, stale publication requests and typed trial-balance and ledger publication. It uses synthetic scan evidence, MFA session state and source bytes inside the transaction.
+The rollback-only Neon test in `verification/staged-imports-api.mjs` covers whole-sheet staging, retry, versioned corrections, preserved originals, exact revalidation, exclusions, stale publication requests, typed publication and pairing published bank datasets. It uses synthetic scan evidence, MFA session state and source bytes inside the transaction.
 
-Remaining work includes live scan-to-import verification, bank account and opening and closing balance reconciliation for bank datasets, generation of financial outputs from published datasets, asynchronous cancellation and retry, and large-file, concurrency, and security acceptance.
+Remaining work includes live scan-to-import verification, generation of financial outputs from published datasets, final reconciliation validation and approval, asynchronous cancellation and retry, and large-file, concurrency, and security acceptance.

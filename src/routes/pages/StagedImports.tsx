@@ -14,6 +14,7 @@ interface BatchDetails {
   publishable: boolean;
   status: string;
   dataType: string;
+  bankAccounts: {id: string; label: string; identifier_last_four: string | null}[];
   currencyCode: string;
   fields: string[];
   rows: Row[];
@@ -27,12 +28,17 @@ function PublishImport({path, details, onPublished}: {path: string; details: Bat
   const [confirmed, setConfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [accountId, setAccountId] = useState('');
+  const [opening, setOpening] = useState('');
+  const [closing, setClosing] = useState('');
   const trialBalance = details.dataType === 'trial_balance';
+  const bank = details.dataType === 'bank_statement' || details.dataType === 'bank_ledger';
   async function publish() {
     setBusy(true);setError('');
     try {
       await backend(path, {qualityRunId: details.quality.id, confirmation: true, reason,
-        balanceBasis: trialBalance ? 'period' : undefined});
+        balanceBasis: trialBalance ? 'period' : undefined,
+        bank: bank ? {accountId, opening: opening.trim(), closing: closing.trim(), signPolicy:'cash_increase_positive'} : undefined});
       onPublished();
     } catch (error) {
       setError(error instanceof Error ? error.message : String(error));
@@ -40,8 +46,24 @@ function PublishImport({path, details, onPublished}: {path: string; details: Bat
   }
   return <form className="stack" onSubmit={event=>{event.preventDefault();void publish();}}>
     <h5>{l('نشر مجموعة البيانات','Publish dataset')}</h5>
+    {bank && <div className="form-grid">
+      <label className="form-field">{l('الحساب البنكي','Bank account')}
+        <select required disabled={busy} value={accountId} onChange={event=>{setAccountId(event.target.value);setConfirmed(false);}}>
+          <option value="">{l('اختر الحساب','Choose account')}</option>
+          {details.bankAccounts.map(account=><option key={account.id} value={account.id}>{account.label} · ••••{account.identifier_last_four}</option>)}
+        </select>
+      </label>
+      <label className="form-field">{l('الرصيد قبل أول حركة في الفترة','Opening balance before the first movement')}
+        <input required inputMode="decimal" maxLength={40} value={opening} disabled={busy}
+          onChange={event=>{setOpening(event.target.value);setConfirmed(false);}}/>
+      </label>
+      <label className="form-field">{l('رصيد الإغلاق في نهاية الفترة','Closing balance at period end')}
+        <input required inputMode="decimal" maxLength={40} value={closing} disabled={busy}
+          onChange={event=>{setClosing(event.target.value);setConfirmed(false);}}/>
+      </label>
+    </div>}
     <label className="row"><input type="checkbox" checked={confirmed} disabled={busy} onChange={event=>setConfirmed(event.target.checked)}/>
-      {trialBalance
+      {bank ? l('أؤكد اكتمال الحركات للفترة وأن زيادة النقد موجبة والنقص سالب.','I confirm the period movements are complete, with positive cash increases and negative cash decreases.') : trialBalance
         ? l('أؤكد اكتمال صفوف ميزان المراجعة للفترة المختارة.','I confirm these are the complete trial-balance rows for the selected period.')
         : l('أؤكد اكتمال قيود دفتر الأستاذ للفترة المختارة.','I confirm these are the complete general-ledger entries for the selected period.')}
     </label>
@@ -49,7 +71,9 @@ function PublishImport({path, details, onPublished}: {path: string; details: Bat
       <input minLength={8} maxLength={500} required disabled={busy} value={reason} onChange={event=>setReason(event.target.value)}/>
     </label>
     {error && <Notice tone="danger">{error}</Notice>}
-    <Button type="submit" disabled={busy || !confirmed || reason.trim().length < 8}>{l('نشر الإصدار وتثبيته','Publish and lock version')}</Button>
+    <Button type="submit" disabled={busy || !confirmed || reason.trim().length < 8 || bank && (!accountId || !opening.trim() || !closing.trim())}>
+      {l('نشر الإصدار وتثبيته','Publish and lock version')}
+    </Button>
   </form>;
 }
 
@@ -169,6 +193,10 @@ export function StagedImports({path, selected, onSelect, revision}: {
         row={row} fields={details.fields} onSaved={()=>{setSelectedRow('');setReload(value=>value+1);}}/>}
       {details.publishable && <PublishImport key={quality.id} path={path+'/'+selected+'/publish'} details={details}
         onPublished={()=>{setSelectedRow('');setReload(value=>value+1);}}/>}
+      {details.editable && details.dataType.startsWith('bank_') && !details.bankAccounts.length &&
+        <Notice>{l('أضف حسابًا بنكيًا بعملة الفترة قبل نشر الدفعة.','Add a bank account in the period currency before publishing this batch.')}</Notice>}
+      {details.editable && details.dataType.startsWith('bank_') && quality.records_read > 1000 &&
+        <Notice>{l('الحد الحالي للنشر البنكي هو 1000 حركة لكل جهة.','Bank publication currently supports up to 1000 movements per side.')}</Notice>}
     </>}
   </section>;
 }

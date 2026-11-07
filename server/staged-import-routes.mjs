@@ -6,6 +6,8 @@ import {bulk, insert} from './financial-routes.mjs';
 import {previewMapping} from './parser/field-mapping.mjs';
 import {rowContext, stagedVersion, writeQuality} from './staged-imports.mjs';
 import {assertPublishable, materializeImport} from './import-publication.mjs';
+import {bankPublicationDetails, isBankImport} from './bank-publication.mjs';
+import {bankAmount} from './bank-core.mjs';
 
 const correctionSchema = z.object({
   rowId: z.uuid(), requestKey: z.uuid(), expectedVersion: z.number().int().min(0),
@@ -16,6 +18,10 @@ const correctionSchema = z.object({
 const publicationSchema = z.object({
   qualityRunId: z.uuid(), confirmation: z.literal(true), balanceBasis: z.literal('period').optional(),
   reason: z.string().trim().min(8).max(500),
+  bank: z.object({
+    accountId: z.uuid(), opening: z.string().max(40), closing: z.string().max(40),
+    signPolicy: z.literal('cash_increase_positive'),
+  }).strict().optional(),
 }).strict();
 
 async function batchAccess(connection, tenant, entity, id, HttpError, lock = false) {
@@ -126,11 +132,18 @@ export function mountStagedImportRoutes(router, {scoped, audit, result, HttpErro
           ORDER BY severity,created_at,id LIMIT 100
         `, [t, e, quality.id]);
         const rows = await rowsFor(connection, t, e, batchId, 25, offset);
+        const bank = isBankImport(batch.data_type);
+        const bankAccounts = bank ? (await connection.query(`
+          SELECT id,label,identifier_last_four FROM mizan.bank_accounts
+          WHERE tenant_id=$1 AND entity_id=$2 AND currency_code=$3 AND active
+            AND mizan.has_permission($1,$2,$4,'imports.manage',id)
+          ORDER BY label,id LIMIT 100
+        `, [t, e, batch.currency_code, req.principal.id])).rows : [];
         return {
           id: batchId, currencyCode: batch.currency_code, editable: batch.status === 'needs_review' && batch.period_status === 'open',
-          status: batch.status, dataType: batch.data_type,
+          status: batch.status, dataType: batch.data_type, bankAccounts,
           publishable: batch.status === 'needs_review' && batch.period_status === 'open'
-            && ['trial_balance','general_ledger'].includes(batch.data_type) && quality.records_read > 0
+            && (!bank || quality.records_read <= 1000 && bankAccounts.length > 0) && quality.records_read > 0
             && quality.records_read === quality.accepted && !quality.has_blockers,
           fields: batch.required_columns.map(item => item.field), quality, issues,
           rows: rows.map(row => ({id: row.id, rowNumber: row.rowNumber, values: row.values,
@@ -154,26 +167,44 @@ export function mountStagedImportRoutes(router, {scoped, audit, result, HttpErro
         if (!quality || quality.id !== data.qualityRunId) {
           throw new HttpError(409, 'IMPORT_VALIDATION_CHANGED', 'Reload the latest validation before publishing');
         }
+        const bankImport = isBankImport(batch.data_type);
+        if (bankImport !== Boolean(data.bank)) {
+          throw new HttpError(422, 'BANK_BALANCES_REQUIRED', 'Bank publication requires a bank account and explicit balances');
+        }
+        if ((batch.data_type === 'trial_balance') !== (data.balanceBasis === 'period')) {
+          throw new HttpError(422, 'IMPORT_BASIS_REQUIRED', 'Confirm period-specific balances for trial-balance publication');
+        }
         if (batch.status === 'published') {
           const {rows: [existing]} = await connection.query(`
             SELECT id FROM mizan.dataset_versions WHERE tenant_id=$1 AND entity_id=$2 AND idempotency_key=$3 AND status='published'
           `, [t, e, hash('publish-staged:' + batchId)]);
+          if (existing && bankImport) {
+            bankAmount(data.bank.opening, batch.minor_units);
+            bankAmount(data.bank.closing, batch.minor_units);
+            const {rows: [same]} = await connection.query(`
+              SELECT bank_account_id=$4 AND opening_balance=$5::numeric AND closing_balance=$6::numeric
+                AND sign_policy=$7 AND mizan.has_permission($1,$2,$8,'imports.manage',bank_account_id) AS matches
+              FROM mizan.published_bank_balances WHERE tenant_id=$1 AND entity_id=$2 AND id=$3
+            `, [t,e,existing.id,data.bank.accountId,data.bank.opening,data.bank.closing,data.bank.signPolicy,req.principal.id]);
+            if (!same?.matches) throw new HttpError(409, 'BANK_PUBLICATION_CHANGED', 'This batch was published with a different bank account or balances');
+          }
           if (existing) return {datasetId: existing.id, reused: true};
         }
         if (batch.status !== 'needs_review' || batch.period_status !== 'open') {
           throw new HttpError(409, 'IMPORT_NOT_EDITABLE', 'Publication requires a review batch in an open period');
         }
-        if ((batch.data_type === 'trial_balance') !== (data.balanceBasis === 'period')) {
-          throw new HttpError(422, 'IMPORT_BASIS_REQUIRED', 'Confirm period-specific balances for trial-balance publication');
-        }
         const rows = await rowsFor(connection, t, e, batchId, 5000, 0);
         assertPublishable(batch, rows, quality, HttpError);
+        const scope = {tenant_id: t, entity_id: e};
+        const bank = data.bank && await bankPublicationDetails(connection, {
+          scope, batch, rows, bank:data.bank, actor:req.principal.id, HttpError,
+        });
         const datasetId = await materializeImport(connection, {
-          scope: {tenant_id: t, entity_id: e}, batch, rows, quality, actor: req.principal.id,
-          session: req.principal.sessionId, basis: data.balanceBasis ?? 'not_applicable', HttpError,
+          scope, batch, rows, quality, actor: req.principal.id, bank,
+          session: req.principal.sessionId, basis: bank ? 'period' : data.balanceBasis ?? 'not_applicable', HttpError,
         });
         await audit(connection, req, t, e, 'import.published', 'dataset', datasetId, data.reason,
-          {batchId, qualityRunId: quality.id, rows: rows.length, dataType: batch.data_type});
+          {batchId, qualityRunId: quality.id, rows: rows.length, dataType: batch.data_type, bankAccountId:bank?.accountId ?? null});
         return {datasetId, reused: false};
       }, {fresh: true}));
     } catch (error) { next(error); }

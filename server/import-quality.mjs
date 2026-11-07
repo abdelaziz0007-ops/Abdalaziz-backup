@@ -18,6 +18,8 @@ export function checkImportRows(rows, dataType, period) {
   const flag = (row, code, message) => issues.push({rowNumber: row?.rowNumber, code, message, severity: 'blocking'});
   const identities = new Map();
   const journals = new Map();
+  const bank = ['bank_statement','bank_ledger'].includes(dataType);
+  let previousDate = period.start_date;
 
   for (const row of included) {
     const {values} = row;
@@ -31,6 +33,11 @@ export function checkImportRows(rows, dataType, period) {
     }
     if (values.postingDate && (values.postingDate < period.start_date || values.postingDate > period.end_date)) {
       flag(row, 'DATE_OUTSIDE_PERIOD', 'Posting date is outside the selected accounting period');
+    }
+    if (bank && values.postingDate) {
+      if (values.postingDate < previousDate) flag(row, 'BANK_DATE_ORDER', 'Bank rows must be ordered by posting date');
+      previousDate = values.postingDate;
+      if (units(row, 'signedAmount') === 0n) flag(row, 'BANK_ZERO_MOVEMENT', 'A bank movement cannot be zero');
     }
     if (dataType === 'trial_balance' && !classifications.includes(values.classification)) {
       flag(row, 'CLASSIFICATION_REQUIRED', 'A supported account classification is required');

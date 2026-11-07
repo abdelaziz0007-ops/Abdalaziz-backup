@@ -41,7 +41,7 @@ try{
       mizan.accounts,mizan.trial_balance_rows,mizan.ledger_entries,mizan.mapping_versions,mizan.report_line_items,mizan.account_mappings,
       mizan.formula_versions,mizan.output_versions,mizan.output_datasets,mizan.report_lines,mizan.report_line_sources,
       mizan.metric_results,mizan.validation_results TO mizan_api_v1;
-      GRANT SELECT,INSERT ON mizan.bank_accounts,mizan.bank_transactions,mizan.book_transactions,
+      GRANT SELECT,INSERT ON mizan.bank_accounts,mizan.bank_transactions,mizan.book_transactions,mizan.published_bank_balances,
       mizan.reconciliations,mizan.match_groups,mizan.match_group_members TO mizan_api_v1;
       GRANT SELECT ON mizan.allocations,mizan.matching_rule_versions TO mizan_api_v1;
       GRANT SELECT,INSERT ON mizan.reconciling_items,mizan.reconciliation_items,mizan.attachments,mizan.proposed_entries,mizan.proposed_entry_lines TO mizan_api_v1;

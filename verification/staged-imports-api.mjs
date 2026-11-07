@@ -7,10 +7,12 @@ import express from 'express';
 import {database} from '../server/database.mjs';
 import {insert} from '../server/financial-routes.mjs';
 import {hash} from '../server/financial-core.mjs';
+import {encryptField} from '../server/financial-storage.mjs';
 import {parseCsvTable, TableInputError} from '../server/parser/tabular-core.mjs';
 import {previewMapping} from '../server/parser/field-mapping.mjs';
 import {mountSourcePreviewRoute} from '../server/source-preview-routes.mjs';
 import {mountStagedImportRoutes} from '../server/staged-import-routes.mjs';
+import {mountPublishedBankRoutes} from '../server/published-bank-routes.mjs';
 
 const {branch} = JSON.parse(await readFile('.neon', 'utf8'));
 assert.equal(branch, 'codex-backend-completion');
@@ -44,6 +46,8 @@ try {
     JOIN mizan.currencies c ON c.code=s.currency_code
     WHERE u.email LIKE 'synthetic-%@example.invalid' AND u.mfa_enabled AND p.status='open'
       AND mizan.has_permission(p.tenant_id,p.entity_id,u.id,'imports.manage')
+      AND mizan.has_permission(p.tenant_id,p.entity_id,u.id,'reports.view')
+      AND mizan.has_permission(p.tenant_id,p.entity_id,u.id,'outputs.prepare')
     ORDER BY p.created_at DESC LIMIT 1
   `);
   assert(fixture, 'Run financial-api verification on the isolated branch first');
@@ -82,7 +86,7 @@ try {
       if (tenant !== t || entity !== e) throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'Out of scope');
       req.principal = {id: actor, sessionId};
       const {rows: [access]} = await connection.query('SELECT mizan.has_permission($1,$2,$3,$4) AS allowed', [t,e,actor,permission]);
-      assert(access.allowed);
+      if (permission) assert(access.allowed);
       await connection.query('SAVEPOINT route_request');
       try { return await callback(connection); }
       catch (error) { await connection.query('ROLLBACK TO route_request'); throw error; }
@@ -94,6 +98,7 @@ try {
     result: (_req, res, data, status = 200) => res.status(status).json(data),
   };
   mountStagedImportRoutes(app, dependencies);
+  mountPublishedBankRoutes(app, dependencies);
   mountSourcePreviewRoute(app, {...dependencies, configured: () => true,
     storage: {read: async key => Buffer.from(sources.get(key))},
     parse: async (bytes, options) => {
@@ -200,8 +205,59 @@ try {
   assert.equal(journal.protected, true);
   passed.push('Balanced ledger publishes typed debit and credit rows with encrypted descriptions');
 
+  const bankAccount = randomUUID();
+  const {rows: [bankLedgerAccount]} = await connection.query('SELECT id FROM mizan.accounts WHERE tenant_id=$1 AND entity_id=$2 AND code=$3',[t,e,asset]);
+  await insert(connection, 'bank_accounts', {...scope, id:bankAccount, label:'Rollback bank',
+    identifier_ciphertext:encryptField('synthetic', t+':'+e+':'+bankAccount), identifier_last_four:'0000',
+    ledger_account_id:bankLedgerAccount.id,currency_code:fixture.currency_code});
+  async function bankDataset(dataType, marker, closing) {
+    const bankSource = await fixtureSource('id,date,reference,amount,running\n'
+      + marker+'1,'+fixture.start_date+',RX,10,110\n'+marker+'2,'+fixture.start_date+',RY,-2,108\n');
+    const bankPreview = '/source-files/' + bankSource + '/preview';
+    const template = await request(bankPreview, {mapping:{periodId,sheetName:'CSV',headerRow:1,dataType,
+      mapping:{rowId:1,postingDate:2,reference:3,signedAmount:4,runningBalance:5}},
+      saveTemplate:{requestKey:randomUUID(),name:'Rollback bank template'}});
+    const stagedBank = await request(bankPreview, {template:{id:template.savedTemplate.id,periodId},stageImport:true}, 201);
+    const bankPath = '/staged-imports/' + stagedBank.staged.batchId;
+    const bankReview = await request(bankPath);
+    const input = {qualityRunId:bankReview.quality.id,confirmation:true,reason:'Reviewed complete bank period',
+      bank:{accountId:bankAccount,opening:'100',closing,signPolicy:'cash_increase_positive'}};
+    assert.equal((await request(bankPath+'/publish',{...input,bank:{...input.bank,opening:'101'}},422)).code,'BANK_RUNNING_BALANCE_MISMATCH');
+    assert.equal((await request(bankPath+'/publish',{...input,bank:{...input.bank,closing:'109'}},422)).code,'BANK_CLOSING_BALANCE_MISMATCH');
+    const published = await request(bankPath+'/publish',input);
+    assert.equal((await request(bankPath+'/publish',input)).datasetId,published.datasetId);
+    assert.equal((await request(bankPath+'/publish',{...input,bank:{...input.bank,closing:'109'}},409)).code,'BANK_PUBLICATION_CHANGED');
+    const table = dataType==='bank_statement' ? 'bank_transactions' : 'book_transactions';
+    const {rows: [totals]} = await connection.query(`
+      SELECT count(*)::int AS rows, sum(signed_amount)::text AS movement,
+        bool_and(reference_ciphertext IS NOT NULL AND bank_account_id=$2) AS linked
+      FROM mizan.${table} WHERE dataset_id=$1
+    `, [published.datasetId,bankAccount]);
+    assert.deepEqual({rows:totals.rows,movement:Number(totals.movement),linked:totals.linked},{rows:2,movement:8,linked:true});
+    return published.datasetId;
+  }
+  const bankDatasetId = await bankDataset('bank_statement','S','108');
+  const bookDatasetId = await bankDataset('bank_ledger','L','108');
+  passed.push('Bank statement and ledger publication verify exact balances, account linkage and immutable replay');
+
+  const available=await request('/published-bank-datasets');
+  assert(available.some(item=>item.id===bankDatasetId));
+  assert(available.some(item=>item.id===bookDatasetId));
+  const pair={bankDatasetId,bookDatasetId,confirmation:true};
+  await request('/reconciliations/from-published',{...pair,bookDatasetId:bankDatasetId},404);
+  const draft=await request('/reconciliations/from-published',pair,201);
+  assert.equal((await request('/reconciliations/from-published',pair)).id,draft.id);
+  const {rows:[reconciliation]}=await connection.query(`
+    SELECT r.bank_complete,r.book_complete,v.status,
+      (SELECT count(*)::int FROM mizan.match_groups WHERE reconciliation_id=r.id) AS suggestions
+    FROM mizan.reconciliations r JOIN mizan.output_versions v ON v.id=r.output_version_id WHERE r.id=$1
+  `,[draft.id]);
+  assert.deepEqual(reconciliation,{bank_complete:true,book_complete:true,status:'draft',suggestions:2});
+  passed.push('Published sources create one draft with exact-match suggestions and reject a wrong source type');
+
   await connection.query('ROLLBACK');
   assert.equal((await connection.query('SELECT count(*)::int AS count FROM mizan.import_batches WHERE id=$1',[staged.batchId])).rows[0].count,0);
+  assert.equal((await connection.query('SELECT count(*)::int AS count FROM mizan.dataset_versions WHERE id=ANY($1::uuid[])',[[bankDatasetId,bookDatasetId]])).rows[0].count,0);
   passed.push('Synthetic records completely rolled back and publication uses a restricted database function');
   await writeFile('verification/staged-imports-api.json', JSON.stringify({branch, passed, rolledBack:true,
     fixture:'Synthetic scan evidence, verified-session fixture, source bytes and parser in a rollback-only transaction. Live Docker and antivirus not exercised.'}, null, 2)+'\n');
