@@ -33,7 +33,7 @@ const optional = {
   bank_statement: ['reference', 'description', 'runningBalance'],
   bank_ledger: ['reference', 'description', 'runningBalance'],
 } as const;
-const labels: Record<string, [string, string]> = {
+export const sourceFieldLabels: Record<string, [string, string]> = {
   accountCode: ['رمز الحساب', 'Account code'], accountName: ['اسم الحساب', 'Account name'],
   closingBalance: ['الرصيد الختامي', 'Closing balance'], openingBalance: ['الرصيد الافتتاحي', 'Opening balance'],
   classification: ['التصنيف', 'Classification'], debitMovement: ['الحركة المدينة', 'Debit movement'],
@@ -44,8 +44,8 @@ const labels: Record<string, [string, string]> = {
   reference: ['المرجع', 'Reference'], runningBalance: ['الرصيد بعد الحركة', 'Running balance'],
 };
 
-export function SourcePreview({path, templatesPath, name, csv, periods}: {
-  path: string; templatesPath: string; name: string; csv: boolean; periods: Period[];
+export function SourcePreview({path, templatesPath, name, csv, periods, onStaged}: {
+  path: string; templatesPath: string; name: string; csv: boolean; periods: Period[]; onStaged: (batchId: string) => void;
 }) {
   const l = useLanguage();
   const [workbook, setWorkbook] = useState<Workbook | null>(null);
@@ -61,6 +61,7 @@ export function SourcePreview({path, templatesPath, name, csv, periods}: {
   const [thousandsSeparator, setThousands] = useState('');
   const [dateFormat, setDateFormat] = useState('YYYY-MM-DD');
   const [busy, setBusy] = useState(false);
+  const [templatePreview, setTemplatePreview] = useState('');
   const [error, setError] = useState('');
   const [templates, setTemplates] = useState<Template[]>([]);
   const [templateId, setTemplateId] = useState('');
@@ -71,7 +72,7 @@ export function SourcePreview({path, templatesPath, name, csv, periods}: {
   const sheet = workbook?.sheets.find(item => item.name === sheetName);
   const header = sheet?.rows.find(row => row.rowNumber === headerRow);
   const fields = [...required[dataType], ...optional[dataType]];
-  const label = (field: string) => labels[field] ? l(...labels[field]) : field;
+  const label = (field: string) => sourceFieldLabels[field] ? l(...sourceFieldLabels[field]) : field;
   const matchingTemplates = templates.filter(template => template.source_format === (csv ? 'csv' : 'xlsx'));
   useEffect(() => {
     let live = true;
@@ -137,9 +138,17 @@ export function SourcePreview({path, templatesPath, name, csv, periods}: {
     } catch (reason) { showError(reason); } finally { setBusy(false); }
   }
   async function applyTemplate() {
-    setBusy(true); setError(''); setMapped(null); setWorkbook(null);
+    setBusy(true); setError(''); setMapped(null); setWorkbook(null); setTemplatePreview('');
     try {
       setMapped(await backend<MappedResponse>(path, {previewRows, template: {id: templateId, periodId}}));
+      setTemplatePreview(JSON.stringify([templateId, periodId]));
+    } catch (reason) { showError(reason); } finally { setBusy(false); }
+  }
+  async function stage() {
+    setBusy(true); setError('');
+    try {
+      const response = await backend<{staged: {batchId: string}}>(path, {template: {id: templateId, periodId}, stageImport: true});
+      onStaged(response.staged.batchId);
     } catch (reason) { showError(reason); } finally { setBusy(false); }
   }
 
@@ -250,6 +259,10 @@ export function SourcePreview({path, templatesPath, name, csv, periods}: {
         {issue.severity==='blocking'?l('خطأ','Error'):l('تحذير','Warning')} · {issue.message}
       </li>)}</ul>}
       {mapped.savedTemplate && <p role="status">{l('حُفظ القالب','Template saved')} · {mapped.savedTemplate.name} (v{mapped.savedTemplate.version})</p>}
+      {!workbook && templatePreview === JSON.stringify([templateId, periodId]) &&
+        <Button type="button" disabled={busy} onClick={()=>void stage()}>
+          {l('حفظ جميع صفوف الورقة للمراجعة','Stage all worksheet rows for review')}
+        </Button>}
       {workbook && <form className="stack" onSubmit={event => {event.preventDefault(); void mapRows(true);}}>
         <label className="form-field">{l('اسم القالب','Template name')}
           <input value={templateName} maxLength={120} required disabled={busy} onChange={event => setTemplateName(event.target.value)}/>

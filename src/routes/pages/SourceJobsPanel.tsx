@@ -4,6 +4,7 @@ import {Button} from '@/components/ui/Button';
 import {DataTable} from '@/components/ui/DataTable';
 import {Notice,useLanguage} from '@/components/WorkspaceUI';
 import {SourcePreview} from './SourcePreview';
+import {StagedImports} from './StagedImports';
 interface Source{id:string;original_name:string;media_type:string;byte_size:string;scan_status:string;scan_job_id:string|null}
 interface Period{id:string;start_date:string;end_date:string;version:number}
 interface Job{id:string;status:string;progress:string;attempt_count:number;error_code:string|null;cancel_requested_at:string|null;attempts:{attempt_number:number;error_code:string|null;finished_at:string}[]}
@@ -11,6 +12,7 @@ export function SourceJobsPanel({tenant,entity,periods}:{tenant:string;entity:st
  const l=useLanguage(),base=`/tenants/${tenant}/entities/${entity}`,[sources,setSources]=useState<Source[]>([]),[selected,setSelected]=useState(''),[job,setJob]=useState<Job|null>(null),[file,setFile]=useState<File|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState(''),[revision,setRevision]=useState(0),[reason,setReason]=useState('');
  const nonce=useRef<{signature:string;key:string}|null>(null),[allowed,setAllowed]=useState(true);
  const [previewId,setPreviewId]=useState('');
+ const [batchId,setBatchId]=useState(''),[batchRevision,setBatchRevision]=useState(0);
  const previewable=sources.filter(source=>source.scan_status==='clean'&&source.scan_job_id);
  const previewSource=previewable.find(source=>source.id===previewId);
  const state=(value:string)=>({quarantined:l('محجور بانتظار الفحص','Quarantined pending scan'),clean:l('فحص ناجح','Scan passed'),infected:l('ملف مصاب','Infected file'),rejected:l('مرفوض','Rejected'),queued:l('في الانتظار','Queued'),running:l('قيد الفحص','Scanning'),succeeded:l('اكتملت المهمة','Completed'),failed:l('تعذّرت المهمة','Failed'),cancelled:l('أُلغيت المهمة','Cancelled')}[value]??value);
@@ -39,7 +41,9 @@ export function SourceJobsPanel({tenant,entity,periods}:{tenant:string;entity:st
    </select>
   </label>}
   {previewSource&&<SourcePreview key={previewSource.id} path={base+'/source-files/'+previewSource.id+'/preview'}
-   templatesPath={base+'/import-templates'} name={previewSource.original_name} csv={previewSource.media_type==='text/csv'} periods={periods}/>}
+   templatesPath={base+'/import-templates'} name={previewSource.original_name} csv={previewSource.media_type==='text/csv'} periods={periods}
+   onStaged={id=>{setBatchId(id);setBatchRevision(value=>value+1);}}/>}
+  <StagedImports path={base+'/staged-imports'} selected={batchId} onSelect={setBatchId} revision={batchRevision}/>
   {job&&<div className="stack" aria-label={l('تفاصيل مهمة الفحص','Scan job details')}><p role="status">{state(job.status)} · {l('المحاولات','Attempts')}: <bdi>{job.attempt_count} / 3</bdi></p>{job.error_code&&job.status==='failed'&&<Notice tone="danger">{job.error_code==='SCANNER_NOT_CONFIGURED'?l('خدمة فحص الملفات غير مهيأة. بقي المصدر في الحجر ولم يبدأ تحليل الملف.','File scanning is not configured. The source remains quarantined; file analysis has not started.'):job.error_code==='MALWARE_DETECTED'?l('اكتُشف محتوى ضار. لا يمكن استخدام هذا المصدر.','Malware was detected. This source cannot be used.'):l('تعذّر إكمال المهمة. راجع إعدادات الخدمة قبل إعادة المحاولة.','The job could not complete. Check the service configuration before retrying.')}</Notice>}
    {job.cancel_requested_at&&job.status==='running'&&<p>{l('طُلب الإلغاء؛ لن تُقبل نتيجة متأخرة للنشر.','Cancellation requested; a late result cannot publish the source.')}</p>}
    {(['queued','running'].includes(job.status)||job.status==='failed'&&job.attempt_count<3&& !['MALWARE_DETECTED','SOURCE_UNAVAILABLE'].includes(job.error_code??''))&&<><label className="form-field">{l('سبب إجراء مهمة الفحص','Scan job action reason')}<input aria-label={l('سبب إجراء مهمة الفحص','Scan job action reason')} minLength={8} maxLength={500} value={reason} onChange={e=>setReason(e.target.value)}/></label><Button disabled={busy||reason.trim().length<8} onClick={()=>void control(job.status==='failed'?'retry':'cancel')}>{job.status==='failed'?l('إعادة محاولة الفحص','Retry scan'):l('إلغاء مهمة الفحص','Cancel scan job')}</Button></>}

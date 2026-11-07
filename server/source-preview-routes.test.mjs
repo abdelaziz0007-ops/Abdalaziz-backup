@@ -126,6 +126,20 @@ it('reads binary-framed input in the parser process and retains exact mapped amo
   expect(JSON.parse(child.stdout).data.rows[0].values.closingBalance).toBe('9007199254740993.001');
 });
 
+it('stages rows beyond the preview limit and rejects oversized worksheets without returning a sample', () => {
+  const script = fileURLToPath(new URL('./parser/preview-process.mjs', import.meta.url));
+  const header = {format: 'csv', importSheet: 'CSV', previewRows: 25, mapping: {
+    sheetName: 'CSV', headerRow: 1, dataType: 'trial_balance', mapping: mapping.mapping,
+  }};
+  const run = count => JSON.parse(spawnSync(process.execPath, [script], {
+    timeout: 5000, encoding: 'utf8', maxBuffer: 8 * 1024 * 1024,
+    input: JSON.stringify(header) + '\ncode,name,balance\n' +
+      Array.from({length: count}, (_, index) => (index + 1) + ',Bank,1.00\n').join(''),
+  }).stdout);
+  expect(run(300).data.rows).toHaveLength(300);
+  expect(run(5000)).toMatchObject({error: {code: 'IMPORT_ROW_LIMIT'}});
+});
+
 function useRealMapping(storage, parse, text) {
   storage.read.mockImplementation(async () => Buffer.from(text));
   parse.mockImplementation(async (bytes, options) => {

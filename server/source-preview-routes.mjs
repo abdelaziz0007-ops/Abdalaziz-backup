@@ -1,6 +1,7 @@
 import {z} from 'zod';
 import {previewConfigured, runIsolatedPreview} from './parser/isolated-preview.mjs';
 import {hash} from './financial-core.mjs';
+import {stageImport} from './staged-imports.mjs';
 
 const mappingSchema = z.object({
   periodId: z.uuid(),
@@ -19,12 +20,14 @@ const requestSchema = z.object({
   previewRows: z.number().int().min(1).max(200).default(50),
   mapping: mappingSchema.optional(),
   template: z.object({id: z.uuid(), periodId: z.uuid()}).strict().optional(),
+  stageImport: z.literal(true).optional(),
   saveTemplate: z.object({
     requestKey: z.uuid(), name: z.string().trim().min(1).max(120),
     predecessorId: z.uuid().nullable().default(null),
   }).strict().optional(),
-}).strict().refine(value => !(value.template && value.mapping) && (!value.saveTemplate || value.mapping), {
-  message: 'Use either a saved template or explicit column mapping. Saving requires explicit mapping.',
+}).strict().refine(value => !(value.template && value.mapping) && (!value.saveTemplate || value.mapping)
+  && (!value.stageImport || value.template), {
+  message: 'Use either a saved template or explicit column mapping. Staging requires a saved template.',
 });
 const formats = new Map([
   ['text/csv', 'csv'],
@@ -165,13 +168,16 @@ export function mountSourcePreviewRoute(router, {scoped, audit, result, HttpErro
         let currency;
         if (mapping) {
           const {rows: [periodCurrency]} = await connection.query(`
-            SELECT s.currency_code, c.minor_units
+            SELECT s.currency_code, c.minor_units, p.status, p.start_date::text, p.end_date::text
             FROM mizan.accounting_periods p
             JOIN mizan.entity_settings_versions s ON s.id=p.settings_version_id AND s.entity_id=p.entity_id AND s.tenant_id=p.tenant_id
             JOIN mizan.currencies c ON c.code=s.currency_code
             WHERE p.tenant_id=$1 AND p.entity_id=$2 AND p.id=$3
           `, [tenantId, entityId, mapping.periodId]);
           if (!periodCurrency) throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'Period not found in this scope');
+          if (options.stageImport && periodCurrency.status !== 'open') {
+            throw new HttpError(409, 'PERIOD_NOT_OPEN', 'Import requires an open period');
+          }
           currency = periodCurrency;
         }
         return callback(connection, {source, format, currency, mapping, delimiter, requiredHeaders});
@@ -207,7 +213,8 @@ export function mountSourcePreviewRoute(router, {scoped, audit, result, HttpErro
             },
           };
           const previewRows = options.template ? Math.max(options.previewRows, mapping.headerRow) : options.previewRows;
-          parsed = await parse(bytes, {previewRows, delimiter, format, mapping: mappedOptions});
+          parsed = await parse(bytes, {previewRows, delimiter, format, mapping: mappedOptions,
+            importSheet: options.stageImport ? mapping.sheetName : undefined});
         } finally {
           bytes.fill(0);
         }
@@ -219,11 +226,25 @@ export function mountSourcePreviewRoute(router, {scoped, audit, result, HttpErro
           }
           throw new HttpError(code === 'PREVIEW_RUNTIME_UNAVAILABLE' ? 503 : 422, code, message);
         }
-        const savedTemplate = await checkAccess(async (connection, current) => {
+        const completed = await checkAccess(async (connection, current) => {
           if (current.source.sha256 !== source.sha256 || current.source.scan_job_id !== source.scan_job_id
               || current.source.scanned_at !== source.scanned_at || current.currency?.currency_code !== currency?.currency_code
               || current.currency?.minor_units !== currency?.minor_units) {
             throw new HttpError(409, 'PREVIEW_SOURCE_CHANGED', 'Source or period changed during preview');
+          }
+          if (options.stageImport) {
+            await connection.query('SELECT pg_advisory_xact_lock(hashtextextended($1,42))', [entityId]);
+            const {rows: [period]} = await connection.query(
+              'SELECT status FROM mizan.accounting_periods WHERE tenant_id=$1 AND entity_id=$2 AND id=$3 FOR UPDATE',
+              [tenantId, entityId, mapping.periodId],
+            );
+            const staged = await stageImport(connection, {
+              tenantId, entityId, sourceId, digest: source.sha256, templateId: options.template.id,
+              mapping, parsed: parsed.data, period: {...currency, status: period?.status}, actorId: req.principal.id, HttpError,
+            });
+            if (!staged.reused) await audit(connection, req, tenantId, entityId, 'import.staged', 'import_batch',
+              staged.batchId, 'Complete worksheet staged for review', {sourceId, rows: staged.recordsRead});
+            return {staged};
           }
           let saved = null;
           if (options.saveTemplate) {
@@ -236,9 +257,11 @@ export function mountSourcePreviewRoute(router, {scoped, audit, result, HttpErro
           }
           await audit(connection, req, tenantId, entityId, 'source.previewed', 'source_file', sourceId,
             'Read-only import preview', {mapped: Boolean(mapping), templateId: options.template?.id ?? null});
-          return saved;
+          return {savedTemplate: saved};
         });
-        result(req, res, {sourceId, currencyCode: currency?.currency_code ?? null, preview: parsed.data, savedTemplate});
+        const payload = {sourceId, currencyCode: currency?.currency_code ?? null, ...completed};
+        if (!options.stageImport) payload.preview = parsed.data;
+        result(req, res, payload, options.stageImport && !completed.staged.reused ? 201 : 200);
       } finally {
         previewRunning = false;
       }

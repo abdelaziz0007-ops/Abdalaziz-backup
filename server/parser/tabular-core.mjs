@@ -5,12 +5,15 @@ const fail=(code,message)=>{throw new TableInputError(code,message);};
 export const tableLimits=Object.freeze({bytes:50*1024*1024,rows:100000,columns:256,field:65536,previewCharacters:512*1024,zipEntries:10000,expandedBytes:200*1024*1024,compressionRatio:100,sharedStrings:200000,sharedStringBytes:32*1024*1024});
 const validText=text=>{if(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\ufffd]/u.test(text))fail('INVALID_TEXT','Unsupported control or replacement character');return text;};
 function utf8(bytes){try{return validText(new TextDecoder('utf-8',{fatal:true}).decode(bytes));}catch(e){if(e instanceof TableInputError)throw e;fail('INVALID_ENCODING','Use valid UTF-8 source text');}}
-export function parseCsvTable(bytes,{delimiter=',',previewRows=50}={}){
+const stagingRowLimit = 5000;
+export function parseCsvTable(bytes,{delimiter=',',previewRows=50,importSheet}={}){
  if(!Buffer.isBuffer(bytes)||bytes.length<1||bytes.length>tableLimits.bytes)fail('FILE_SIZE_LIMIT','Source size is outside the supported limit');
  if(![',',';','\t'].includes(delimiter)||!Number.isInteger(previewRows)||previewRows<1||previewRows>200)fail('INVALID_PREVIEW_OPTIONS','Select a supported delimiter and preview row limit');
+ if(importSheet!==undefined&&importSheet!=='CSV')fail('INVALID_MAPPING','Select the CSV worksheet');
+ const limit=importSheet?stagingRowLimit:previewRows;
  const text=utf8(bytes).replace(/^\ufeff/,''),rows=[];let values=[],value='',quoted=false,closed=false,rowNumber=1,startLine=1,line=1,count=0,maxColumns=0,hasData=false,previewCharacters=0;
- const cell=()=>{if(value.length>tableLimits.field)fail('FIELD_SIZE_LIMIT','A source field exceeds 64 KiB');if(rows.length<previewRows){previewCharacters+=value.length;if(previewCharacters>tableLimits.previewCharacters)fail('PREVIEW_SIZE_LIMIT','Reduce the preview row count for large text fields');}values.push({text:value,kind:'text'});if(values.length>tableLimits.columns)fail('COLUMN_LIMIT','Source exceeds 256 columns');value='';closed=false;};
- const row=()=>{cell();count++;if(count>tableLimits.rows)fail('ROW_LIMIT','Source exceeds 100000 rows');maxColumns=Math.max(maxColumns,values.length);if(rows.length<previewRows)rows.push({rowNumber,startLine,cells:values});values=[];rowNumber++;startLine=line+1;hasData=false;};
+ const cell=()=>{if(value.length>tableLimits.field)fail('FIELD_SIZE_LIMIT','A source field exceeds 64 KiB');if(rows.length<limit){previewCharacters+=value.length;if(previewCharacters>tableLimits.previewCharacters)fail(importSheet?'IMPORT_SIZE_LIMIT':'PREVIEW_SIZE_LIMIT',importSheet?'The worksheet exceeds the staging text limit':'Reduce the preview row count for large text fields');}values.push({text:value,kind:'text'});if(values.length>tableLimits.columns)fail('COLUMN_LIMIT','Source exceeds 256 columns');value='';closed=false;};
+ const row=()=>{cell();count++;if(count>tableLimits.rows)fail('ROW_LIMIT','Source exceeds 100000 rows');if(importSheet&&count>limit)fail('IMPORT_ROW_LIMIT','The worksheet exceeds 5000 rows');maxColumns=Math.max(maxColumns,values.length);if(rows.length<limit)rows.push({rowNumber,startLine,cells:values});values=[];rowNumber++;startLine=line+1;hasData=false;};
  for(let i=0;i<text.length;i++){
   const ch=text[i];hasData=true;
   if(quoted){if(ch==='"'){if(text[i+1]==='"'){value+='"';i++;}else{quoted=false;closed=true;}}else if(ch==='\r'||ch==='\n'){if(ch==='\r'&&text[i+1]==='\n')i++;value+='\n';line++;}else value+=ch;}
@@ -53,7 +56,7 @@ function xml(text,handlers){
 }
 const attribute=(node,name)=>Object.values(node.attributes).find(a=>a.local===name)?.value;
 function columnNumber(reference){const match=/^([A-Z]{1,3})([1-9]\d*)$/.exec(reference??'');if(!match)fail('INVALID_CELL_REFERENCE','A workbook cell reference is invalid');let column=0;for(const ch of match[1])column=column*26+ch.charCodeAt(0)-64;if(column>tableLimits.columns)fail('COLUMN_LIMIT','Source exceeds 256 columns');return {column,row:Number(match[2])};}
-export async function parseXlsxTable(bytes,{previewRows=50}={}){
+export async function parseXlsxTable(bytes,{previewRows=50,importSheet}={}){
  if(!Number.isInteger(previewRows)||previewRows<1||previewRows>200)fail('INVALID_PREVIEW_OPTIONS','Select a supported preview row limit');
  const manifest=inspectWorkbookZip(bytes);
  const part=async name=>{
@@ -75,10 +78,11 @@ export async function parseXlsxTable(bytes,{previewRows=50}={}){
  if(manifest.names.has('xl/sharedStrings.xml')){let text='',inText=false;xml(await part('xl/sharedStrings.xml'),{opentag:n=>{if(n.local==='si')text='';if(n.local==='t')inText=true;},text:v=>{if(inText){text+=v;if(text.length>tableLimits.field)fail('FIELD_SIZE_LIMIT','Shared string exceeds the field limit');}},closetag:n=>{if(n.local==='t')inText=false;if(n.local==='si'){strings.push(text);totalStringBytes+=Buffer.byteLength(text);if(strings.length>tableLimits.sharedStrings||totalStringBytes>tableLimits.sharedStringBytes)fail('SHARED_STRING_LIMIT','Workbook shared strings exceed the limit');}}});}
  const result=[];let totalRows=0,previewCharacters=0;const warnings=[];
  for(const sheet of sheets){
+  const limit=importSheet?(sheet.name===importSheet?stagingRowLimit:0):previewRows;
   if(!/^xl\/worksheets\/[^/]+\.xml$/.test(sheet.path))fail('INVALID_WORKBOOK','Only standard worksheet parts are supported');
   let currentRow=null,cell=null,tag='',rowCount=0,columnCount=0,lastRow=0;const rows=[];
   xml(await part(sheet.path),{opentag:n=>{
-   if(n.local==='row'){const number=attribute(n,'r')===undefined?lastRow+1:Number(attribute(n,'r'));if(!Number.isInteger(number)||number<1||number<=lastRow||number>1048576)fail('INVALID_ROW_REFERENCE','Worksheet rows must have increasing valid references');lastRow=number;currentRow={rowNumber:number,startLine:null,cells:[]};rowCount++;totalRows++;if(totalRows>tableLimits.rows)fail('ROW_LIMIT','Workbook exceeds 100000 rows');}
+   if(n.local==='row'){const number=attribute(n,'r')===undefined?lastRow+1:Number(attribute(n,'r'));if(!Number.isInteger(number)||number<1||number<=lastRow||number>1048576)fail('INVALID_ROW_REFERENCE','Worksheet rows must have increasing valid references');lastRow=number;currentRow={rowNumber:number,startLine:null,cells:[]};rowCount++;totalRows++;if(totalRows>tableLimits.rows)fail('ROW_LIMIT','Workbook exceeds 100000 rows');if(importSheet&&limit&&rowCount>limit)fail('IMPORT_ROW_LIMIT','The worksheet exceeds 5000 rows');}
    if(n.local==='c'){if(!currentRow||cell)fail('INVALID_WORKBOOK','Cell outside a worksheet row');const reference=attribute(n,'r'),ref=reference?columnNumber(reference):{column:currentRow.cells.length+1,row:currentRow.rowNumber};if(ref.column>tableLimits.columns||ref.row!==currentRow.rowNumber||ref.column<=currentRow.cells.length)fail('INVALID_CELL_REFERENCE','Cells must have increasing references in their row');while(currentRow.cells.length<ref.column-1)currentRow.cells.push({text:'',kind:'blank'});cell={column:ref.column,type:attribute(n,'t')||'n',value:'',inline:'',formula:false};}
    if(n.local==='f'&&cell)cell.formula=true;if(cell&&['v','t'].includes(n.local))tag=n.local;
    if(n.local==='hyperlink'&&attribute(n,'id'))fail('EXTERNAL_WORKBOOK_REFERENCE','Linked worksheet content is unsupported');
@@ -93,9 +97,9 @@ export async function parseXlsxTable(bytes,{previewRows=50}={}){
     else if(cell.type==='e')fail('WORKBOOK_ERROR_CELL',`Worksheet ${sheet.name}, row ${currentRow.rowNumber}: source contains an error cell`);
     else if(!['n','str','d'].includes(cell.type))fail('UNSUPPORTED_CELL_TYPE','Unsupported workbook cell type');
     if(kind==='number'&&text&&!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(text))fail('INVALID_CELL_VALUE','Invalid workbook numeric text');
-    if(rows.length<previewRows){previewCharacters+=text.length;if(previewCharacters>tableLimits.previewCharacters)fail('PREVIEW_SIZE_LIMIT','Reduce the preview row count for large text fields');}currentRow.cells.push({text,kind,sourceType:cell.type});columnCount=Math.max(columnCount,cell.column);cell=null;
+    if(rows.length<limit){previewCharacters+=text.length;if(previewCharacters>tableLimits.previewCharacters)fail(importSheet?'IMPORT_SIZE_LIMIT':'PREVIEW_SIZE_LIMIT',importSheet?'The worksheet exceeds the staging text limit':'Reduce the preview row count for large text fields');}currentRow.cells.push({text,kind,sourceType:cell.type});columnCount=Math.max(columnCount,cell.column);cell=null;
    }
-   if(n.local==='row'){if(rows.length<previewRows)rows.push(currentRow);currentRow=null;}
+   if(n.local==='row'){if(rows.length<limit)rows.push(currentRow);currentRow=null;}
   }});result.push({name:sheet.name,rowCount,columnCount,rows});
  }
  return {format:'xlsx',sheets:result,dateSystem,warnings,parserVersion:'tabular-raw-v1'};

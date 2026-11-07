@@ -5,9 +5,11 @@ import {hash} from './financial-core.mjs';
 import {sourceStorage} from './financial-storage.mjs';
 import {insert} from './financial-routes.mjs';
 import {mountSourcePreviewRoute} from './source-preview-routes.mjs';
+import {mountStagedImportRoutes} from './staged-import-routes.mjs';
 export function mountSourceJobRoutes(router,{scoped,audit,result,HttpError}){
  const base='/tenants/:tenantId/entities/:entityId',storage=sourceStorage(),max=50*1024*1024;
  mountSourcePreviewRoute(router,{scoped,audit,result,HttpError,storage});
+ mountStagedImportRoutes(router,{scoped,audit,result,HttpError});
  const missing=()=>new HttpError(404,'RESOURCE_NOT_FOUND','Source or job not found in this scope');
  const failure=e=>e.code==='P0002'?missing():e.code==='54000'?new HttpError(409,'JOB_CAPACITY_REACHED','Workspace processing capacity is full; wait or cancel an existing job'):e;
  router.post(base+'/source-files',async(req,_res,next)=>{

@@ -33,6 +33,14 @@ After reviewing explicitly mapped rows, the user can save the mapping as an inde
 
 The template selector lists the latest version of each template in the current entity. A template binds each mapped field to its header and column position. Renamed, missing or moved mapped columns cause `TEMPLATE_COLUMN_DRIFT` and ask the user to review the mapping. Unmapped columns may be added if the mapped headers remain in place. The user selects a period when applying the template, so amount precision comes from that period.
 
+## Staging and row review
+
+After a template preview, **Stage all worksheet rows for review** reads every data row after the selected header. The import uses the same scan and permission gates as preview and requires an open period. This first staging path supports up to 5,000 physical rows per selected sheet, 512 Ki characters of source text and the existing 8 MiB parser response bound. Requests outside those limits return an error. The batch stays in review until a separate publication workflow is available.
+
+The source bytes remain in encrypted object storage. Original row cells and mapped values are encrypted in the database. A repeat request for the same source, template version and period returns the existing batch. The review panel displays original and current mapped values, blocking issues, warning messages, record counts, and exact before and after totals. Missing amounts are counted separately.
+
+Corrections use the selected template's input format and record the actor, reason and row version. A user can also exclude or reinstate a row. All these actions append a transformation and a fresh quality run. The checks cover duplicate row identities, posting dates outside the period, classifications, trial-balance totals, and the balance of each general-ledger journal. A stale edit asks the user to reload. Apply migration `018_staged_import_corrections.sql` before serving the review endpoints.
+
 ## Evidence and remaining work
 
 `server/parser/tabular-core.test.mjs` and `field-mapping.test.mjs` exercise real generated XLSX ZIP/XML fixtures and raw CSV sources: exact numeric text, scientific notation, locale grouping, multiline source coordinates, calendar/date-system cases, template drift, duplicates, blocking ledger errors, formulas beyond the visible preview, external/active content, malformed XML/ZIP, CRC corruption, lying inflation metadata and preview limits.
@@ -41,4 +49,6 @@ Existing `saxes@5.0.1` is now declared as a direct runtime dependency and existi
 
 `server/source-preview-routes.test.mjs` exercises the HTTP scan gate, permission revocation during processing, period currency precision, and the parser process protocol. It also covers idempotent template saves, appended versions, stale-version conflicts and column drift. These checks use a fixture for database and scanner state. All eight preview and template SQL statements were also prepared and planned with application credentials in a read-only transaction on the Neon test branch. The production path requires Docker and a successful real scan. Docker was unavailable on the development host, so container build and live scan-to-preview acceptance remain pending.
 
-Remaining acceptance includes live scan-to-template verification, full-file normalized ingestion and balanced journal groups, persistent corrections, exclusion reports and before/after totals, asynchronous cancellation and retry, publication, and large-file, concurrency, and security tests.
+The rollback-only Neon test in `verification/staged-imports-api.mjs` covers whole-sheet staging, retry, versioned corrections, preserved originals, exact revalidation and exclusions. It uses synthetic scan evidence and source bytes inside the transaction.
+
+Remaining work includes live scan-to-import verification, publication into typed datasets, bank opening and closing reconciliation, asynchronous cancellation and retry, and large-file, concurrency, and security acceptance.

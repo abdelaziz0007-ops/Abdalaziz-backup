@@ -103,9 +103,10 @@
       "status": "partial",
       "evidence": [
         "server/parser/tabular-core.test.mjs",
-        "server/parser/field-mapping.test.mjs"
+        "server/parser/field-mapping.test.mjs",
+        "verification/staged-imports-api.json"
       ],
-      "remaining": "Raw/derived row preservation and mandatory-field/ledger-side preview checks are tested. Complete normalized GL/bank/TB ingestion, journal balancing and full-file acceptance remain pending."
+      "remaining": "Complete selected sheets can be staged with mapped row values and journal validation. Typed dataset publication and live scan-to-import acceptance remain pending."
     },
     {
       "id": "FR-010",
@@ -122,8 +123,8 @@
       "stage": "M",
       "acceptance": "Blocking errors and warnings are separate; record counts, rejection reasons, and totals before and after exclusions are shown",
       "status": "partial",
-      "evidence": [],
-      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+      "evidence": ["server/import-quality.test.mjs", "verification/staged-imports-api.json"],
+      "remaining": "Review displays blocking issues, warnings, counts and exact totals before and after exclusions. Live acceptance with scanned files and broader quality rules remain pending."
     },
     {
       "id": "FR-012",
@@ -133,9 +134,10 @@
       "status": "partial",
       "evidence": [
         "server/parser/tabular-core.test.mjs",
-        "server/parser/field-mapping.test.mjs"
+        "server/parser/field-mapping.test.mjs",
+        "verification/staged-imports-api.json"
       ],
-      "remaining": "Read-only mapped previews retain originals and field/row errors. Persistent actor/reason corrections, versioned transformations, full recalculation/publication and acceptance remain pending."
+      "remaining": "Scoped draft corrections preserve encrypted originals, append actor and reason history and rerun row and batch validation. Typed output recalculation and live acceptance remain pending."
     },
     {
       "id": "FR-013",

@@ -37,7 +37,7 @@ try{
       GRANT USAGE ON SCHEMA mizan_private TO mizan_scanner_v1;
       GRANT EXECUTE ON FUNCTION mizan_private.claim_scan_job(text),mizan_private.finish_scan_job(uuid,text,text,text,text) TO mizan_scanner_v1;
       GRANT SELECT,INSERT ON mizan.source_files,mizan.import_templates,mizan.import_batches,mizan.source_rows,
-      mizan.row_dispositions,mizan.quality_runs,mizan.quality_issues,mizan.dataset_versions,mizan.dataset_imports,
+      mizan.row_dispositions,mizan.row_transformations,mizan.quality_runs,mizan.quality_issues,mizan.dataset_versions,mizan.dataset_imports,
       mizan.accounts,mizan.trial_balance_rows,mizan.mapping_versions,mizan.report_line_items,mizan.account_mappings,
       mizan.formula_versions,mizan.output_versions,mizan.output_datasets,mizan.report_lines,mizan.report_line_sources,
       mizan.metric_results,mizan.validation_results TO mizan_api_v1;

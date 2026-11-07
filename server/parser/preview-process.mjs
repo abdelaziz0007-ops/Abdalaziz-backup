@@ -31,7 +31,19 @@ try {
   const table = options.format === 'csv'
     ? parseCsvTable(bytes, options)
     : await parseXlsxTable(bytes, options);
-  const data = options.mapping ? previewMapping(table, options.mapping) : table;
+  let data = options.mapping ? previewMapping(table, options.mapping) : table;
+  if (options.importSheet) {
+    const sheet = table.sheets.find(item => item.name === options.importSheet);
+    if (!sheet || !data.completeSourcePreview || !data.rows.length) {
+      throw new TableInputError('IMPORT_INCOMPLETE', 'A complete worksheet with at least one data row is required');
+    }
+    const byRow = new Map(sheet.rows.map(row => [row.rowNumber, row]));
+    data = {
+      ...data,
+      dateSystem: table.dateSystem,
+      rows: data.rows.map(({original: _original, ...row}) => ({...row, cells: byRow.get(row.rowNumber).cells})),
+    };
+  }
   process.stdout.write(JSON.stringify({data}));
 } catch (error) {
   if (error instanceof TableInputError) {
