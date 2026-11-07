@@ -90,9 +90,10 @@
       "status": "partial",
       "evidence": [
         "server/parser/tabular-core.test.mjs",
-        "server/parser/field-mapping.test.mjs"
+        "server/parser/field-mapping.test.mjs",
+        "server/source-preview-routes.test.mjs"
       ],
-      "remaining": "Required template column-drift checks are tested. Persistent template versions, reuse/review workflow and actual imported-source acceptance remain pending."
+      "remaining": "Scoped persistence, immutable versions and reuse with drift rejection are wired and exercised with fixtures. Live save and reuse after a real scan and isolated preview remain pending."
     },
     {
       "id": "FR-009",
