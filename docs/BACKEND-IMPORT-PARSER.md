@@ -57,7 +57,9 @@ After matching or documenting the remaining movements, select the version in **L
 
 Choose **Reports from a published trial balance** in the connected financial workspace and confirm the period earnings basis. With recent MFA and reporting and preparation permissions, an open-period version generates one set of income statement, financial position and analysis drafts. The same input returns the existing set on retry. A period with approved reports requires a separate reopening before preparing a replacement.
 
-The calculation uses exact signed closing balances and the classifications from the frozen source history. The database checks the source scan and publishes the complete account mapping through a restricted function in migration `021_published_trial_balance_reports.sql`. Report lines link to source rows and to the correction used in the calculation. Independent review is required for approval. Cash flow and comparative analysis require separate sources and policies.
+The calculation uses exact signed closing balances and the classifications from the frozen source history. The database checks the source scan and publishes the complete account mapping through a restricted function in migration `021_published_trial_balance_reports.sql`. Report lines link to source rows and to the correction used in the calculation. Independent review is required for approval. Cash flow requires separate inputs and policies.
+
+For a saved income statement or financial position generated from a published balance, choose an earlier version in **Compare with an earlier period**. The server restricts choices to the same entity, statement type, currency, settings and calendar duration. The view uses each saved classification, shows both versions and approval statuses, and applies the SRS absolute-base variance formula. A zero baseline suppresses the percentage. Budget and exchange-rate comparisons require separate implementation.
 
 ## Evidence and remaining work
 

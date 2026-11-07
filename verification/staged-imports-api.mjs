@@ -224,6 +224,34 @@ try {
   assert.equal(analysis.metrics.find(metric=>metric.name==='Net margin').value,null);
   passed.push('Published trial balance generates three drafts once, freezes mapping and links exact corrected evidence');
 
+  const comparativePeriod=randomUUID();
+  await connection.query(`
+    INSERT INTO mizan.accounting_periods(id,tenant_id,entity_id,version,settings_version_id,start_date,end_date,created_by)
+    SELECT $1,tenant_id,entity_id,1,settings_version_id,(start_date+interval '20 years')::date,
+      (end_date+interval '20 years')::date,$3 FROM mizan.accounting_periods WHERE id=$2
+  `,[comparativePeriod,periodId,actor]);
+  const comparativeFile=await fixtureSource('code,name,classification,balance\n'+asset+
+    ',Cash,asset.current,125\n'+equity+',Equity,equity,-125\n');
+  const {staged:later}=await request('/source-files/'+comparativeFile+'/preview',
+    {template:{id:savedTemplate.id,periodId:comparativePeriod},stageImport:true},201);
+  const laterPath='/staged-imports/'+later.batchId;
+  const laterReview=await request(laterPath);
+  const laterDataset=await request(laterPath+'/publish',{...publication,qualityRunId:laterReview.quality.id});
+  const laterReports=await request('/datasets/'+laterDataset.datasetId+'/reports',reportRequest,201);
+  const comparisonPath='/reports/'+laterReports.outputs[1].id+'/comparisons';
+  assert((await request(comparisonPath)).some(item=>item.id===report.id));
+  const query='?baselineId='+report.id;
+  const comparison=await request(comparisonPath+query);
+  assert.equal(comparison.entityId,e);
+  assert.equal(comparison.current.currency_code,comparison.baseline.currency_code);
+  assert.equal(comparison.lines.find(line=>line.code==='assets').percent,'25.00');
+  assert.match(comparison.lines.find(line=>line.code==='assets').variance,/^25(?:\.0+)?$/);
+  assert.equal(comparison.lines.find(line=>line.code==='liabilities').percent,null);
+  assert.equal(comparison.lines.find(line=>line.code==='liabilities').unavailableReason,'zero_baseline');
+  const incompatible='/reports/'+laterReports.outputs[2].id+'/comparisons'+query;
+  assert.equal((await request(incompatible,undefined,422)).code,'INCOMPATIBLE_COMPARISON');
+  passed.push('Compatible published statement versions compare exact monetary variances and suppress zero-base percentages');
+
   const ledgerSource = await fixtureSource('journal,line,account,date,debit,credit,description\n' +
     ['J,1,'+asset+','+fixture.start_date+',100,0,Cash entry',
       'J,2,'+equity+','+fixture.start_date+',0,100,Equity entry'].join('\n')+'\n');

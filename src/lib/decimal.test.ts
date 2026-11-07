@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { percentageVariance } from "@/lib/decimal";
+import { parseDecimal, percentageVariance, percentageVarianceDec } from "@/lib/decimal";
 
 /**
  * percentageVariance must return a PERCENT at two decimals per SRS 8.2:
@@ -7,6 +7,11 @@ import { percentageVariance } from "@/lib/decimal";
  * A scaling regression previously returned the bare ratio (6.67% → "0.06").
  */
 describe("percentageVariance", () => {
+  it("uses the absolute negative base across exact input scales", () => {
+    expect(percentageVarianceDec(parseDecimal("-99.99500000", 8), parseDecimal("-100", 0))).toBe("0.00");
+    expect(percentageVarianceDec(parseDecimal("-99.99499999", 8), parseDecimal("-100", 0))).toBe("0.01");
+    expect(percentageVarianceDec(parseDecimal("-100.00500001", 8), parseDecimal("-100", 0))).toBe("-0.01");
+  });
   const opts = "USD" as const;
 
   it("returns a percentage, not the bare ratio", () => {

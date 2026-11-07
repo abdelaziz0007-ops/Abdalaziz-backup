@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { calculateFinancials,classifications,coefficient,hash,money,parseTrialBalance } from './financial-core.mjs';
 import { decryptField,rowContext,sourceStorage } from './financial-storage.mjs';
-import { parseDecimal } from '../src/lib/decimal.ts';
+import { formatDec,parseDecimal,percentageVarianceDec,subDec } from '../src/lib/decimal.ts';
 
 const input=z.object({periodId:z.uuid(),fileName:z.string().min(1).max(200).regex(/^[^/\\\u0000-\u001f]+\.csv$/i),csv:z.string().max(524288),basis:z.literal('period'),confirmation:z.literal(true)}).strict();
 const algorithm='classified-tb-draft-v1';
@@ -220,9 +220,68 @@ export function mountFinancialRoutes(router,{scoped,audit,result,HttpError}){
         const args=[t,e,id];
         const lines=(await c.query('SELECT r.id,i.name AS code,r.value::text,r.value_state FROM mizan.report_lines r JOIN mizan.report_line_items i ON (i.tenant_id,i.entity_id,i.id)=(r.tenant_id,r.entity_id,r.line_item_id) WHERE r.tenant_id=$1 AND r.entity_id=$2 AND r.output_version_id=$3 ORDER BY r.display_order',args)).rows;
         const metrics=(await c.query('SELECT r.id,f.name,f.unit,f.expression,r.value::text,r.value_state,r.unavailable_reason,r.input_references FROM mizan.metric_results r JOIN mizan.formula_versions f ON (f.tenant_id,f.entity_id,f.id)=(r.tenant_id,r.entity_id,r.formula_version_id) WHERE r.tenant_id=$1 AND r.entity_id=$2 AND r.output_version_id=$3 ORDER BY f.formula_code',args)).rows;
-        const validations=(await c.query('SELECT code,passed,message FROM mizan.validation_results WHERE tenant_id=$1 AND entity_id=$2 AND output_version_id=$3 ORDER BY code',args)).rows;
-        return {...report,lines,metrics,validations};
+        const checks=(await c.query('SELECT code,passed,message,evidence FROM mizan.validation_results WHERE tenant_id=$1 AND entity_id=$2 AND output_version_id=$3 AND validated_fingerprint=$4 ORDER BY code',[...args,report.content_fingerprint])).rows;
+        const comparable=report.output_type!=='analysis'&&checks.some(check=>check.code==='completeness'&&check.passed&&check.evidence.algorithm===publishedAlgorithm);
+        return {...report,lines,metrics,comparable,validations:checks.map(({code,passed,message})=>({code,passed,message}))};
       }));
+    }catch(error){next(error);}
+  });
+  router.get(base+'/reports/:reportId/comparisons',async(req,res,next)=>{
+    try{
+      const {tenantId:t,entityId:e,reportId}=req.params;
+      z.uuid().parse(reportId);
+      const baselineId=z.uuid().optional().parse(req.query.baselineId)??null;
+      const comparison=await scoped(req,t,e,'reports.view',async c=>{
+        const {rows}=await c.query(`
+          WITH eligible AS (
+            SELECT v.id,v.output_type,v.version,v.status,v.currency_code,v.content_fingerprint,v.settings_version_id,
+              p.start_date,p.end_date,k.minor_units,age((p.end_date+1)::timestamp,p.start_date::timestamp) AS duration
+            FROM mizan.output_versions v JOIN mizan.accounting_periods p
+              ON (p.tenant_id,p.entity_id,p.id)=(v.tenant_id,v.entity_id,v.period_id)
+            JOIN mizan.currencies k ON k.code=v.currency_code
+            WHERE v.tenant_id=$1 AND v.entity_id=$2 AND v.output_type IN ('income_statement','financial_position')
+              AND EXISTS(SELECT 1 FROM mizan.validation_results q
+                WHERE (q.tenant_id,q.entity_id,q.output_version_id,q.validated_fingerprint)=(v.tenant_id,v.entity_id,v.id,v.content_fingerprint)
+                  AND q.code='completeness' AND q.passed AND q.evidence->>'algorithm'=$5)
+          ), current_version AS (SELECT * FROM eligible WHERE id=$3)
+          SELECT r.id,r.output_type,r.version,r.status,r.currency_code,r.content_fingerprint,r.settings_version_id,
+                 r.start_date::text,r.end_date::text,r.minor_units,r.id=$3 AS is_current
+          FROM eligible r CROSS JOIN current_version s WHERE r.id=$3 OR (
+             r.output_type=s.output_type AND r.currency_code=s.currency_code AND r.settings_version_id=s.settings_version_id
+             AND r.end_date<s.start_date AND extract(year FROM r.duration)=extract(year FROM s.duration)
+             AND extract(month FROM r.duration)=extract(month FROM s.duration)
+             AND extract(day FROM r.duration)=extract(day FROM s.duration)
+             AND ($4::uuid IS NULL OR r.id=$4))
+          ORDER BY is_current DESC,r.end_date DESC,r.version DESC,r.id LIMIT 51
+        `,[t,e,reportId,baselineId,publishedAlgorithm]);
+        const [current,...baselines]=rows;
+        if(!current)throw notFound();
+        const publicVersion=({is_current,minor_units,...version})=>version;
+        if(!baselineId)return baselines.map(publicVersion);
+        const [baseline]=baselines;
+        if(!baseline)throw new HttpError(422,'INCOMPATIBLE_COMPARISON','Choose an earlier period of matching duration, report type, settings and currency');
+        const {rows:lines}=await c.query(`
+          SELECT r.output_version_id,i.name AS code,trunc(r.value,$5)::text AS value
+          FROM mizan.report_lines r JOIN mizan.report_line_items i
+            ON (i.tenant_id,i.entity_id,i.id)=(r.tenant_id,r.entity_id,r.line_item_id)
+          WHERE r.tenant_id=$1 AND r.entity_id=$2 AND r.output_version_id IN ($3,$4)
+            AND r.value_state='available' ORDER BY r.display_order,r.id
+        `,[t,e,reportId,baselineId,current.minor_units]);
+        const byVersion=id=>new Map(lines.filter(line=>line.output_version_id===id).map(line=>[line.code,line.value]));
+        const currentLines=byVersion(reportId), baselineLines=byVersion(baselineId);
+        return {entityId:e,current:publicVersion(current),baseline:publicVersion(baseline),calculationPolicy:publishedAlgorithm,
+          lines:types[current.output_type].map(code=>{
+            const value=currentLines.get(code)??null,baseValue=baselineLines.get(code)??null;
+            const [amount,reference]=[value,baseValue].map(v=>v===null?null:parseDecimal(v,current.minor_units));
+            return {code,current:value,baseline:baseValue,
+              variance:amount&&reference?formatDec(subDec(amount,reference),current.minor_units):null,
+              percent:amount&&reference?percentageVarianceDec(amount,reference):null,
+              unavailableReason:!amount||!reference?'missing_value':reference.units===0n?'zero_baseline':null,
+            };
+          }),
+        };
+      });
+      result(req,res,comparison);
     }catch(error){next(error);}
   });
   router.get(base+'/reports/:reportId/lines/:lineId/sources',async(req,res,next)=>{

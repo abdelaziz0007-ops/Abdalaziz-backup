@@ -3,13 +3,14 @@ import { backend } from '@/lib/backend-client';
 import { Button } from '@/components/ui/Button';
 import { DataTable } from '@/components/ui/DataTable';
 import { Notice,Panel,useLanguage } from '@/components/WorkspaceUI';
+import { FinancialComparison } from './FinancialComparison';
 
 interface Period {id:string;start_date:string;end_date:string;status:string}
 interface ReportSummary {id:string;output_type:string;version:number;status:string;currency_code:string;period_id:string}
 interface Dataset {id:string;period_id:string;currency_code:string;version:number;status:string;account_count:number}
 interface SourceValues {accountCode:string;name:string;classification:string;signedDebitBalance:string}
 interface Source {id:string;row_number:number;original_values:SourceValues|null;effective_values?:SourceValues|null;contribution:string;original_name:string;sha256:string;scan_status:string}
-interface Report extends ReportSummary {start_date:string;end_date:string;lines:{id:string;code:string;value:string;value_state:string}[];metrics:{id:string;name:string;unit:string;expression:string;value:string|null;unavailable_reason:string|null}[];validations:{code:string;passed:boolean;message:string}[]}
+interface Report extends ReportSummary {start_date:string;end_date:string;comparable:boolean;lines:{id:string;code:string;value:string;value_state:string}[];metrics:{id:string;name:string;unit:string;expression:string;value:string|null;unavailable_reason:string|null}[];validations:{code:string;passed:boolean;message:string}[]}
 const labels:Record<string,[string,string]>={income_statement:['قائمة الدخل','Income statement'],financial_position:['المركز المالي','Financial position'],analysis:['التحليل المالي','Financial analysis'],revenue:['الإيرادات','Revenue'],cost:['تكلفة الإيرادات','Cost of revenue'],gross_profit:['مجمل الربح','Gross profit'],operating_expenses:['المصروفات التشغيلية','Operating expenses'],tax:['الضريبة','Tax'],net_profit:['صافي الربح','Net profit'],assets:['الأصول','Assets'],liabilities:['الالتزامات','Liabilities'],equity:['حقوق الملكية شاملة نتيجة الفترة','Equity including period earnings'],current_assets:['الأصول المتداولة','Current assets'],current_liabilities:['الالتزامات المتداولة','Current liabilities'],working_capital:['رأس المال العامل','Working capital']};
 const sample='accountCode,name,classification,signedDebitBalance\n1000,Cash,asset.current,1000\n3000,Capital,equity,-1000\n';
 export const financialLabels=labels;
@@ -84,6 +85,7 @@ export function ConnectedFinance({tenant,entity,periods,onSaved}:{tenant:string;
         <details><summary>{l('تفاصيل التحقق','Validation details')}</summary><ul>{report.validations.map(v=><li key={v.code}>{v.passed?'✓':'!'} <bdi>{v.code}: {v.message}</bdi></li>)}</ul></details>
       </div>}
     </Panel>
+    {report?.comparable&&<FinancialComparison key={report.id+':'+revision} base={base} reportId={report.id} label={label}/>}
     {sources.length>0&&<Panel title={`${l('مصادر البند','Line sources')}: ${sourceTitle}`}><DataTable label={l('أدلة المصدر','Source evidence')} rows={sources} rowKey={r=>r.id} columns={[{key:'row',header:l('الصف','Row'),render:r=>r.row_number},{key:'account',header:l('الحساب','Account'),render:r=>{const account=r.effective_values??r.original_values;return account?`${account.accountCode} · ${account.name}`:'—';}},{key:'amount',header:l('الرصيد الأصلي','Original balance'),render:r=><bdi>{r.original_values?.signedDebitBalance??'—'}</bdi>},{key:'effective',header:l('الرصيد بعد التصحيح','Corrected balance'),render:r=><bdi>{r.effective_values?.signedDebitBalance??'—'}</bdi>},{key:'contribution',header:l('المساهمة في البند','Line contribution'),render:r=><bdi>{r.contribution}</bdi>},{key:'source',header:l('المصدر','Source'),render:r=><span style={{overflowWrap:'anywhere'}}>{r.original_name}<br/><bdi>{r.sha256}</bdi><br/>{r.scan_status==='clean'?l('اجتاز الفحص','Scan passed'):r.scan_status==='quarantined'?l('في الحجر','Quarantined'):r.scan_status}</span>}]}/></Panel>}
   </div>;
 }

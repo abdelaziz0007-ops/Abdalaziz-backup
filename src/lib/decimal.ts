@@ -120,16 +120,21 @@ export function isZeroStr(value: string, currency: CurrencyCode): boolean {
  * Returns null for a zero base — callers must render "Unavailable", never a fake number.
  */
 export function percentageVariance(current: string, comparative: string, currency: CurrencyCode): string | null {
-  if (isZeroStr(comparative, currency)) return null;
-  const num = subDec(dec(current, currency), dec(comparative, currency));
-  const den = absDec(dec(comparative, currency));
+  return percentageVarianceDec(dec(current, currency), dec(comparative, currency));
+}
+
+export function percentageVarianceDec(current: Dec, comparative: Dec): string | null {
+  if (isZero(comparative)) return null;
+  const num = subDec(current, comparative);
+  const den = absDec(comparative);
   // Compute at extra scale (4 dp) using integer arithmetic, then round half-even to 2 dp.
-  const scaledNum = rescale(num.units, num.scale, den.scale + 4);
-  const quotient = scaledNum / den.units; // truncates toward zero
-  const remainder = scaledNum % den.units;
+  const scaledNum = num.units * 10000n;
+  const denominator = rescale(den.units, den.scale, num.scale);
+  const quotient = scaledNum / denominator; // truncates toward zero
+  const remainder = scaledNum % denominator;
   let q = quotient;
   const twiceRemainder = (remainder < 0n ? -remainder : remainder) * 2n;
-  if (twiceRemainder > den.units || (twiceRemainder === den.units && quotient % 2n !== 0n)) {
+  if (twiceRemainder > denominator || (twiceRemainder === denominator && quotient % 2n !== 0n)) {
     q += scaledNum < 0n ? -1n : 1n;
   }
   // `q` is ratio × 10^4. Percent = ratio × 100, so the minor units of a
