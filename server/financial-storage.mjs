@@ -3,6 +3,8 @@ import { Files } from 'files-sdk';
 import { neon } from 'files-sdk/neon';
 import { hash } from './financial-core.mjs';
 
+export const rowContext = (tenant, entity, id, version = 0) => `staged-row:${tenant}:${entity}:${id}:${version}`;
+
 export function encryptField(value,context){
   const key=process.env.SOURCE_ENCRYPTION_KEY;if(!/^[0-9a-f]{64}$/.test(key??''))throw Error('Source encryption is not configured');
   const iv=randomBytes(12),cipher=createCipheriv('aes-256-gcm',Buffer.from(key,'hex'),iv);cipher.setAAD(Buffer.from(context));

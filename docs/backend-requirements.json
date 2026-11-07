@@ -167,8 +167,8 @@
       "stage": "M",
       "acceptance": "Every unmapped account is visible; splitting an account across line items requires a rule that defines totals and prevents duplication",
       "status": "partial",
-      "evidence": [],
-      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+      "evidence": ["verification/staged-imports-api.json"],
+      "remaining": "Published trial balances generate a frozen mapping with one validated classification per account. Editable mapping policies, documented splits and live acceptance remain pending."
     },
     {
       "id": "FR-016",
@@ -176,8 +176,8 @@
       "stage": "M",
       "acceptance": "Results match ground truth; approval is blocked if balance, mapping, or scope validations fail",
       "status": "partial",
-      "evidence": [],
-      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+      "evidence": ["verification/staged-imports-api.json"],
+      "remaining": "Published, balanced trial balances generate versioned drafts with passed validations. Independent approval using live scanned sources and broader ground-truth coverage remain pending."
     },
     {
       "id": "FR-017",
@@ -194,8 +194,8 @@
       "stage": "M",
       "acceptance": "Each metric shows its formula, contributing accounts, and period; missing required inputs produce “Unavailable”",
       "status": "partial",
-      "evidence": [],
-      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+      "evidence": ["verification/staged-imports-api.json"],
+      "remaining": "Versioned ratio formulas produce exact values or explicit unavailable reasons. Broader KPI coverage and account-level metric navigation remain pending."
     },
     {
       "id": "FR-019",
@@ -203,8 +203,8 @@
       "stage": "M",
       "acceptance": "Reviewers can navigate from a line item to available accounts, transactions, or trial-balance rows; the interface does not imply unavailable transaction detail",
       "status": "partial",
-      "evidence": [],
-      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+      "evidence": ["verification/staged-imports-api.json"],
+      "remaining": "Statement lines link to original source rows and the specific correction applied. Linked ledger transaction drill-down and live acceptance remain pending."
     },
     {
       "id": "FR-020",

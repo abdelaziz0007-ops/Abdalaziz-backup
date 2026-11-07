@@ -5,6 +5,7 @@
     "Versioned correction preserves the original, rejects stale changes and revalidates exact totals",
     "Explicit exclusion records counts and reopens balance validation",
     "Publication rejects stale or incomplete reviews and locks a corrected typed dataset exactly once",
+    "Published trial balance generates three drafts once, freezes mapping and links exact corrected evidence",
     "Balanced ledger publishes typed debit and credit rows with encrypted descriptions",
     "Bank statement and ledger publication verify exact balances, account linkage and immutable replay",
     "Published sources create one draft with exact-match suggestions and reject a wrong source type",

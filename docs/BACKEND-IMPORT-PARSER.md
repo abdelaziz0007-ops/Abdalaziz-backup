@@ -45,11 +45,17 @@ Corrections use the selected template's input format and record the actor, reaso
 
 The review panel can publish complete period trial balances and general ledgers after the user confirms completeness and supplies a reason. Publication requires recent MFA, an open period, current scan evidence, and the exact latest validation reviewed by the user. The first publication policy requires every source data row to be accepted. An exclusion therefore keeps the batch in review. An existing ledger account must be active, and a trial-balance account must agree with the recorded account type.
 
-Publication creates typed rows and links them to their source rows, then publishes the dataset and freezes the import and row history in one database transaction. Retrying returns the existing dataset. Prior quality runs remain available in the database. The published dataset can feed financial reporting once the report-generation workflow is connected. Apply migration `019_staged_dataset_publication.sql` before enabling publication.
+Publication creates typed rows and links them to their source rows, then publishes the dataset and freezes the import and row history in one database transaction. Retrying returns the existing dataset. Prior quality runs remain available in the database. Apply migration `019_staged_dataset_publication.sql` before enabling publication.
 
 Bank statements and bank ledgers also require an active bank account in the period currency, explicit opening and closing balances, and confirmation of cash-increase-positive signs. The service checks each supplied running balance and the exact period roll-forward. The database repeats these checks before publication and rejects overlapping periods for the same account and source type. Each side is limited to 1,000 movements, in line with the connected reconciliation workspace. Migration `020_staged_bank_publication.sql` adds the immutable balance records.
 
 In **Connected bank reconciliation**, choose **Create reconciliation from published datasets** to pair published versions for the same account, currency, period and sign policy. The workflow creates a draft at the period end with matching suggestions. The exact pair reopens its existing reconciliation when retried. It retains the separate matching and review steps.
+
+## Reports from a published trial balance
+
+Choose **Reports from a published trial balance** in the connected financial workspace and confirm the period earnings basis. With recent MFA and reporting and preparation permissions, an open-period version generates one set of income statement, financial position and analysis drafts. The same input returns the existing set on retry. A period with approved reports requires a separate reopening before preparing a replacement.
+
+The calculation uses exact signed closing balances and the classifications from the frozen source history. The database checks the source scan and publishes the complete account mapping through a restricted function in migration `021_published_trial_balance_reports.sql`. Report lines link to source rows and to the correction used in the calculation. Independent review is required for approval. Cash flow and comparative analysis require separate sources and policies.
 
 ## Evidence and remaining work
 
@@ -59,6 +65,6 @@ Existing `saxes@5.0.1` is now declared as a direct runtime dependency and existi
 
 `server/source-preview-routes.test.mjs` exercises the HTTP scan gate, permission revocation during processing, period currency precision, and the parser process protocol. It also covers idempotent template saves, appended versions, stale-version conflicts and column drift. These checks use a fixture for database and scanner state. All eight preview and template SQL statements were also prepared and planned with application credentials in a read-only transaction on the Neon test branch. The production path requires Docker and a successful real scan. Docker was unavailable on the development host, so container build and live scan-to-preview acceptance remain pending.
 
-The rollback-only Neon test in `verification/staged-imports-api.mjs` covers whole-sheet staging, retry, versioned corrections, preserved originals, exact revalidation, exclusions, stale publication requests, typed publication and pairing published bank datasets. It uses synthetic scan evidence, MFA session state and source bytes inside the transaction.
+The rollback-only Neon test in `verification/staged-imports-api.mjs` covers whole-sheet staging, retry, versioned corrections, preserved originals, exact revalidation, exclusions, stale publication requests, typed publication, financial draft generation with corrected evidence, and pairing published bank datasets. It uses synthetic scan evidence, MFA session state and source bytes inside the transaction.
 
-Remaining work includes live scan-to-import verification, generation of financial outputs from published datasets, final reconciliation validation and approval, asynchronous cancellation and retry, and large-file, concurrency, and security acceptance.
+Remaining work includes live scan-to-import verification, independent acceptance for published financial reports, final reconciliation validation and approval, asynchronous cancellation and retry, and large-file, concurrency, and security acceptance.

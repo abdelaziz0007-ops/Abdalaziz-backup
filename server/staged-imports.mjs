@@ -1,11 +1,10 @@
 import {randomUUID} from 'node:crypto';
 import {hash} from './financial-core.mjs';
-import {encryptField} from './financial-storage.mjs';
+import {encryptField, rowContext} from './financial-storage.mjs';
 import {bulk, insert} from './financial-routes.mjs';
 import {checkImportRows} from './import-quality.mjs';
 
 export const stagedVersion = 'staged-tabular-v1';
-export const rowContext = (tenant, entity, id, version = 0) => `staged-row:${tenant}:${entity}:${id}:${version}`;
 
 export async function writeQuality(connection, scope, batchId, rows, dataType, period) {
   const quality = checkImportRows(rows, dataType, period);

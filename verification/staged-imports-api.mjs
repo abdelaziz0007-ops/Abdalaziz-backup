@@ -5,7 +5,7 @@ import {readFile, writeFile} from 'node:fs/promises';
 import {parseEnv} from 'node:util';
 import express from 'express';
 import {database} from '../server/database.mjs';
-import {insert} from '../server/financial-routes.mjs';
+import {insert,mountFinancialRoutes} from '../server/financial-routes.mjs';
 import {hash} from '../server/financial-core.mjs';
 import {encryptField} from '../server/financial-storage.mjs';
 import {parseCsvTable, TableInputError} from '../server/parser/tabular-core.mjs';
@@ -34,9 +34,11 @@ try {
   const {rows: [grants]} = await connection.query(`
     SELECT has_function_privilege('mizan_api_v1','mizan_private.publish_staged_dataset(uuid,uuid,uuid,uuid,uuid,uuid,uuid,text)','EXECUTE') AS publish,
       has_table_privilege('mizan_api_v1','mizan.ledger_entries','INSERT') AS ledger,
-      has_column_privilege('mizan_api_v1','mizan.dataset_versions','status','UPDATE') AS update_status
+      has_column_privilege('mizan_api_v1','mizan.dataset_versions','status','UPDATE') AS update_status,
+      has_function_privilege('mizan_api_v1','mizan_private.publish_trial_balance_mapping(uuid,uuid,uuid,uuid,uuid,uuid)','EXECUTE') AS mapping,
+      has_column_privilege('mizan_api_v1','mizan.mapping_versions','status','UPDATE') AS update_mapping
   `);
-  assert.deepEqual(grants, {publish:true,ledger:true,update_status:false});
+  assert.deepEqual(grants, {publish:true,ledger:true,update_status:false,mapping:true,update_mapping:false});
   const {rows: [fixture]} = await connection.query(`
     SELECT p.tenant_id,p.entity_id,p.id AS period_id,p.start_date::text,u.id AS uploaded_by,s.currency_code,c.minor_units
     FROM mizan.accounting_periods p
@@ -99,6 +101,7 @@ try {
   };
   mountStagedImportRoutes(app, dependencies);
   mountPublishedBankRoutes(app, dependencies);
+  mountFinancialRoutes(app, dependencies);
   mountSourcePreviewRoute(app, {...dependencies, configured: () => true,
     storage: {read: async key => Buffer.from(sources.get(key))},
     parse: async (bytes, options) => {
@@ -183,6 +186,41 @@ try {
   assert.match(dataset.balance, /^0(?:\.0+)?$/);
   await request(path + '/corrections', {...correction, expectedVersion:3, requestKey:randomUUID()}, 409);
   passed.push('Publication rejects stale or incomplete reviews and locks a corrected typed dataset exactly once');
+
+  const reportPath = '/datasets/' + published.datasetId + '/reports';
+  const availableTrialBalances = await request('/datasets?status=published');
+  assert(availableTrialBalances.some(item=>item.id===published.datasetId && item.account_count===2));
+  assert(availableTrialBalances.every(item=>item.status==='published'));
+  const reportRequest = {confirmation:true};
+  const generated = await request(reportPath, reportRequest, 201);
+  assert.equal(generated.reused, false);
+  assert.deepEqual(generated.outputs.map(output=>output.output_type), ['analysis','financial_position','income_statement']);
+  assert(generated.outputs.every(output=>output.status==='draft'));
+  const replay = await request(reportPath, reportRequest);
+  assert.equal(replay.reused, true);
+  assert.deepEqual(replay.outputs, generated.outputs);
+  const report = await request('/reports/' + generated.outputs[1].id);
+  const equityLine = report.lines.find(line=>line.code==='equity');
+  assert.match(equityLine.value, /^100(?:\.0+)?$/);
+  assert.match(report.lines.find(line=>line.code==='assets').value, /^100(?:\.0+)?$/);
+  assert(report.validations.every(validation=>validation.passed));
+  const [evidence] = await request('/reports/' + report.id + '/lines/' + equityLine.id + '/sources');
+  assert.equal(evidence.id, row.id);
+  assert.equal(evidence.original_values.signedDebitBalance, original);
+  assert.match(evidence.effective_values.signedDebitBalance, /^-100(?:\.0+)?$/);
+  assert(evidence.transformation_id);
+  assert(!JSON.stringify(evidence).includes('"sealed"'));
+  const {rows:[mapping]} = await connection.query(`
+    SELECT m.status,m.published_at,count(a.id)::int AS accounts FROM mizan.output_versions o
+    JOIN mizan.mapping_versions m ON m.id=o.mapping_version_id
+    JOIN mizan.account_mappings a ON a.mapping_version_id=m.id WHERE o.id=$1 GROUP BY m.id
+  `,[report.id]);
+  assert.equal(mapping.status,'published');
+  assert.equal(mapping.accounts,2);
+  assert(mapping.published_at);
+  const analysis = await request('/reports/' + generated.outputs[0].id);
+  assert.equal(analysis.metrics.find(metric=>metric.name==='Net margin').value,null);
+  passed.push('Published trial balance generates three drafts once, freezes mapping and links exact corrected evidence');
 
   const ledgerSource = await fixtureSource('journal,line,account,date,debit,credit,description\n' +
     ['J,1,'+asset+','+fixture.start_date+',100,0,Cash entry',
