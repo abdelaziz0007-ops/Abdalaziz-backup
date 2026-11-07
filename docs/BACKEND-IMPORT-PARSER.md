@@ -1,6 +1,19 @@
 # Exact tabular reader and mapping foundation
 
-This batch implements a bounded, read-only CSV/XLSX reader and field-mapping core. It is **not yet a deployed import worker or an API that processes uploaded sources**. Public source processing must first verify a real clean scan and run the parser inside a properly isolated, resource-limited worker. No source is marked clean or published by these modules.
+The source panel exposes a read-only CSV/XLSX preview through `POST /api/v1/tenants/:tenantId/entities/:entityId/source-files/:sourceId/preview`. The endpoint requires `imports.manage`, recent MFA, and a completed scan for that source. It verifies the encrypted original against its stored hash and size before parsing. Before returning rows, it checks access and scan evidence again and records a preview audit event. A mapped preview uses the selected accounting period's currency precision.
+
+## Local preview runtime
+
+Build the preview image from the project root on a host with a local Linux Docker engine.
+
+```powershell
+docker build -f server/parser/Dockerfile -t mizan-import-preview:local .
+docker image inspect mizan-import-preview:local --format '{{.Id}}'
+```
+
+Set `IMPORT_PREVIEW_IMAGE` in the server environment to the returned `sha256:...` image ID and restart the app. A running ClamAV scan worker must independently process the source before the preview is available. Open **Sources and scan jobs**, select a source that passed scanning, and choose **Read source rows**. The mapping form appears after the raw preview loads.
+
+The app starts one preview at a time per server process. It uses a local, prebuilt image and transfers source bytes through stdin. The container has no network access or host mounts and receives no app credentials. It runs as a non-root user with a read-only filesystem and limits on memory, CPU, processes, execution time, and response size. Docker logging is disabled for these containers to keep plaintext rows out of daemon logs. [Docker run options](https://docs.docker.com/reference/cli/docker/container/run/)
 
 ## Original values and limits
 
@@ -24,4 +37,6 @@ Required template headers are bound to explicit field/column positions. Renamed,
 
 Existing `saxes@5.0.1` is now declared as a direct runtime dependency and existing `jszip@3.10.2` as a development fixture dependency; no installed transitive package versions changed. The reader itself uses bounded Node zlib inflation, not JSZip's whole-archive async decompression. Dependency audit currently reports eight moderate findings in the existing ExcelJS dependency tree (minimatch/uuid and affected parents), zero high and zero critical. No forced downgrade or unverified override was applied. Full security/call-path assessment and export-library remediation remain tracked work.
 
-Remaining acceptance: scan-first authenticated preview/job APIs; credential-free parser isolation with network/resource controls; real scanner and isolated parser end-to-end acceptance; full-file normalized ingestion and balanced journal groups; persistent versioned templates/corrections; exclusion reports and before/after totals; asynchronous cancellation/retry/publication; large-file/concurrency/security tests. The core tests do not close FR-006–013 by themselves.
+`server/source-preview-routes.test.mjs` exercises the HTTP scan gate, permission revocation during processing, period currency precision, and the parser process protocol. These checks use a fixture for database and scanner state. The production path requires Docker and a successful real scan. Docker was unavailable on the development host, so container build and live scan-to-preview acceptance remain pending.
+
+Remaining acceptance includes full-file normalized ingestion and balanced journal groups, persistent versioned templates and corrections, exclusion reports and before/after totals, asynchronous cancellation and retry, publication, and large-file, concurrency, and security tests.

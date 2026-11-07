@@ -99,7 +99,7 @@ export function ConnectedWorkspace(){
       {tenant&&entity&&<ConnectedBank key={'bank'+tenant+entity} tenant={tenant} entity={entity} periods={periods} actor={me.user}/>}
       {tenant&&entity&&<AdministrationPanel key={'admin'+tenant+entity} tenant={tenant} entity={entity} actor={me.user}/>}
       {tenant&&entity&&<ReviewWorkspace key={'review'+tenant+entity} tenant={tenant} entity={entity} actor={me.user}/>}
-      {tenant&&entity&&<SourceJobsPanel key={'sources'+tenant+entity} tenant={tenant} entity={entity}/>}
+      {tenant&&entity&&<SourceJobsPanel key={'sources'+tenant+entity} tenant={tenant} entity={entity} periods={periods}/>}
       {audit.length>0&&<Panel title={l('آخر إجراءات مساحة العمل','Recent workspace actions')}><ul className="stack">{audit.slice(0,10).map(a=><li key={a.id}><strong>{l(({'workspace.created':'إنشاء مساحة عمل','entity.created':'إضافة منشأة','period.created':'إنشاء فترة مالية','trial_balance.imported':'استيراد ميزان مراجعة'} as Record<string,string>)[a.action]??a.action,a.action)}</strong> · <bdi>{new Date(a.created_at).toLocaleString()}</bdi></li>)}</ul></Panel>}
     </>}
   </div></PublicLayout>;

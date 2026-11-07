@@ -77,9 +77,10 @@
       "status": "partial",
       "evidence": [
         "server/parser/tabular-core.test.mjs",
-        "server/parser/field-mapping.test.mjs"
+        "server/parser/field-mapping.test.mjs",
+        "server/source-preview-routes.test.mjs"
       ],
-      "remaining": "Bounded exact CSV/XLSX reading and explicit mapping core are tested. Authenticated scan-first preview APIs, isolated execution and full UI acceptance remain pending."
+      "remaining": "The scoped preview API and UI are wired. Live acceptance requires a real scanner and local Docker engine for end-to-end scan, isolated execution and mapped preview."
     },
     {
       "id": "FR-008",
