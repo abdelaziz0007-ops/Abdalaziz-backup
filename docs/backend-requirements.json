@@ -375,13 +375,14 @@
       "title": "Support review, approval, and rejection",
       "stage": "M",
       "acceptance": "Preparers cannot approve their own version; approval fails if critical validation fails or the version changed after submission",
-      "status": "pending",
+      "status": "partial",
       "evidence": [
         "verification/review-membership-api.json",
         "verification/review-browser.json",
-        "verification/administration-scope-api.json"
+        "verification/administration-scope-api.json",
+        "verification/staged-imports-api.json"
       ],
-      "remaining": "Successful approval of actually scanned/published data, reopening and complete period-version lifecycle remain pending."
+      "remaining": "Independent approval and locking work for published financial statements and fully matched bank reconciliations in rollback fixtures. Live scan-to-approval, reconciliation with differences, and complete period-version lifecycle remain pending."
     },
     {
       "id": "FR-037",

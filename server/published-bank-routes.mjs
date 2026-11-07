@@ -3,8 +3,12 @@ import {hash} from './financial-core.mjs';
 import {bankAmount, suggestBankMatches} from './bank-core.mjs';
 import {decryptField} from './financial-storage.mjs';
 import {createBankDraft} from './reconciliation-create.mjs';
+import {bulk} from './financial-routes.mjs';
+import {lockedReconciliation,requireEditable} from './reconciliation-domain.mjs';
+import {randomUUID} from 'node:crypto';
 
 const pair = z.object({bankDatasetId:z.uuid(), bookDatasetId:z.uuid(), confirmation:z.literal(true)}).strict();
+const validationRequest = z.object({expectedFingerprint:z.string().regex(/^[0-9a-f]{64}$/)}).strict();
 const algorithm = 'published-bank-pair-v1';
 const availableDatasets = `
   SELECT d.id,d.version,d.period_id,d.data_type,d.currency_code,d.content_fingerprint,
@@ -96,6 +100,54 @@ export function mountPublishedBankRoutes(router, {scoped,audit,result,HttpError}
         return saved;
       },{fresh:true});
       result(req,res,draft,draft.reused?200:201);
+    } catch(error) {next(error);}
+  });
+  router.post(base+'/reconciliations/:reconciliationId/validate', async (req,res,next) => {
+    try {
+      const {tenantId:t,entityId:e,reconciliationId}=req.params;
+      z.uuid().parse(reconciliationId);
+      const {expectedFingerprint}=validationRequest.parse(req.body);
+      const validated=await scoped(req,t,e,null,async c=>{
+        const rec=await lockedReconciliation(c,req,t,e,reconciliationId,HttpError);
+        requireEditable(rec,HttpError);
+        const prior=(await c.query(`
+          SELECT evidence FROM mizan.validation_results WHERE tenant_id=$1 AND entity_id=$2 AND output_version_id=$3
+            AND validated_fingerprint=$4 AND code='residual' AND passed
+        `,[t,e,rec.output_version_id,rec.content_fingerprint])).rows[0];
+        if(expectedFingerprint!==rec.content_fingerprint && expectedFingerprint!==prior?.evidence.previousFingerprint){
+          throw new HttpError(409,'STALE_OUTPUT','Reload the reconciliation and validate the latest version');
+        }
+        let totals;
+        try {
+          totals=(await c.query('SELECT mizan_private.check_reconciliation($1,$2,$3) AS totals',[t,e,rec.id])).rows[0].totals;
+        } catch(error) {
+          if(error.code==='23514')throw new HttpError(422,'RECONCILIATION_VALIDATION_FAILED',error.message);
+          throw error;
+        }
+        if(prior)return {fingerprint:rec.content_fingerprint,totals,reused:true};
+        const fingerprint=hash(JSON.stringify(['reconciliation-validation-v1',rec.content_fingerprint,totals]));
+        await c.query('UPDATE mizan.output_versions SET content_fingerprint=$4 WHERE tenant_id=$1 AND entity_id=$2 AND id=$3',
+          [t,e,rec.output_version_id,fingerprint]);
+        const checks=[
+          ['scope','Published datasets match the bank account, currency and period'],
+          ['completeness','Both sources are complete and published'],
+          ['malware_scan','Both sources passed scanning and are currently available'],
+          ['bank_rollforward','Bank movements reconcile to closing balance'],
+          ['book_rollforward','Book movements reconcile to closing balance'],
+          ['mapping','All movement capacity is allocated or explained by supported items'],
+          ['balance','Adjusted bank and book balances agree'],
+          ['residual','Movement coverage, evidence and adjusted balances passed'],
+        ];
+        const evidence={...totals,previousFingerprint:rec.content_fingerprint};
+        await bulk(c,'validation_results',checks.map(([code,message])=>({
+          id:randomUUID(),tenant_id:t,entity_id:e,created_at:new Date().toISOString(),output_version_id:rec.output_version_id,
+          validated_fingerprint:fingerprint,severity:'blocking',passed:true,code,message,evidence,
+        })));
+        await audit(c,req,t,e,'reconciliation.validated','reconciliation',rec.id,
+          'Recomputed published source balances, allocations and supporting evidence',{fingerprint});
+        return {fingerprint,totals,reused:false};
+      },{fresh:true});
+      result(req,res,validated);
     } catch(error) {next(error);}
   });
 }

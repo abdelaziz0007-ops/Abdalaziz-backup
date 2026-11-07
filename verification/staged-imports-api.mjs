@@ -13,6 +13,7 @@ import {previewMapping} from '../server/parser/field-mapping.mjs';
 import {mountSourcePreviewRoute} from '../server/source-preview-routes.mjs';
 import {mountStagedImportRoutes} from '../server/staged-import-routes.mjs';
 import {mountPublishedBankRoutes} from '../server/published-bank-routes.mjs';
+import {mountMatchRoutes} from '../server/match-routes.mjs';
 
 const {branch} = JSON.parse(await readFile('.neon', 'utf8'));
 assert.equal(branch, 'codex-backend-completion');
@@ -101,6 +102,7 @@ try {
   };
   mountStagedImportRoutes(app, dependencies);
   mountPublishedBankRoutes(app, dependencies);
+  mountMatchRoutes(app, dependencies);
   mountFinancialRoutes(app, dependencies);
   mountSourcePreviewRoute(app, {...dependencies, configured: () => true,
     storage: {read: async key => Buffer.from(sources.get(key))},
@@ -292,6 +294,56 @@ try {
   `,[draft.id]);
   assert.deepEqual(reconciliation,{bank_complete:true,book_complete:true,status:'draft',suggestions:2});
   passed.push('Published sources create one draft with exact-match suggestions and reject a wrong source type');
+
+  const reviewer=randomUUID(), reviewerSession=randomUUID(), membership=randomUUID();
+  await insert(connection,'app_users',{id:reviewer,identity_provider:'verification',provider_subject:reviewer,
+    email:'synthetic-'+reviewer+'@example.invalid',display_name:'Rollback independent reviewer',mfa_enabled:true});
+  await insert(connection,'memberships',{id:membership,tenant_id:t,user_id:reviewer,status:'active'});
+  await insert(connection,'access_grants',{tenant_id:t,membership_id:membership,permission_code:'outputs.approve',entity_id:e,granted_by:actor});
+  await connection.query(`
+    INSERT INTO mizan.user_sessions(id,user_id,provider_session_hash,authenticated_at,mfa_verified_at,expires_at)
+    VALUES($1,$2,$3,now(),now(),now()+interval '30 minutes')
+  `,[reviewerSession,reviewer,hash(reviewerSession)]);
+  async function reviewAction(outputId,action,fingerprint,submissionId=null,reviewerId=reviewer) {
+    const [user,session]=action==='submit'?[actor,sessionId]:[reviewer,reviewerSession];
+    const {rows:[result]}=await connection.query(`
+      SELECT mizan_private.review_action($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) AS value
+    `,[user,session,t,e,outputId,action,action==='submit'?reviewerId:null,submissionId,fingerprint,
+      'Synthetic independent review of this specific version',randomUUID(),randomUUID()]);
+    return result.value;
+  }
+  const financialReview=await reviewAction(report.id,'submit',report.content_fingerprint);
+  assert.equal((await reviewAction(report.id,'approve',financialReview.fingerprint,financialReview.id)).status,'approved_locked');
+  passed.push('An independent reviewer can approve and lock financial statements generated from a published source');
+
+  const {rows:[initial]}=await connection.query('SELECT content_fingerprint FROM mizan.output_versions WHERE id=$1',[draft.output_version_id]);
+  const draftPath='/reconciliations/'+draft.id;
+  const initialCheck=await request(draftPath+'/validate',{expectedFingerprint:initial.content_fingerprint},422);
+  assert.equal(initialCheck.code,'RECONCILIATION_VALIDATION_FAILED');
+  await connection.query('SAVEPOINT premature_review');
+  await assert.rejects(reviewAction(draft.output_version_id,'submit',initial.content_fingerprint),/Validate this version/);
+  await connection.query('ROLLBACK TO SAVEPOINT premature_review');
+  await connection.query('RELEASE SAVEPOINT premature_review');
+  const {rows:groups}=await connection.query('SELECT id FROM mizan.match_groups WHERE reconciliation_id=$1 ORDER BY id',[draft.id]);
+  for (const group of groups) {
+    const confirmed=await request(draftPath+'/matches/'+group.id+'/confirm',
+      {requestKey:randomUUID(),expectedVersion:0,reason:'Verify both signed movements and their exact references'});
+    assert.equal(confirmed.status,'confirmed');
+  }
+  assert.equal((await request(draftPath+'/validate',{expectedFingerprint:initial.content_fingerprint},409)).code,'STALE_OUTPUT');
+  const {rows:[matched]}=await connection.query('SELECT content_fingerprint FROM mizan.output_versions WHERE id=$1',[draft.output_version_id]);
+  const check={expectedFingerprint:matched.content_fingerprint};
+  const validated=await request(draftPath+'/validate',check);
+  assert.equal(validated.reused,false);
+  assert.equal(validated.totals.bankUnexplained,0);
+  assert.match(validated.totals.adjustedBooks,/^108(?:\.0+)?$/);
+  assert.equal((await request(draftPath+'/validate',check)).fingerprint,validated.fingerprint);
+  const submission=await reviewAction(draft.output_version_id,'submit',validated.fingerprint);
+  assert.equal(submission.status,'under_review');
+  assert.equal((await request(draftPath+'/matches/'+groups[0].id+'/unmatch',
+    {requestKey:randomUUID(),expectedVersion:1,reason:'Mutation should fail during independent review'},409)).code,'OUTPUT_FROZEN');
+  assert.equal((await reviewAction(draft.output_version_id,'approve',submission.fingerprint,submission.id)).status,'approved_locked');
+  passed.push('Equal balances alone cannot pass; confirmed coverage enables validation, independent review and immutable bank approval');
 
   await connection.query('ROLLBACK');
   assert.equal((await connection.query('SELECT count(*)::int AS count FROM mizan.import_batches WHERE id=$1',[staged.batchId])).rows[0].count,0);
