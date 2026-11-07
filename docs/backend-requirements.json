@@ -398,9 +398,9 @@
       "title": "Export PDF and XLSX",
       "stage": "M",
       "acceptance": "Values match the selected version; entity, period, currency, status, version, and generation date are displayed",
-      "status": "pending",
-      "evidence": [],
-      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+      "status": "partial",
+      "evidence": ["verification/staged-imports-api.json"],
+      "remaining": "Version-bound PDF and XLSX downloads cover stored statements, analysis and reconciliation totals. Direct downloads require explicit export scope and recent MFA and log the file digest. Large asynchronous reports, localized PDF typography and live acceptance remain pending."
     },
     {
       "id": "FR-039",

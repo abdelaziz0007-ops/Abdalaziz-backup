@@ -15,6 +15,8 @@ import {mountStagedImportRoutes} from '../server/staged-import-routes.mjs';
 import {mountPublishedBankRoutes} from '../server/published-bank-routes.mjs';
 import {mountMatchRoutes} from '../server/match-routes.mjs';
 import {mountAuditRoutes} from '../server/audit-routes.mjs';
+import {mountOutputExportRoutes} from '../server/output-export-routes.mjs';
+import ExcelJS from 'exceljs';
 
 const {branch} = JSON.parse(await readFile('.neon', 'utf8'));
 assert.equal(branch, 'codex-backend-completion');
@@ -106,6 +108,7 @@ try {
   mountPublishedBankRoutes(app, dependencies);
   mountMatchRoutes(app, dependencies);
   mountAuditRoutes(app, dependencies);
+  mountOutputExportRoutes(app, dependencies);
   mountFinancialRoutes(app, dependencies);
   mountSourcePreviewRoute(app, {...dependencies, configured: () => true,
     storage: {read: async key => Buffer.from(sources.get(key))},
@@ -393,6 +396,31 @@ try {
   const exportEvents=await (await fetch(auditPath+'?action=audit.exported')).json();
   assert(exportEvents.some(event=>event.redacted_metadata.count===1));
   passed.push('Audit filters isolate one approval and CSV download records its own audit event without reasons');
+
+  const download=(id,format,fingerprint,status)=>fetch(base+'/outputs/'+id+'/export',{
+    method:'POST',headers:{'content-type':'application/json'},
+    body:JSON.stringify({format,expectedFingerprint:fingerprint,expectedStatus:status}),
+  });
+  assert.equal((await download(report.id,'pdf',financialReview.fingerprint,'approved_locked')).status,403);
+  const {rows:[exportMember]}=await connection.query('SELECT id FROM mizan.memberships WHERE tenant_id=$1 AND user_id=$2',[t,actor]);
+  await insert(connection,'access_grants',{tenant_id:t,membership_id:exportMember.id,entity_id:e,permission_code:'outputs.export',granted_by:actor});
+  assert.equal((await download(report.id,'xlsx',financialReview.fingerprint,'draft')).status,409);
+  const workbookResponse=await download(report.id,'xlsx',financialReview.fingerprint,'approved_locked');
+  assert.equal(workbookResponse.status,200);
+  assert.match(workbookResponse.headers.get('content-disposition'),/attachment/);
+  const workbook=new ExcelJS.Workbook();
+  await workbook.xlsx.load(Buffer.from(await workbookResponse.arrayBuffer()));
+  assert.equal(workbook.getWorksheet('Version').getCell('B3').value,e);
+  assert.equal(workbook.getWorksheet('Version').getCell('B6').value,'Approved and locked');
+  assert.match(workbook.getWorksheet('Values').getCell('B2').value,/^100(?:\.0+)?$/);
+  const pdf=await download(draft.output_version_id,'pdf',submission.fingerprint,'approved_locked');
+  assert.equal(pdf.status,200);
+  assert.equal(pdf.headers.get('content-type'),'application/pdf');
+  assert.equal(Buffer.from(await pdf.arrayBuffer()).subarray(0,5).toString(),'%PDF-');
+  const exportLog=await (await fetch(auditPath+'?action=output.exported')).json();
+  assert.equal(exportLog.length,2);
+  assert(exportLog.every(event=>/^[0-9a-f]{64}$/.test(event.redacted_metadata.sha256)));
+  passed.push('Exact approved outputs download as PDF and XLSX with scoped permission, stale-state protection and audited hashes');
 
   await connection.query('ROLLBACK');
   assert.equal((await connection.query('SELECT count(*)::int AS count FROM mizan.import_batches WHERE id=$1',[staged.batchId])).rows[0].count,0);
