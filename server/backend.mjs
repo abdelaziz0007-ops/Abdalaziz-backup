@@ -13,6 +13,7 @@ import { mountReconcilingItemRoutes } from './reconciling-item-routes.mjs';
 import { mountSourceJobRoutes } from './source-job-routes.mjs';
 import { mountAuditRoutes } from './audit-routes.mjs';
 import { mountOutputExportRoutes } from './output-export-routes.mjs';
+import { mountOutputCommentRoutes } from './output-comment-routes.mjs';
 
 class HttpError extends Error {
   constructor(status,code,message){super(message);this.status=status;this.code=code;}
@@ -126,6 +127,7 @@ export function backendRouter({pool,auth,dataRegion}){
   });
   mountAuditRoutes(router,{scoped,audit,result,HttpError});
   mountOutputExportRoutes(router,{scoped,audit,HttpError});
+  mountOutputCommentRoutes(router,{scoped,result,audit,HttpError});
   mountFinancialRoutes(router,{scoped,audit,result,HttpError});
   mountBankRoutes(router,{scoped,audit,result,HttpError});
   mountMatchRoutes(router,{scoped,audit,result,HttpError});

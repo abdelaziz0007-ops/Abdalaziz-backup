@@ -1,9 +1,10 @@
 import {useEffect,useRef,useState} from 'react';
-import {backend,BackendError} from '@/lib/backend-client';
+import {backend,backendDownload,BackendError} from '@/lib/backend-client';
 import {Button} from '@/components/ui/Button';
 import {Panel,Notice,useLanguage} from '@/components/WorkspaceUI';
 import {DataTable} from '@/components/ui/DataTable';
 import {financialLabels} from './ConnectedFinance';
+import {OutputComments} from './OutputComments';
 interface Output{id:string;output_type:string;status:string;version:number;currency_code:string;start_date:string;end_date:string;reconciliation_id:string|null}
 interface Review{output:{id:string;status:string;version:number;period_status:string;preparer_id:string;content_fingerprint:string;can_prepare:boolean;can_approve:boolean;can_export:boolean};reviewers:{id:string;name:string}[];checks:{code:string;passed:boolean;severity:string;message:string}[];submissions:{id:string;reviewer_id:string;submitted_by:string;content_fingerprint:string;withdrawn_at:string|null}[];decisions:{id:string;decision:string;reason:string;actor_id:string;created_at:string}[];approvalEligible:boolean}
 interface Fact{id:string;name:string;value:string;formula?:string;unit?:string}
@@ -22,20 +23,14 @@ export function ReviewWorkspace({tenant,entity,actor}:{tenant:string;entity:stri
   if(!review)return;
   setBusy(true);setError('');setMessage('');
   try{
-   const response=await fetch('/api/v1'+base+'/outputs/'+selected+'/export',{
-    method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({format,expectedFingerprint:review.output.content_fingerprint,expectedStatus:review.output.status}),
-   });
-   if(!response.ok){
-    const {error}=await response.json();
-    if(response.status===409)setRevision(value=>value+1);
-    throw Error(error?.message??'Download failed');
-   }
-   const url=URL.createObjectURL(await response.blob());
-   const link=document.createElement('a');link.href=url;link.download='mizan-v'+review.output.version+'-'+selected+'.'+format;link.click();
-   setTimeout(()=>URL.revokeObjectURL(url),1000);
+   await backendDownload(base+'/outputs/'+selected+'/export',
+    {format,expectedFingerprint:review.output.content_fingerprint,expectedStatus:review.output.status},
+    'mizan-v'+review.output.version+'-'+selected+'.'+format);
    setMessage(l('تم تنزيل الإصدار المحدد.','The selected version was downloaded.'));
-  }catch(e){setError(e instanceof Error?e.message:String(e));}
+  }catch(e){
+   if(e instanceof BackendError&&e.status===409)setRevision(value=>value+1);
+   setError(e instanceof Error?e.message:String(e));
+  }
   finally{setBusy(false);}
  }
  const canAct=review?.output.period_status==='open',current=outputs.find(o=>o.id===selected),active=review?.submissions.find(s=>!s.withdrawn_at&&s.content_fingerprint===review.output.content_fingerprint),isPreparer=review?.output.preparer_id===actor.id,isReviewer=active?.reviewer_id===actor.id&&!isPreparer;
@@ -57,6 +52,7 @@ export function ReviewWorkspace({tenant,entity,actor}:{tenant:string;entity:stri
   <label className="form-field">{l('نسخة المراجعة','Review version')}<select aria-label={l('نسخة المراجعة','Review version')} disabled={busy} value={selected} onChange={e=>{setSelected(e.target.value);setReason('');setMessage('');}}><option value="">{l('اختر نسخة محفوظة','Select saved version')}</option>{outputs.map(o=><option key={o.id} value={o.id}>{names[o.output_type]??o.output_type} · {o.start_date} — {o.end_date} · v{o.version} · {o.currency_code} · {o.status}</option>)}</select></label><Button disabled={busy} onClick={()=>setRevision(v=>v+1)}>{l('تحديث المراجعة','Refresh review')}</Button>
   {review&&current&&<div className="stack"><h3>{names[current.output_type]} · <bdi>{current.currency_code} · v{review.output.version} · {review.output.status}</bdi></h3><DataTable label={l('أرقام النسخة الجاري مراجعتها','Figures of the reviewed version')} rows={facts} rowKey={r=>r.id} columns={[{key:'name',header:l('البند أو المؤشر','Line or metric'),render:r=>r.name},{key:'value',header:l('القيمة والوحدة','Value and unit'),render:r=><bdi>{r.value} {r.unit??current.currency_code}</bdi>},{key:'formula',header:l('المعادلة','Formula'),render:r=><bdi>{r.formula??'—'}</bdi>}]}/><DataTable label={l('فحوص النسخة','Version checks')} rows={review.checks} rowKey={c=>c.code} columns={[{key:'code',header:l('الفحص','Check'),render:c=>c.code},{key:'state',header:l('النتيجة','Result'),render:c=>c.passed?l('ناجح','Passed'):l('غير مستوفى','Not satisfied')},{key:'message',header:l('التفسير','Explanation'),render:c=>c.message}]}/>
    {review.output.can_export&&<div className="row"><Button disabled={busy} onClick={()=>void downloadOutput('pdf')}>{l('تنزيل PDF','Download PDF')}</Button><Button disabled={busy} onClick={()=>void downloadOutput('xlsx')}>{l('تنزيل XLSX','Download XLSX')}</Button></div>}
+   <OutputComments key={selected+':'+review.output.content_fingerprint} base={base} id={selected} fingerprint={review.output.content_fingerprint} actorId={actor.id}/>
    {!canAct&&<Notice tone="warning">{l('الفترة مقفلة؛ لا يمكن تغيير قرارات هذه النسخة.','The accounting period is locked; decisions cannot change.')}</Notice>}{!review.approvalEligible&&<Notice tone="warning">{l('النسخة غير مؤهلة للاعتماد حاليًا. يمكن للمراجع طلب التعديلات دون اعتمادها.','This version is not currently eligible for approval. Its reviewer can request changes without approving it.')}</Notice>}
    {canSubmit&&reconciliationId&&<Button disabled={busy||!canAct} onClick={()=>void validateBank()}>{l('التحقق من التسوية قبل المراجعة','Validate reconciliation for review')}</Button>}
    {canSubmit&&<label className="form-field">{l('المراجع المستقل','Independent reviewer')}<select aria-label={l('المراجع المستقل','Independent reviewer')} value={reviewer} disabled={busy} onChange={e=>setReviewer(e.target.value)}><option value="">{l('اختر مراجعًا مخولًا','Select authorized reviewer')}</option>{review.reviewers.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}</select></label>}

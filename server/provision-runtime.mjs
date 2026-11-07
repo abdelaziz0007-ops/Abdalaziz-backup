@@ -48,6 +48,9 @@ try{
       GRANT EXECUTE ON FUNCTION mizan_private.publish_staged_dataset(uuid,uuid,uuid,uuid,uuid,uuid,uuid,text) TO mizan_api_v1;
       GRANT EXECUTE ON FUNCTION mizan_private.publish_trial_balance_mapping(uuid,uuid,uuid,uuid,uuid,uuid) TO mizan_api_v1;
       GRANT EXECUTE ON FUNCTION mizan_private.check_reconciliation(uuid,uuid,uuid) TO mizan_api_v1;
+      GRANT EXECUTE ON FUNCTION mizan_private.create_output_comment(uuid,uuid,uuid,uuid,uuid,text,text,uuid,uuid[],uuid,uuid) TO mizan_api_v1;
+      GRANT SELECT ON mizan.comments,mizan.notifications TO mizan_api_v1;
+      GRANT UPDATE(read_at) ON mizan.notifications TO mizan_api_v1;
       GRANT UPDATE(status,clearance_source_row_id,decision_reason) ON mizan.reconciliation_items TO mizan_api_v1;
       GRANT UPDATE(id) ON mizan.match_groups TO mizan_api_v1;
       GRANT SELECT,INSERT ON mizan.match_decisions,mizan.allocations TO mizan_api_v1;

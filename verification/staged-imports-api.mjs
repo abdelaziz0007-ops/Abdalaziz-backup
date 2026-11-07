@@ -16,6 +16,7 @@ import {mountPublishedBankRoutes} from '../server/published-bank-routes.mjs';
 import {mountMatchRoutes} from '../server/match-routes.mjs';
 import {mountAuditRoutes} from '../server/audit-routes.mjs';
 import {mountOutputExportRoutes} from '../server/output-export-routes.mjs';
+import {mountOutputCommentRoutes} from '../server/output-comment-routes.mjs';
 import ExcelJS from 'exceljs';
 
 const {branch} = JSON.parse(await readFile('.neon', 'utf8'));
@@ -61,6 +62,7 @@ try {
   const {tenant_id: t, entity_id: e, period_id: periodId, uploaded_by: actor, minor_units: precision} = fixture;
   const scope = {tenant_id: t, entity_id: e};
   const sessionId = randomUUID();
+  let identity={id:actor,sessionId};
   await connection.query(`
     INSERT INTO mizan.user_sessions(id,user_id,provider_session_hash,authenticated_at,mfa_verified_at,expires_at)
     VALUES($1,$2,$3,now(),now(),now()+interval '30 minutes')
@@ -91,7 +93,8 @@ try {
     HttpError,
     scoped: async (req, tenant, entity, permission, callback) => {
       if (tenant !== t || (entity && entity !== e)) throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'Out of scope');
-      req.principal = {id: actor, sessionId};
+      req.principal = identity;
+      req.requestId = randomUUID();
       const {rows: [access]} = await connection.query('SELECT mizan.has_permission($1,$2,$3,$4) AS allowed', [t,e,actor,permission]);
       if (permission) assert(access.allowed);
       await connection.query('SAVEPOINT route_request');
@@ -99,9 +102,9 @@ try {
       catch (error) { await connection.query('ROLLBACK TO route_request'); throw error; }
       finally { await connection.query('RELEASE route_request'); }
     },
-    audit: (db, _req, tenant, entity, action, type, id, reason, metadata) =>
+    audit: (db, req, tenant, entity, action, type, id, reason, metadata) =>
       db.query('SELECT mizan_private.append_audit($1,$2,$3,$4,$5,$6,$7,$8,$9)',
-        [tenant, entity, actor, action, type, id, reason, randomUUID(), metadata]),
+        [tenant, entity, req.principal.id, action, type, id, reason, req.requestId, metadata]),
     result: (_req, res, data, status = 200) => res.status(status).json(data),
   };
   mountStagedImportRoutes(app, dependencies);
@@ -109,6 +112,12 @@ try {
   mountMatchRoutes(app, dependencies);
   mountAuditRoutes(app, dependencies);
   mountOutputExportRoutes(app, dependencies);
+  mountOutputCommentRoutes(app, {...dependencies,storage:{read:async(key,expectedHash,expectedSize)=>{
+    const bytes=sources.get(key);
+    assert.equal(hash(bytes),expectedHash);
+    assert.equal(bytes.length,expectedSize);
+    return bytes;
+  }}});
   mountFinancialRoutes(app, dependencies);
   mountSourcePreviewRoute(app, {...dependencies, configured: () => true,
     storage: {read: async key => Buffer.from(sources.get(key))},
@@ -126,8 +135,9 @@ try {
       }
     }});
   app.use((error, _req, res, _next) => {
-    if (!error.status) console.error('Unexpected SQL or runtime error', error.code ?? error.name, error.message);
-    res.status(error.status ?? 500).json({code: error.code});
+    const status=error.status??({'23514':422,'42501':403,'40001':409}[error.code]??500);
+    if (status===500) console.error('Unexpected SQL or runtime error', error.code ?? error.name, error.message);
+    res.status(status).json({code: error.code});
   });
   server = app.listen(0, '127.0.0.1');
   await once(server, 'listening');
@@ -334,6 +344,8 @@ try {
     email:'synthetic-'+reviewer+'@example.invalid',display_name:'Rollback independent reviewer',mfa_enabled:true});
   await insert(connection,'memberships',{id:membership,tenant_id:t,user_id:reviewer,status:'active'});
   await insert(connection,'access_grants',{tenant_id:t,membership_id:membership,permission_code:'outputs.approve',entity_id:e,granted_by:actor});
+  await insert(connection,'access_grants',{tenant_id:t,membership_id:membership,permission_code:'reports.view',entity_id:e,granted_by:actor});
+  await insert(connection,'access_grants',{tenant_id:t,membership_id:membership,permission_code:'comments.create',entity_id:e,granted_by:actor});
   await connection.query(`
     INSERT INTO mizan.user_sessions(id,user_id,provider_session_hash,authenticated_at,mfa_verified_at,expires_at)
     VALUES($1,$2,$3,now(),now(),now()+interval '30 minutes')
@@ -347,6 +359,34 @@ try {
     return result.value;
   }
   const financialReview=await reviewAction(report.id,'submit',report.content_fingerprint);
+  const commentsPath='/outputs/'+report.id+'/comments';
+  const commentInput={expectedFingerprint:financialReview.fingerprint,body:'Synthetic review comment',
+    attachmentIds:[sourceId],requestKey:randomUUID()};
+  await request(commentsPath,{...commentInput,attachmentIds:[randomUUID()]},422);
+  const comment=await request(commentsPath,commentInput,201);
+  assert.equal((await request(commentsPath,commentInput)).id,comment.id);
+  const authorDiscussion=await request(commentsPath);
+  assert.equal(authorDiscussion.unread,0);
+  assert.equal(authorDiscussion.comments[0].attachments[0].id,sourceId);
+  identity={id:reviewer,sessionId:reviewerSession};
+  await connection.query("SELECT set_config('mizan.user_id',$1,true)",[reviewer]);
+  assert.equal((await request(commentsPath)).unread,1);
+  const attached=await fetch(base+commentsPath+'/'+comment.id+'/attachments/'+sourceId+'/download',{
+    method:'POST',headers:{'content-type':'application/json'},body:'{}',
+  });
+  assert.equal(attached.status,200);
+  assert.equal(attached.headers.get('x-content-type-options'),'nosniff');
+  assert.match(await attached.text(),/Cash,asset\.current,100/);
+  assert.equal((await request(commentsPath+'/read',{})).read,1);
+  assert.equal((await request(commentsPath)).unread,0);
+  await request(commentsPath,{expectedFingerprint:financialReview.fingerprint,parentId:comment.id,
+    body:'Synthetic reply from independent reviewer',requestKey:randomUUID()},201);
+  identity={id:actor,sessionId};
+  await connection.query("SELECT set_config('mizan.user_id',$1,true)",[actor]);
+  const replies=await request(commentsPath);
+  assert.equal(replies.unread,1);
+  assert(replies.comments.some(reply=>reply.parent_id===comment.id));
+  passed.push('Version comments protect scanned attachments and notify only the other participant without duplicate retries');
   assert.equal((await reviewAction(report.id,'approve',financialReview.fingerprint,financialReview.id)).status,'approved_locked');
   passed.push('An independent reviewer can approve and lock financial statements generated from a published source');
 

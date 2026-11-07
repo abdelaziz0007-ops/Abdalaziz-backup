@@ -10,6 +10,7 @@
     "Balanced ledger publishes typed debit and credit rows with encrypted descriptions",
     "Bank statement and ledger publication verify exact balances, account linkage and immutable replay",
     "Published sources create one draft with exact-match suggestions and reject a wrong source type",
+    "Version comments protect scanned attachments and notify only the other participant without duplicate retries",
     "An independent reviewer can approve and lock financial statements generated from a published source",
     "Equal balances alone cannot pass; confirmed coverage enables validation, independent review and immutable bank approval",
     "Audit filters isolate one approval and CSV download records its own audit event without reasons",
