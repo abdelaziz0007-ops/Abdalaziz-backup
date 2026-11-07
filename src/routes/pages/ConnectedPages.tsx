@@ -7,6 +7,7 @@ import { Notice,PageHeader,Panel,Status,useLanguage } from '@/components/Workspa
 import { PublicLayout } from './PublicPages';
 import { DataTable } from '@/components/ui/DataTable';
 import { ConnectedFinance } from './ConnectedFinance';
+import { WorkspaceAudit } from './WorkspaceAudit';
 import { ConnectedBank } from './ConnectedBank';
 import {AdministrationPanel} from './AdministrationPanel';
 import {ReviewWorkspace} from './ReviewWorkspace';
@@ -17,7 +18,6 @@ interface Workspace {id:string;name:string;region:string}
 interface Entity {id:string;code:string;name:string;status:string}
 interface Period {id:string;start_date:string;end_date:string;status:string;version:number}
 interface Currency {code:string;name:string;minor_units:number}
-interface Audit {id:string;created_at:string;action:string;object_type:string}
 export function ConnectedAuth({kind}:{kind:string}){
   const l=useLanguage(),nav=useNavigate(),location=useLocation();
   const [email,setEmail]=useState(''),[password,setPassword]=useState(''),[name,setName]=useState(''),[code,setCode]=useState(''),[backupMode,setBackupMode]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
@@ -72,14 +72,14 @@ function SecuritySetup({me,onVerified}:{me:Me;onVerified:()=>Promise<void>}){
 export function ConnectedWorkspace(){
   const l=useLanguage(),nav=useNavigate();
   const [me,setMe]=useState<Me|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[revision,setRevision]=useState(0);
-  const [workspaces,setWorkspaces]=useState<Workspace[]>([]),[tenant,setTenant]=useState(''),[entities,setEntities]=useState<Entity[]>([]),[entity,setEntity]=useState(''),[periods,setPeriods]=useState<Period[]>([]),[currencies,setCurrencies]=useState<Currency[]>([]),[audit,setAudit]=useState<Audit[]>([]),[security,setSecurity]=useState(false);
+  const [workspaces,setWorkspaces]=useState<Workspace[]>([]),[tenant,setTenant]=useState(''),[entities,setEntities]=useState<Entity[]>([]),[entity,setEntity]=useState(''),[periods,setPeriods]=useState<Period[]>([]),[currencies,setCurrencies]=useState<Currency[]>([]),[security,setSecurity]=useState(false);
   const [workspaceKey,setWorkspaceKey]=useState(()=>crypto.randomUUID());
   const [workspaceName,setWorkspaceName]=useState(''),[consent,setConsent]=useState(false),[entityName,setEntityName]=useState(''),[entityCode,setEntityCode]=useState(''),[currency,setCurrency]=useState('USD'),[framework,setFramework]=useState(''),[fiscalStart,setFiscalStart]=useState(1),[effective,setEffective]=useState(new Date().getFullYear()+'-01-01'),[preparer,setPreparer]=useState(false),[start,setStart]=useState(''),[end,setEnd]=useState('');
   async function refreshMe(){const value=await backend<Me>('/me');setMe(value);setSecurity(false);setRevision(r=>r+1);}
   const showError=(e:unknown)=>{if(e instanceof BackendError&&e.status===401){nav('/auth/sign-in',{replace:true});return;}if(e instanceof BackendError&&e.code==='MFA_REQUIRED')setSecurity(true);const messages:Record<string,[string,string]>={MFA_REQUIRED:['أكّد رمز المصادقة للمتابعة.','Verify your authenticator code to continue.'],PERMISSION_DENIED:['ليس لديك صلاحية لهذا الإجراء.','You do not have permission for this action.'],PERIOD_OVERLAP:['تتداخل هذه الفترة مع فترة محفوظة.','This date range overlaps a saved period.'],RESOURCE_NOT_FOUND:['مساحة العمل أو المنشأة غير متاحة لحسابك.','Workspace or entity unavailable to your account.']};setError(e instanceof BackendError&&messages[e.code]?l(...messages[e.code]):e instanceof Error?e.message:String(e));};
   useEffect(()=>{let live=true;backend<Me>('/me').then(value=>{if(live)setMe(value);}).catch(showError).finally(()=>{if(live)setLoading(false);});return()=>{live=false;};},[]);
   useEffect(()=>{if(!me)return;let live=true;backend<Workspace[]>('/tenants').then(values=>{if(!live)return;setWorkspaces(values);setTenant(old=>values.some(w=>w.id===old)?old:values[0]?.id??'');}).catch(showError);backend<Currency[]>('/reference/currencies').then(values=>{if(live)setCurrencies(values);}).catch(showError);return()=>{live=false;};},[me?.user.id,revision]);
-  useEffect(()=>{setAudit([]);if(!tenant||!me?.mfaVerified)return;let live=true;backend<Entity[]>(`/tenants/${tenant}/entities`).then(values=>{if(live){setEntities(values);setEntity(old=>values.some(e=>e.id===old)?old:values[0]?.id??'');}}).catch(e=>{if(live)showError(e);});backend<Audit[]>(`/tenants/${tenant}/audit`).then(values=>{if(live)setAudit(values);}).catch(e=>{if(live&&!(e instanceof BackendError&&e.status===403))showError(e);});return()=>{live=false;};},[tenant,me?.mfaVerified,revision]);
+  useEffect(()=>{if(!tenant||!me?.mfaVerified)return;let live=true;backend<Entity[]>(`/tenants/${tenant}/entities`).then(values=>{if(live){setEntities(values);setEntity(old=>values.some(e=>e.id===old)?old:values[0]?.id??'');}}).catch(e=>{if(live)showError(e);});return()=>{live=false;};},[tenant,me?.mfaVerified,revision]);
   useEffect(()=>{setPeriods([]);if(!tenant||!entity)return;let live=true;backend<Period[]>(`/tenants/${tenant}/entities/${entity}/periods`).then(values=>{if(live)setPeriods(values);}).catch(e=>{if(live)showError(e);});return()=>{live=false;};},[tenant,entity,revision]);
   async function action(fn:()=>Promise<void>){setBusy(true);setError('');setMessage('');try{await fn();setRevision(r=>r+1);}catch(e){showError(e);}finally{setBusy(false);}}
   async function createWorkspace(e:FormEvent){e.preventDefault();await action(async()=>{const value=await backend<{id:string}>('/tenants',{name:workspaceName,administrationConsent:consent,idempotencyKey:workspaceKey});setWorkspaceKey(crypto.randomUUID());setEntity('');setEntities([]);setTenant(value.id);setWorkspaceName('');setConsent(false);setMessage(l('أُنشئت مساحة العمل وحُفظت صلاحيات إدارتك.','Workspace and explicit administration grants saved.'));});}
@@ -100,7 +100,8 @@ export function ConnectedWorkspace(){
       {tenant&&entity&&<AdministrationPanel key={'admin'+tenant+entity} tenant={tenant} entity={entity} actor={me.user}/>}
       {tenant&&entity&&<ReviewWorkspace key={'review'+tenant+entity} tenant={tenant} entity={entity} actor={me.user}/>}
       {tenant&&entity&&<SourceJobsPanel key={'sources'+tenant+entity} tenant={tenant} entity={entity} periods={periods}/>}
-      {audit.length>0&&<Panel title={l('آخر إجراءات مساحة العمل','Recent workspace actions')}><ul className="stack">{audit.slice(0,10).map(a=><li key={a.id}><strong>{l(({'workspace.created':'إنشاء مساحة عمل','entity.created':'إضافة منشأة','period.created':'إنشاء فترة مالية','trial_balance.imported':'استيراد ميزان مراجعة'} as Record<string,string>)[a.action]??a.action,a.action)}</strong> · <bdi>{new Date(a.created_at).toLocaleString()}</bdi></li>)}</ul></Panel>}
+
+      {tenant&&<WorkspaceAudit key={tenant} tenant={tenant} revision={revision}/>}
     </>}
   </div></PublicLayout>;
 }

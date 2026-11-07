@@ -14,6 +14,7 @@ import {mountSourcePreviewRoute} from '../server/source-preview-routes.mjs';
 import {mountStagedImportRoutes} from '../server/staged-import-routes.mjs';
 import {mountPublishedBankRoutes} from '../server/published-bank-routes.mjs';
 import {mountMatchRoutes} from '../server/match-routes.mjs';
+import {mountAuditRoutes} from '../server/audit-routes.mjs';
 
 const {branch} = JSON.parse(await readFile('.neon', 'utf8'));
 assert.equal(branch, 'codex-backend-completion');
@@ -51,6 +52,7 @@ try {
       AND mizan.has_permission(p.tenant_id,p.entity_id,u.id,'imports.manage')
       AND mizan.has_permission(p.tenant_id,p.entity_id,u.id,'reports.view')
       AND mizan.has_permission(p.tenant_id,p.entity_id,u.id,'outputs.prepare')
+      AND mizan.has_permission(p.tenant_id,NULL,u.id,'members.manage')
     ORDER BY p.created_at DESC LIMIT 1
   `);
   assert(fixture, 'Run financial-api verification on the isolated branch first');
@@ -86,12 +88,12 @@ try {
   const dependencies = {
     HttpError,
     scoped: async (req, tenant, entity, permission, callback) => {
-      if (tenant !== t || entity !== e) throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'Out of scope');
+      if (tenant !== t || (entity && entity !== e)) throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'Out of scope');
       req.principal = {id: actor, sessionId};
       const {rows: [access]} = await connection.query('SELECT mizan.has_permission($1,$2,$3,$4) AS allowed', [t,e,actor,permission]);
       if (permission) assert(access.allowed);
       await connection.query('SAVEPOINT route_request');
-      try { return await callback(connection); }
+      try { return await callback(connection,{entityIds:[e]}); }
       catch (error) { await connection.query('ROLLBACK TO route_request'); throw error; }
       finally { await connection.query('RELEASE route_request'); }
     },
@@ -103,6 +105,7 @@ try {
   mountStagedImportRoutes(app, dependencies);
   mountPublishedBankRoutes(app, dependencies);
   mountMatchRoutes(app, dependencies);
+  mountAuditRoutes(app, dependencies);
   mountFinancialRoutes(app, dependencies);
   mountSourcePreviewRoute(app, {...dependencies, configured: () => true,
     storage: {read: async key => Buffer.from(sources.get(key))},
@@ -372,6 +375,24 @@ try {
     {requestKey:randomUUID(),expectedVersion:1,reason:'Mutation should fail during independent review'},409)).code,'OUTPUT_FROZEN');
   assert.equal((await reviewAction(draft.output_version_id,'approve',submission.fingerprint,submission.id)).status,'approved_locked');
   passed.push('Equal balances alone cannot pass; confirmed coverage enables validation, independent review and immutable bank approval');
+
+  const auditPath='http://127.0.0.1:'+server.address().port+'/tenants/'+t+'/audit';
+  const auditResponse=await fetch(auditPath+'?action=review.approve&objectId='+report.id);
+  assert.equal(auditResponse.status,200);
+  const auditEvents=await auditResponse.json();
+  assert.equal(auditEvents.length,1);
+  assert.equal(auditEvents[0].actor_id,reviewer);
+  assert.match(auditEvents[0].event_hash,/^[0-9a-f]{64}$/);
+  const csvResponse=await fetch(auditPath+'/export',{method:'POST',headers:{'content-type':'application/json'},
+    body:JSON.stringify({action:'review.approve',objectId:report.id})});
+  assert.equal(csvResponse.status,200);
+  const auditExport=await csvResponse.json();
+  assert.equal(auditExport.count,1);
+  assert(auditExport.csv.includes(report.id));
+  assert(!auditExport.csv.includes('Synthetic independent review'));
+  const exportEvents=await (await fetch(auditPath+'?action=audit.exported')).json();
+  assert(exportEvents.some(event=>event.redacted_metadata.count===1));
+  passed.push('Audit filters isolate one approval and CSV download records its own audit event without reasons');
 
   await connection.query('ROLLBACK');
   assert.equal((await connection.query('SELECT count(*)::int AS count FROM mizan.import_batches WHERE id=$1',[staged.batchId])).rows[0].count,0);

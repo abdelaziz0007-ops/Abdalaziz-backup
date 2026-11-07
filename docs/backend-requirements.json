@@ -417,8 +417,8 @@
       "stage": "M",
       "acceptance": "Imports, edits, matching, approval, downloads, and permission changes are recorded; client users cannot modify the trail",
       "status": "partial",
-      "evidence": [],
-      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+      "evidence": ["verification/staged-imports-api.json"],
+      "remaining": "Authorized administrators can filter scoped audit events and export up to 1,000 events with recent MFA. Downloads record a new event and the CSV omits free-text reasons and metadata. Full lifecycle event coverage and large-history acceptance remain pending."
     },
     {
       "id": "FR-041",

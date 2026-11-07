@@ -11,6 +11,7 @@ import { mountAdministrationRoutes } from './administration-routes.mjs';
 import { mountReviewRoutes } from './review-routes.mjs';
 import { mountReconcilingItemRoutes } from './reconciling-item-routes.mjs';
 import { mountSourceJobRoutes } from './source-job-routes.mjs';
+import { mountAuditRoutes } from './audit-routes.mjs';
 
 class HttpError extends Error {
   constructor(status,code,message){super(message);this.status=status;this.code=code;}
@@ -122,9 +123,7 @@ export function backendRouter({pool,auth,dataRegion}){
       },{fresh:true});result(req,res,value,201);
     }catch(e){next(e);}
   });
-  router.get('/tenants/:tenantId/audit',async(req,res,next)=>{
-    try{result(req,res,await scoped(req,req.params.tenantId,null,'members.manage',async(c,context)=>(await c.query('SELECT id,created_at,action,object_type,object_id,event_hash,previous_event_hash,redacted_metadata FROM mizan.audit_events WHERE tenant_id=$1 AND (entity_id IS NULL OR entity_id=ANY($2::uuid[])) ORDER BY created_at DESC LIMIT 50',[req.params.tenantId,context.entityIds])).rows));}catch(e){next(e);}
-  });
+  mountAuditRoutes(router,{scoped,audit,result,HttpError});
   mountFinancialRoutes(router,{scoped,audit,result,HttpError});
   mountBankRoutes(router,{scoped,audit,result,HttpError});
   mountMatchRoutes(router,{scoped,audit,result,HttpError});
