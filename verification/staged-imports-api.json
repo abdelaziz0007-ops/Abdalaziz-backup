@@ -18,6 +18,7 @@
     "Authorized reopening creates a linked replacement from corrected figures and leaves the approved original intact",
     "Bank reopening requires new sources and independently approves replacement matches while preserving the original allocations",
     "Period locking protects active reviews and historical reports, and reopening starts one new importable version",
+    "A reopened period links financial and bank replacements to the latest approval while preserving prior versions",
     "Synthetic records completely rolled back and publication uses a restricted database function"
   ],
   "rolledBack": true,

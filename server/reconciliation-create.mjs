@@ -8,8 +8,7 @@ export async function latestApprovedReconciliation(c,t,e,periodId,accountId){
     SELECT v.id,v.logical_output_id,v.content_fingerprint,r.bank_dataset_id,r.book_dataset_id,r.cutoff_date::text AS cutoff
     FROM mizan.output_versions v JOIN mizan.reconciliations r
       ON (r.tenant_id,r.entity_id,r.output_version_id)=(v.tenant_id,v.entity_id,v.id)
-    WHERE (v.tenant_id,v.entity_id,v.period_id,r.bank_account_id)=($1,$2,$3,$4)
-      AND v.status='approved_locked' ORDER BY v.version DESC,v.id DESC LIMIT 1
+    WHERE (v.tenant_id,v.entity_id,v.id)=($1,$2,mizan.latest_approved_output($1,$2,$3,'reconciliation',$4))
   `,[t,e,periodId,accountId])).rows[0];
 }
 
@@ -20,9 +19,10 @@ export async function createBankDraft(connection, {
   const {rows: [previous]} = await connection.query(`
     SELECT v.logical_output_id,v.version FROM mizan.output_versions v
     JOIN mizan.reconciliations r ON (r.tenant_id,r.entity_id,r.output_version_id)=(v.tenant_id,v.entity_id,v.id)
-    WHERE v.tenant_id=$1 AND v.entity_id=$2 AND v.period_id=$3 AND r.bank_account_id=$4
+    WHERE v.tenant_id=$1 AND v.entity_id=$2 AND r.bank_account_id=$4
+      AND CASE WHEN $5::uuid IS NULL THEN v.period_id=$3 ELSE v.logical_output_id=$5 END
     ORDER BY v.version DESC LIMIT 1
-  `, [scope.tenant_id, scope.entity_id, period.id, bank.id]);
+  `, [scope.tenant_id, scope.entity_id, period.id, bank.id, reopen?.logical_output_id??null]);
   await insert(connection, 'output_versions', {
     ...scope, id: output, logical_output_id: reopen?.logical_output_id ?? previous?.logical_output_id ?? randomUUID(), version: (previous?.version ?? 0)+1,
     predecessor_id:reopen?.id??null,reopen_reason:reopen?.reason??null,

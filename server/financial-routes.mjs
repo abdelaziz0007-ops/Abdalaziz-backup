@@ -12,6 +12,13 @@ const reportInput=z.object({confirmation:z.literal(true),reopen:z.object({
   predecessorId:z.uuid(),expectedFingerprint:z.string().regex(/^[0-9a-f]{64}$/),reason:z.string().trim().min(8).max(500),
 }).strict().optional()}).strict();
 
+async function hasApprovedFinancialOutput(c,t,e,periodId){
+  return (await c.query(`
+    SELECT 1 FROM unnest($4::text[]) AS kind(output_type)
+    WHERE mizan.latest_approved_output($1,$2,$3,kind.output_type,NULL) IS NOT NULL LIMIT 1
+  `,[t,e,periodId,Object.keys(types)])).rowCount>0;
+}
+
 async function datasetOutputs(c,t,e,dataset,{initialOnly=false}={}){
   return (await c.query(`
     SELECT v.id,v.output_type,v.status FROM mizan.output_versions v JOIN mizan.output_datasets d
@@ -62,7 +69,11 @@ async function createFinancialDrafts(c,{
   for(const [type,lines] of Object.entries(types)){
     if(reopen&&type!==reopen.output_type)continue;
     const id=randomUUID(),outputFingerprint=hash(fingerprint+':'+type);
-    const prev=(await c.query('SELECT id,logical_output_id,version,status FROM mizan.output_versions WHERE tenant_id=$1 AND entity_id=$2 AND period_id=$3 AND output_type=$4 ORDER BY version DESC,created_at DESC LIMIT 1',[t,e,period.id,type])).rows[0];
+    const prev=(await c.query(`
+      SELECT logical_output_id,version FROM mizan.output_versions WHERE tenant_id=$1 AND entity_id=$2 AND output_type=$4
+      AND CASE WHEN $5::uuid IS NULL THEN period_id=$3 ELSE logical_output_id=$5 END
+      ORDER BY version DESC,created_at DESC LIMIT 1
+    `,[t,e,period.id,type,reopen?.logical_output_id??null])).rows[0];
     await insert(c,'output_versions',{...scope,id,logical_output_id:reopen?.logical_output_id??prev?.logical_output_id??randomUUID(),version:(prev?.version??0)+1,predecessor_id:reopen?.id??null,reopen_reason:reopen?.reason??null,output_type:type,period_id:period.id,currency_code:period.currency_code,settings_version_id:period.settings_version_id,mapping_version_id:mapping,preparer_id:actor,content_fingerprint:outputFingerprint,status:'draft'});
     drafts.push({id,output_type:type,status:'draft'});
     await insert(c,'output_datasets',{...scope,id:randomUUID(),output_version_id:id,dataset_id:dataset,source_role:'primary'});
@@ -124,8 +135,9 @@ export function mountFinancialRoutes(router,{scoped,audit,result,HttpError}){
           if(!grant.allowed)throw new HttpError(403,'PERMISSION_DENIED','Reopening permission is required');
           const {rows:[original]}=await c.query(`
             SELECT id,output_type,logical_output_id,content_fingerprint FROM mizan.output_versions
-            WHERE (tenant_id,entity_id,id,period_id,currency_code,settings_version_id)=($1,$2,$3,$4,$5,$6)
+            WHERE (tenant_id,entity_id,id,currency_code,settings_version_id)=($1,$2,$3,$5,$6)
               AND status='approved_locked' AND output_type IN ('income_statement','financial_position','analysis')
+              AND id=mizan.latest_approved_output($1,$2,$4,output_type,NULL)
           `,[t,e,reopen.predecessorId,dataset.id,dataset.currency_code,dataset.settings_version_id]);
           if(!original)throw notFound();
           if(original.content_fingerprint!==reopen.expectedFingerprint)throw new HttpError(409,'STALE_OUTPUT','Reload the approved version before reopening');
@@ -145,11 +157,9 @@ export function mountFinancialRoutes(router,{scoped,audit,result,HttpError}){
             }
             return {datasetId,reused:true,outputs};
           }
-          const {rowCount:locked}=await c.query(`
-            SELECT 1 FROM mizan.output_versions WHERE tenant_id=$1 AND entity_id=$2 AND period_id=$3
-              AND status='approved_locked' AND output_type IN ('income_statement','financial_position','analysis') LIMIT 1
-          `,[t,e,dataset.id]);
-          if(locked)throw new HttpError(409,'REOPEN_REQUIRED','This period has approved financial outputs and requires a separate reopening');
+          if(await hasApprovedFinancialOutput(c,t,e,dataset.id)){
+            throw new HttpError(409,'REOPEN_REQUIRED','This accounting period has approved reports in its version history; reopen the report to prepare a replacement');
+          }
         }
         if(dataset.status!=='open')throw new HttpError(409,'PERIOD_NOT_OPEN','Use an open accounting period');
         const {rows:typed}=await c.query(`
@@ -215,8 +225,7 @@ export function mountFinancialRoutes(router,{scoped,audit,result,HttpError}){
         const prior=(await c.query('SELECT id FROM mizan.dataset_versions WHERE tenant_id=$1 AND entity_id=$2 AND idempotency_key=$3',[t,e,idempotency])).rows[0];
         async function response(id,reused){return {datasetId:id,reused,outputs:await datasetOutputs(c,t,e,id)};}
         if(prior)return response(prior.id,true);
-        if((await c.query(`SELECT 1 FROM mizan.output_versions WHERE tenant_id=$1 AND entity_id=$2 AND period_id=$3
-          AND status='approved_locked' AND output_type IN ('income_statement','financial_position','analysis') LIMIT 1`,[t,e,period.id])).rowCount){
+        if(await hasApprovedFinancialOutput(c,t,e,period.id)){
           throw new HttpError(409,'REOPEN_REQUIRED','This period has approved financial outputs; use a published trial balance to reopen them');
         }
         const fingerprint=hash(JSON.stringify({algorithm,period:period.id,settings:period.settings_version_id,digest}));

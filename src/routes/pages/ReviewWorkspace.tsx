@@ -8,7 +8,7 @@ import {OutputComments} from './OutputComments';
 import {ReopenFinancialOutput} from './ReopenFinancialOutput';
 import {PublishedBankPair} from './PublishedBankPair';
 interface Output{id:string;output_type:string;status:string;version:number;currency_code:string;start_date:string;end_date:string;reconciliation_id:string|null}
-interface Review{output:{id:string;status:string;version:number;period_status:string;period_id:string;predecessor_id:string|null;reopen_reason:string|null;can_reopen:boolean;bank_account_id:string|null;bank_dataset_id:string|null;book_dataset_id:string|null;preparer_id:string;content_fingerprint:string;can_prepare:boolean;can_approve:boolean;can_export:boolean};reviewers:{id:string;name:string}[];checks:{code:string;passed:boolean;severity:string;message:string}[];submissions:{id:string;reviewer_id:string;submitted_by:string;content_fingerprint:string;withdrawn_at:string|null}[];decisions:{id:string;decision:string;reason:string;actor_id:string;created_at:string}[];approvalEligible:boolean;changes:{key:string;label:string;previous:string|null;current:string|null;difference:string|null;unit:string}[]}
+interface Review{output:{id:string;status:string;version:number;period_status:string;reopen_period_id:string|null;reopen_period_version:number|null;period_id:string;predecessor_id:string|null;reopen_reason:string|null;can_reopen:boolean;bank_account_id:string|null;bank_dataset_id:string|null;book_dataset_id:string|null;preparer_id:string;content_fingerprint:string;can_prepare:boolean;can_approve:boolean;can_export:boolean};reviewers:{id:string;name:string}[];checks:{code:string;passed:boolean;severity:string;message:string}[];submissions:{id:string;reviewer_id:string;submitted_by:string;content_fingerprint:string;withdrawn_at:string|null}[];decisions:{id:string;decision:string;reason:string;actor_id:string;created_at:string}[];approvalEligible:boolean;changes:{key:string;label:string;previous:string|null;current:string|null;difference:string|null;unit:string}[]}
 interface Fact{id:string;name:string;value:string;formula?:string;unit?:string}
 export function ReviewWorkspace({tenant,entity,actor}:{tenant:string;entity:string;actor:{id:string;name:string}}){
  const l=useLanguage(),base=`/tenants/${tenant}/entities/${entity}`,[outputs,setOutputs]=useState<Output[]>([]),[selected,setSelected]=useState(''),[review,setReview]=useState<Review|null>(null),[facts,setFacts]=useState<Fact[]>([]),[reviewer,setReviewer]=useState(''),[reason,setReason]=useState(''),[ack,setAck]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState(''),[revision,setRevision]=useState(0),pending=useRef<{signature:string;key:string}|null>(null);
@@ -65,13 +65,15 @@ export function ReviewWorkspace({tenant,entity,actor}:{tenant:string;entity:stri
         {key:'after',header:l('النسخة الجديدة','Replacement'),render:row=><bdi>{row.current??'—'}</bdi>},
         {key:'delta',header:l('الفرق','Difference'),render:row=><bdi>{row.difference??'—'} {row.unit}</bdi>},
       ]}/>}</section>}
-   {canAct&&review.output.status==='approved_locked'&&review.output.can_prepare&&review.output.can_reopen&&['income_statement','financial_position','analysis'].includes(current.output_type)&&
-     <ReopenFinancialOutput key={selected} base={base} id={selected} periodId={review.output.period_id} fingerprint={review.output.content_fingerprint}
+   {review.output.can_reopen&&review.output.can_prepare&&review.output.reopen_period_id&&review.output.reopen_period_id!==review.output.period_id&&
+    <p>{l('ستُنشأ المسودة في الإصدار المفتوح للفترة','The draft will use the open period version')} · v{review.output.reopen_period_version}</p>}
+   {review.output.reopen_period_id&&review.output.status==='approved_locked'&&review.output.can_prepare&&review.output.can_reopen&&['income_statement','financial_position','analysis'].includes(current.output_type)&&
+     <ReopenFinancialOutput key={selected} base={base} id={selected} periodId={review.output.reopen_period_id} fingerprint={review.output.content_fingerprint}
       onOpened={id=>{setSelected(id);setRevision(value=>value+1);setMessage(l('حُفظت مسودة بديلة مرتبطة بالإصدار المعتمد.','Replacement draft saved and linked to the approved version.'));}}/>}
-   {canAct&&review.output.status==='approved_locked'&&review.output.can_prepare&&review.output.can_reopen&&reconciliationId&&
+   {review.output.reopen_period_id&&review.output.status==='approved_locked'&&review.output.can_prepare&&review.output.can_reopen&&reconciliationId&&
     review.output.bank_account_id&&review.output.bank_dataset_id&&review.output.book_dataset_id&&
     <PublishedBankPair key={selected} base={base} reopen={{predecessorId:selected,expectedFingerprint:review.output.content_fingerprint,
-      periodId:review.output.period_id,bankAccountId:review.output.bank_account_id,oldBankDatasetId:review.output.bank_dataset_id,
+      periodId:review.output.reopen_period_id,bankAccountId:review.output.bank_account_id,oldBankDatasetId:review.output.bank_dataset_id,
       oldBookDatasetId:review.output.book_dataset_id}} onCreated={(_id,_reused,outputId)=>{setSelected(outputId);setRevision(value=>value+1);
       setMessage(l('حُفظت مسودة تسوية بديلة. راجع المطابقات في شاشة التسويات البنكية.','Replacement draft saved. Review its matches in the bank reconciliation workspace.'));}}/>}
    <OutputComments key={selected+':'+review.output.content_fingerprint} base={base} id={selected} fingerprint={review.output.content_fingerprint} actorId={actor.id}/>

@@ -299,15 +299,15 @@ try {
   await insert(connection, 'bank_accounts', {...scope, id:bankAccount, label:'Rollback bank',
     identifier_ciphertext:encryptField('synthetic', t+':'+e+':'+bankAccount), identifier_last_four:'0000',
     ledger_account_id:bankLedgerAccount.id,currency_code:fixture.currency_code});
-  async function bankDataset(dataType, marker, closing) {
+  async function bankDataset(dataType, marker, closing, targetPeriod=periodId) {
     const deposit=Number(closing)-98;
     const bankSource = await fixtureSource('id,date,reference,amount,running\n'
       + marker+'1,'+fixture.start_date+',RX,'+deposit+','+(100+deposit)+'\n'+marker+'2,'+fixture.start_date+',RY,-2,'+closing+'\n');
     const bankPreview = '/source-files/' + bankSource + '/preview';
-    const template = await request(bankPreview, {mapping:{periodId,sheetName:'CSV',headerRow:1,dataType,
+    const template = await request(bankPreview, {mapping:{periodId:targetPeriod,sheetName:'CSV',headerRow:1,dataType,
       mapping:{rowId:1,postingDate:2,reference:3,signedAmount:4,runningBalance:5}},
       saveTemplate:{requestKey:randomUUID(),name:'Rollback bank template'}});
-    const stagedBank = await request(bankPreview, {template:{id:template.savedTemplate.id,periodId},stageImport:true}, 201);
+    const stagedBank = await request(bankPreview, {template:{id:template.savedTemplate.id,periodId:targetPeriod},stageImport:true}, 201);
     const bankPath = '/staged-imports/' + stagedBank.staged.batchId;
     const bankReview = await request(bankPath);
     const input = {qualityRunId:bankReview.quality.id,confirmation:true,reason:'Reviewed complete bank period',
@@ -581,6 +581,44 @@ try {
   assert.notEqual(reimport.staged.batchId,replacement.batchId);
   assert.equal((await request('/reports/'+report.id)).status,'approved_locked');
   passed.push('Period locking protects active reviews and historical reports, and reopening starts one new importable version');
+
+  const targetReview=await request('/outputs/'+newReport.id+'/review');
+  assert.equal(targetReview.output.period_status,'locked');
+  assert.equal(targetReview.output.reopen_period_id,newPeriod.id);
+  assert.equal((await request('/outputs/'+report.id+'/review')).output.reopen_period_id,null);
+  const nextReview=await request('/staged-imports/'+reimport.staged.batchId);
+  const nextDataset=await request('/staged-imports/'+reimport.staged.batchId+'/publish',
+    {...publication,qualityRunId:nextReview.quality.id});
+  const nextReportPath='/datasets/'+nextDataset.datasetId+'/reports';
+  assert.equal((await request(nextReportPath,{confirmation:true},409)).code,'REOPEN_REQUIRED');
+  await request(nextReportPath,reopening,404);
+  const across=await request(nextReportPath,{confirmation:true,reopen:{
+    predecessorId:newReport.id,expectedFingerprint:newSubmission.fingerprint,reason:'Replace the report in the reopened accounting period',
+  }},201);
+  const acrossId=across.outputs[0].id;
+  const acrossDetails=await request('/outputs/'+acrossId+'/review');
+  assert.equal(acrossDetails.output.period_id,newPeriod.id);
+  assert.equal(acrossDetails.output.predecessor_id,newReport.id);
+  assert.equal(acrossDetails.output.version,targetReview.output.version+1);
+  const acrossSubmission=await reviewAction(acrossId,'submit',acrossDetails.output.content_fingerprint);
+  assert.equal((await reviewAction(acrossId,'approve',acrossSubmission.fingerprint,acrossSubmission.id)).status,'approved_locked');
+
+  const bankTarget=await request('/outputs/'+replacementBankDraft.output_version_id+'/review');
+  assert.equal(bankTarget.output.reopen_period_id,newPeriod.id);
+  const carriedBank=await bankDataset('bank_statement','S3','110',newPeriod.id);
+  const carriedBooks=await bankDataset('bank_ledger','L3','110',newPeriod.id);
+  const acrossPair={bankDatasetId:carriedBank,bookDatasetId:carriedBooks,confirmation:true};
+  assert.equal((await request('/reconciliations/from-published',acrossPair,409)).code,'REOPEN_REQUIRED');
+  const bankAcross=await request('/reconciliations/from-published',{...acrossPair,reopen:{
+    predecessorId:replacementBankDraft.output_version_id,expectedFingerprint:newBankReview.fingerprint,
+    reason:'Replace the reconciliation in the reopened accounting period',
+  }},201);
+  const bankAcrossReview=await request('/outputs/'+bankAcross.output_version_id+'/review');
+  assert.equal(bankAcrossReview.output.period_id,newPeriod.id);
+  assert.equal(bankAcrossReview.output.predecessor_id,replacementBankDraft.output_version_id);
+  assert.equal(bankAcrossReview.output.version,bankTarget.output.version+1);
+  assert.equal((await request('/outputs/'+replacementBankDraft.output_version_id+'/review')).output.status,'approved_locked');
+  passed.push('A reopened period links financial and bank replacements to the latest approval while preserving prior versions');
 
   await connection.query('ROLLBACK');
   assert.equal((await connection.query('SELECT count(*)::int AS count FROM mizan.import_batches WHERE id=$1',[staged.batchId])).rows[0].count,0);
