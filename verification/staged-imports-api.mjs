@@ -18,6 +18,7 @@ import {mountAuditRoutes} from '../server/audit-routes.mjs';
 import {mountOutputExportRoutes} from '../server/output-export-routes.mjs';
 import {mountOutputCommentRoutes} from '../server/output-comment-routes.mjs';
 import {mountReviewRoutes} from '../server/review-routes.mjs';
+import {mountPeriodRoutes} from '../server/period-routes.mjs';
 import ExcelJS from 'exceljs';
 
 const {branch} = JSON.parse(await readFile('.neon', 'utf8'));
@@ -57,6 +58,7 @@ try {
       AND mizan.has_permission(p.tenant_id,p.entity_id,u.id,'reports.view')
       AND mizan.has_permission(p.tenant_id,p.entity_id,u.id,'outputs.prepare')
       AND mizan.has_permission(p.tenant_id,NULL,u.id,'members.manage')
+      AND mizan.has_permission(p.tenant_id,p.entity_id,u.id,'entities.manage')
     ORDER BY p.created_at DESC LIMIT 1
   `);
   assert(fixture, 'Run financial-api verification on the isolated branch first');
@@ -96,8 +98,8 @@ try {
       if (tenant !== t || (entity && entity !== e)) throw new HttpError(404, 'RESOURCE_NOT_FOUND', 'Out of scope');
       req.principal = identity;
       req.requestId = randomUUID();
-      const {rows: [access]} = await connection.query('SELECT mizan.has_permission($1,$2,$3,$4) AS allowed', [t,e,actor,permission]);
-      if (permission) assert(access.allowed);
+      const {rows: [access]} = await connection.query('SELECT mizan.has_permission($1,$2,$3,$4) AS allowed', [t,entity,identity.id,permission]);
+      if (permission&&!access.allowed)throw new HttpError(403,'PERMISSION_DENIED','Action is not granted');
       await connection.query('SAVEPOINT route_request');
       try { return await callback(connection,{entityIds:[e]}); }
       catch (error) { await connection.query('ROLLBACK TO route_request'); throw error; }
@@ -121,6 +123,7 @@ try {
   }}});
   mountFinancialRoutes(app, dependencies);
   mountReviewRoutes(app, dependencies);
+  mountPeriodRoutes(app, dependencies);
   mountSourcePreviewRoute(app, {...dependencies, configured: () => true,
     storage: {read: async key => Buffer.from(sources.get(key))},
     parse: async (bytes, options) => {
@@ -361,6 +364,9 @@ try {
     return result.value;
   }
   const financialReview=await reviewAction(report.id,'submit',report.content_fingerprint);
+  const periodPath='/periods/'+periodId;
+  const lockPeriod={requestKey:randomUUID(),reason:'Finalize the completed test accounting period'};
+  assert.equal((await request(periodPath+'/lock',lockPeriod,409)).code,'PERIOD_STATE_CONFLICT');
   const supersededId=randomUUID(),supersededFingerprint=hash(supersededId);
   await connection.query(`
     INSERT INTO mizan.output_versions(id,tenant_id,entity_id,logical_output_id,version,output_type,period_id,currency_code,
@@ -506,6 +512,39 @@ try {
   assert.equal(originalAfter.content_fingerprint,financialReview.fingerprint);
   assert.match(originalAfter.lines.find(line=>line.code==='assets').value,/^100(?:\.0+)?$/);
   passed.push('Authorized reopening creates a linked replacement from corrected figures and leaves the approved original intact');
+
+  identity={id:reviewer,sessionId:reviewerSession};
+  await connection.query("SELECT set_config('mizan.user_id',$1,true)",[reviewer]);
+  await request(periodPath+'/lock',lockPeriod,403);
+  identity={id:actor,sessionId};
+  await connection.query("SELECT set_config('mizan.user_id',$1,true)",[actor]);
+  const locked=await request(periodPath+'/lock',lockPeriod);
+  assert.equal(locked.status,'locked');
+  assert.equal((await request(periodPath+'/lock',lockPeriod)).reused,true);
+  await connection.query('SAVEPOINT frozen_period');
+  await assert.rejects(connection.query('UPDATE mizan.output_versions SET content_fingerprint=$2 WHERE id=$1',
+    [supersededId,hash(randomUUID())]),/Period is closed/);
+  await connection.query('ROLLBACK TO SAVEPOINT frozen_period');
+  await connection.query('RELEASE SAVEPOINT frozen_period');
+  const reopenPeriod={requestKey:randomUUID(),reason:'Create a new period version for controlled corrections'};
+  const newPeriod=await request(periodPath+'/reopen',reopenPeriod,201);
+  assert.equal(newPeriod.predecessor_id,periodId);
+  assert.equal(newPeriod.version,locked.version+1);
+  assert.equal((await request(periodPath+'/reopen',reopenPeriod)).id,newPeriod.id);
+  await request(periodPath+'/reopen',{...reopenPeriod,requestKey:randomUUID()},409);
+  const periods=await request('/periods');
+  const previous=periods.find(item=>item.id===periodId), next=periods.find(item=>item.id===newPeriod.id);
+  assert.equal(previous.status,'locked');
+  assert.equal(previous.is_latest,false);
+  assert.equal(next.status,'open');
+  assert.equal(next.is_latest,true);
+  assert.equal(next.reopen_reason,reopenPeriod.reason);
+  assert.deepEqual([next.start_date,next.end_date],[previous.start_date,previous.end_date]);
+  const reimport=await request('/source-files/'+correctionFile+'/preview',
+    {template:{id:savedTemplate.id,periodId:newPeriod.id},stageImport:true},201);
+  assert.notEqual(reimport.staged.batchId,replacement.batchId);
+  assert.equal((await request('/reports/'+report.id)).status,'approved_locked');
+  passed.push('Period locking protects active reviews and historical reports, and reopening starts one new importable version');
 
   await connection.query('ROLLBACK');
   assert.equal((await connection.query('SELECT count(*)::int AS count FROM mizan.import_batches WHERE id=$1',[staged.batchId])).rows[0].count,0);

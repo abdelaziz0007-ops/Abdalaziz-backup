@@ -14,6 +14,7 @@ import { mountSourceJobRoutes } from './source-job-routes.mjs';
 import { mountAuditRoutes } from './audit-routes.mjs';
 import { mountOutputExportRoutes } from './output-export-routes.mjs';
 import { mountOutputCommentRoutes } from './output-comment-routes.mjs';
+import { mountPeriodRoutes } from './period-routes.mjs';
 
 class HttpError extends Error {
   constructor(status,code,message){super(message);this.status=status;this.code=code;}
@@ -102,9 +103,6 @@ export function backendRouter({pool,auth,dataRegion}){
   router.get('/tenants/:tenantId/entities/:entityId/settings',async(req,res,next)=>{
     try{result(req,res,await scoped(req,req.params.tenantId,req.params.entityId,null,async c=>(await c.query('SELECT id,version,currency_code,fiscal_year_start_month,accounting_framework,effective_from FROM mizan.entity_settings_versions WHERE tenant_id=$1 AND entity_id=$2 ORDER BY version DESC LIMIT 1',[req.params.tenantId,req.params.entityId])).rows[0]??null));}catch(e){next(e);}
   });
-  router.get('/tenants/:tenantId/entities/:entityId/periods',async(req,res,next)=>{
-    try{result(req,res,await scoped(req,req.params.tenantId,req.params.entityId,null,async c=>(await c.query('SELECT id,start_date::text,end_date::text,status,version FROM mizan.accounting_periods WHERE tenant_id=$1 AND entity_id=$2 ORDER BY start_date DESC,version DESC LIMIT 100',[req.params.tenantId,req.params.entityId])).rows));}catch(e){next(e);}
-  });
   router.get('/tenants/:tenantId/entities/:entityId/reports',async(req,res,next)=>{
     try{result(req,res,await scoped(req,req.params.tenantId,req.params.entityId,'reports.view',async c=>(await c.query("SELECT id,output_type,period_id,currency_code,version,status,created_at FROM mizan.output_versions WHERE tenant_id=$1 AND entity_id=$2 AND output_type<>'reconciliation' ORDER BY created_at DESC LIMIT 50",[req.params.tenantId,req.params.entityId])).rows));}catch(e){next(e);}
   });
@@ -117,7 +115,7 @@ export function backendRouter({pool,auth,dataRegion}){
     try{
       const data=schemas.period.parse(req.body),tenant=req.params.tenantId,entity=req.params.entityId;
       const value=await scoped(req,tenant,entity,'entities.manage',async c=>{
-        await c.query('SELECT pg_advisory_xact_lock(hashtextextended($1,23))',[entity]);
+        await c.query('SELECT pg_advisory_xact_lock(hashtextextended($1,42))',[entity]);
         if((await c.query("SELECT 1 FROM mizan.accounting_periods WHERE tenant_id=$1 AND entity_id=$2 AND status<>'superseded' AND start_date<=$4::date AND end_date>=$3::date LIMIT 1",[tenant,entity,data.startDate,data.endDate])).rows.length)throw new HttpError(409,'PERIOD_OVERLAP','The date range overlaps an existing accounting period');
         const settings=(await c.query('SELECT id FROM mizan.entity_settings_versions WHERE tenant_id=$1 AND entity_id=$2 ORDER BY version DESC LIMIT 1',[tenant,entity])).rows[0];
         const period=(await c.query('INSERT INTO mizan.accounting_periods(tenant_id,entity_id,version,settings_version_id,start_date,end_date,created_by) VALUES($1,$2,1,$3,$4,$5,$6) RETURNING id,start_date::text,end_date::text,status,version',[tenant,entity,settings.id,data.startDate,data.endDate,req.principal.id])).rows[0];
@@ -125,6 +123,7 @@ export function backendRouter({pool,auth,dataRegion}){
       },{fresh:true});result(req,res,value,201);
     }catch(e){next(e);}
   });
+  mountPeriodRoutes(router,{scoped,result,HttpError});
   mountAuditRoutes(router,{scoped,audit,result,HttpError});
   mountOutputExportRoutes(router,{scoped,audit,HttpError});
   mountOutputCommentRoutes(router,{scoped,result,audit,HttpError});

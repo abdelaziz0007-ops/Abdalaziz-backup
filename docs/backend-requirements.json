@@ -54,8 +54,8 @@
       "stage": "M",
       "acceptance": "A locked period rejects direct changes; reopening requires authorization and a reason and creates a new version",
       "status": "partial",
-      "evidence": [],
-      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+      "evidence": ["verification/staged-imports-api.json"],
+      "remaining": "Period administrators can lock the current version with a reason and reopen it as a new version with the same dates and settings. Active reviews block locking. Historical outputs stay readable and new imports target the reopened period. Browser and production acceptance remain pending."
     },
     {
       "id": "FR-006",
@@ -391,7 +391,7 @@
       "acceptance": "Previous versions remain retrievable; new versions explain their reason and differences",
       "status": "partial",
       "evidence": ["verification/staged-imports-api.json"],
-      "remaining": "Authorized users can reopen approved financial statements and analysis in an open period from a published trial balance. The original remains approved, the replacement displays its reason and value changes, and review rejects drafts that do not replace the latest approval. Reopening locked periods and bank reconciliations remains pending."
+      "remaining": "Authorized users can reopen approved financial statements and analysis in an open period from a published trial balance. The original remains approved, the replacement displays its reason and value changes, and review rejects drafts that do not replace the latest approval. Report lineage across reopened period versions and reopening approved bank reconciliations remain pending."
     },
     {
       "id": "FR-038",
