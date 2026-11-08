@@ -16,6 +16,7 @@
     "Audit filters isolate one approval and CSV download records its own audit event without reasons",
     "Exact approved outputs download as PDF and XLSX with scoped permission, stale-state protection and audited hashes",
     "Authorized reopening creates a linked replacement from corrected figures and leaves the approved original intact",
+    "Bank reopening requires new sources and independently approves replacement matches while preserving the original allocations",
     "Period locking protects active reviews and historical reports, and reopening starts one new importable version",
     "Synthetic records completely rolled back and publication uses a restricted database function"
   ],

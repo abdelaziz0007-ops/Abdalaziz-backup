@@ -4,7 +4,7 @@ import {insert,bulk} from './financial-routes.mjs';
 import {hash,money} from './financial-core.mjs';
 import {sourceStorage,encryptField,decryptField} from './financial-storage.mjs';
 import {bankAmount,parseBankCsv,suggestBankMatches,bankHeader} from './bank-core.mjs';
-import {createBankDraft} from './reconciliation-create.mjs';
+import {createBankDraft,latestApprovedReconciliation} from './reconciliation-create.mjs';
 import {mountPublishedBankRoutes} from './published-bank-routes.mjs';
 const algorithm='bank-pair-draft-v1';
 const file=z.object({fileName:z.string().max(200).regex(/^[^/\\\u0000-\u001f]+\.csv$/i),csv:z.string().max(262144),opening:z.string().max(40),closing:z.string().max(40)}).strict();
@@ -44,6 +44,7 @@ export function mountBankRoutes(router,{scoped,audit,result,HttpError}){
    const fingerprint=hash(JSON.stringify({algorithm,bank:bank.id,period:period.id,settings:period.settings_version_id,cutoff:data.cutoff,files:[data.bank,data.books].map(f=>[hash(f.csv),money(bankAmount(f.opening,precision),precision),money(bankAmount(f.closing,precision),precision)])}));
    const scope={tenant_id:t,entity_id:e},actor=req.principal.id,now=new Date().toISOString();
    const prior=(await c.query(`SELECT r.id,r.output_version_id FROM mizan.reconciliations r JOIN mizan.output_versions v ON (v.tenant_id,v.entity_id,v.id)=(r.tenant_id,r.entity_id,r.output_version_id) JOIN mizan.dataset_versions d ON (d.tenant_id,d.entity_id,d.id)=(r.tenant_id,r.entity_id,r.bank_dataset_id) WHERE r.tenant_id=$1 AND r.entity_id=$2 AND r.bank_account_id=$3 AND d.idempotency_key=$4||':bank'`,[t,e,bank.id,fingerprint])).rows[0];if(prior)return {...prior,reused:true};
+   if(await latestApprovedReconciliation(c,t,e,period.id,bank.id))throw new HttpError(409,'REOPEN_REQUIRED','Use published sources to reopen the approved reconciliation');
    const datasets={};
    for(const side of ['bank','books']){
     const f=data[side],digest=hash(f.csv);let source=(await c.query('SELECT id,scan_status,deleted_at FROM mizan.source_files WHERE tenant_id=$1 AND entity_id=$2 AND sha256=$3',[t,e,digest])).rows[0];

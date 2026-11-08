@@ -300,8 +300,9 @@ try {
     identifier_ciphertext:encryptField('synthetic', t+':'+e+':'+bankAccount), identifier_last_four:'0000',
     ledger_account_id:bankLedgerAccount.id,currency_code:fixture.currency_code});
   async function bankDataset(dataType, marker, closing) {
+    const deposit=Number(closing)-98;
     const bankSource = await fixtureSource('id,date,reference,amount,running\n'
-      + marker+'1,'+fixture.start_date+',RX,10,110\n'+marker+'2,'+fixture.start_date+',RY,-2,108\n');
+      + marker+'1,'+fixture.start_date+',RX,'+deposit+','+(100+deposit)+'\n'+marker+'2,'+fixture.start_date+',RY,-2,'+closing+'\n');
     const bankPreview = '/source-files/' + bankSource + '/preview';
     const template = await request(bankPreview, {mapping:{periodId,sheetName:'CSV',headerRow:1,dataType,
       mapping:{rowId:1,postingDate:2,reference:3,signedAmount:4,runningBalance:5}},
@@ -322,7 +323,7 @@ try {
         bool_and(reference_ciphertext IS NOT NULL AND bank_account_id=$2) AS linked
       FROM mizan.${table} WHERE dataset_id=$1
     `, [published.datasetId,bankAccount]);
-    assert.deepEqual({rows:totals.rows,movement:Number(totals.movement),linked:totals.linked},{rows:2,movement:8,linked:true});
+    assert.deepEqual({rows:totals.rows,movement:Number(totals.movement),linked:totals.linked},{rows:2,movement:Number(closing)-100,linked:true});
     return published.datasetId;
   }
   const bankDatasetId = await bankDataset('bank_statement','S','108');
@@ -491,6 +492,9 @@ try {
   const reopenPath='/datasets/'+replacementDataset.datasetId+'/reports';
   const reopening={confirmation:true,reopen:{predecessorId:report.id,expectedFingerprint:financialReview.fingerprint,
     reason:'Use the corrected published trial balance for this period'}};
+  const bankReopen={predecessorId:draft.output_version_id,expectedFingerprint:submission.fingerprint,
+    reason:'Correct the published bank and ledger balances for this period'};
+  await request('/reconciliations/from-published',{...pair,reopen:bankReopen},403);
   assert.equal((await request(reopenPath,{confirmation:true},409)).code,'REOPEN_REQUIRED');
   await request(reopenPath,reopening,403);
   await insert(connection,'access_grants',{tenant_id:t,membership_id:exportMember.id,entity_id:e,permission_code:'outputs.reopen',granted_by:actor});
@@ -512,6 +516,38 @@ try {
   assert.equal(originalAfter.content_fingerprint,financialReview.fingerprint);
   assert.match(originalAfter.lines.find(line=>line.code==='assets').value,/^100(?:\.0+)?$/);
   passed.push('Authorized reopening creates a linked replacement from corrected figures and leaves the approved original intact');
+
+  assert.equal((await request('/reconciliations/from-published',{...pair,reopen:bankReopen},409)).code,'REPLACEMENT_SOURCES_USED');
+  const replacementBank=await bankDataset('bank_statement','S2','110');
+  const replacementBooks=await bankDataset('bank_ledger','L2','110');
+  const newPair={bankDatasetId:replacementBank,bookDatasetId:replacementBooks,confirmation:true};
+  assert.equal((await request('/reconciliations/from-published',newPair,409)).code,'REOPEN_REQUIRED');
+  await request('/reconciliations/from-published',{...newPair,reopen:{...bankReopen,expectedFingerprint:'0'.repeat(64)}},409);
+  const replacementBankDraft=await request('/reconciliations/from-published',{...newPair,reopen:bankReopen},201);
+  assert.equal((await request('/reconciliations/from-published',{...newPair,reopen:bankReopen})).id,replacementBankDraft.id);
+  const bankChanges=await request('/outputs/'+replacementBankDraft.output_version_id+'/review');
+  assert.equal(bankChanges.output.predecessor_id,draft.output_version_id);
+  assert.match(bankChanges.changes.find(row=>row.key==='bank_closing').difference,/^2(?:\.0+)?$/);
+  const {rows:replacementGroups}=await connection.query('SELECT id FROM mizan.match_groups WHERE reconciliation_id=$1 ORDER BY id',[replacementBankDraft.id]);
+  assert.equal(replacementGroups.length,2);
+  for(const group of replacementGroups){
+    await request('/reconciliations/'+replacementBankDraft.id+'/matches/'+group.id+'/confirm',
+      {requestKey:randomUUID(),expectedVersion:0,reason:'Confirm the new sources and their independent exact match'});
+  }
+  const bankBeforeValidation=await request('/outputs/'+replacementBankDraft.output_version_id+'/review');
+  const replacementCheck=await request('/reconciliations/'+replacementBankDraft.id+'/validate',
+    {expectedFingerprint:bankBeforeValidation.output.content_fingerprint});
+  const newBankReview=await reviewAction(replacementBankDraft.output_version_id,'submit',replacementCheck.fingerprint);
+  assert.equal((await reviewAction(replacementBankDraft.output_version_id,'approve',newBankReview.fingerprint,newBankReview.id)).status,'approved_locked');
+  const originalBank=await request('/outputs/'+draft.output_version_id+'/review');
+  assert.equal(originalBank.output.status,'approved_locked');
+  assert.equal(originalBank.output.content_fingerprint,submission.fingerprint);
+  const {rows:[originalAllocations]}=await connection.query(`
+    SELECT count(*)::int AS active FROM mizan.allocations a JOIN mizan.match_groups g ON g.id=a.match_group_id
+    WHERE g.reconciliation_id=$1 AND a.reversed_at IS NULL
+  `,[draft.id]);
+  assert.equal(originalAllocations.active,2);
+  passed.push('Bank reopening requires new sources and independently approves replacement matches while preserving the original allocations');
 
   identity={id:reviewer,sessionId:reviewerSession};
   await connection.query("SELECT set_config('mizan.user_id',$1,true)",[reviewer]);

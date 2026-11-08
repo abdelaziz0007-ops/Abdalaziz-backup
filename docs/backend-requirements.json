@@ -391,7 +391,7 @@
       "acceptance": "Previous versions remain retrievable; new versions explain their reason and differences",
       "status": "partial",
       "evidence": ["verification/staged-imports-api.json"],
-      "remaining": "Authorized users can reopen approved financial statements and analysis in an open period from a published trial balance. The original remains approved, the replacement displays its reason and value changes, and review rejects drafts that do not replace the latest approval. Report lineage across reopened period versions and reopening approved bank reconciliations remain pending."
+      "remaining": "Authorized users can reopen approved financial reports and bank reconciliations in the same open period with documented reasons and visible balance changes. Bank replacements require two unused published source versions and independent matching and approval. Cross-period version lineage, reuse of unchanged bank sources, and production acceptance remain pending."
     },
     {
       "id": "FR-038",

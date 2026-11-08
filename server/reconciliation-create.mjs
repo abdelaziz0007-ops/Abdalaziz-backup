@@ -3,8 +3,18 @@ import {insert, bulk} from './financial-routes.mjs';
 import {bankAmount} from './bank-core.mjs';
 import {money} from './financial-core.mjs';
 
+export async function latestApprovedReconciliation(c,t,e,periodId,accountId){
+  return (await c.query(`
+    SELECT v.id,v.logical_output_id,v.content_fingerprint,r.bank_dataset_id,r.book_dataset_id,r.cutoff_date::text AS cutoff
+    FROM mizan.output_versions v JOIN mizan.reconciliations r
+      ON (r.tenant_id,r.entity_id,r.output_version_id)=(v.tenant_id,v.entity_id,v.id)
+    WHERE (v.tenant_id,v.entity_id,v.period_id,r.bank_account_id)=($1,$2,$3,$4)
+      AND v.status='approved_locked' ORDER BY v.version DESC,v.id DESC LIMIT 1
+  `,[t,e,periodId,accountId])).rows[0];
+}
+
 export async function createBankDraft(connection, {
-  scope, actor, bank, period, sides, suggestions, fingerprint, algorithm, complete,
+  scope, actor, bank, period, sides, suggestions, fingerprint, algorithm, complete, reopen,
 }) {
   const id = randomUUID(), output = randomUUID(), created_at = new Date().toISOString();
   const {rows: [previous]} = await connection.query(`
@@ -14,7 +24,8 @@ export async function createBankDraft(connection, {
     ORDER BY v.version DESC LIMIT 1
   `, [scope.tenant_id, scope.entity_id, period.id, bank.id]);
   await insert(connection, 'output_versions', {
-    ...scope, id: output, logical_output_id: previous?.logical_output_id ?? randomUUID(), version: (previous?.version ?? 0)+1,
+    ...scope, id: output, logical_output_id: reopen?.logical_output_id ?? previous?.logical_output_id ?? randomUUID(), version: (previous?.version ?? 0)+1,
+    predecessor_id:reopen?.id??null,reopen_reason:reopen?.reason??null,
     output_type:'reconciliation', period_id:period.id, currency_code:bank.currency_code,
     settings_version_id:period.settings_version_id, preparer_id:actor, content_fingerprint:fingerprint, status:'draft',
   });

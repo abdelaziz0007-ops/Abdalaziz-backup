@@ -2,12 +2,14 @@ import {z} from 'zod';
 import {hash} from './financial-core.mjs';
 import {bankAmount, suggestBankMatches} from './bank-core.mjs';
 import {decryptField} from './financial-storage.mjs';
-import {createBankDraft} from './reconciliation-create.mjs';
+import {createBankDraft,latestApprovedReconciliation} from './reconciliation-create.mjs';
 import {bulk} from './financial-routes.mjs';
 import {lockedReconciliation,requireEditable} from './reconciliation-domain.mjs';
 import {randomUUID} from 'node:crypto';
 
-const pair = z.object({bankDatasetId:z.uuid(), bookDatasetId:z.uuid(), confirmation:z.literal(true)}).strict();
+const pair = z.object({bankDatasetId:z.uuid(), bookDatasetId:z.uuid(), confirmation:z.literal(true),reopen:z.object({
+  predecessorId:z.uuid(),expectedFingerprint:z.string().regex(/^[a-f0-9]{64}$/),reason:z.string().trim().min(8).max(500),
+}).strict().optional()}).strict();
 const validationRequest = z.object({expectedFingerprint:z.string().regex(/^[0-9a-f]{64}$/)}).strict();
 const algorithm = 'published-bank-pair-v1';
 const availableDatasets = `
@@ -53,9 +55,11 @@ export function mountPublishedBankRoutes(router, {scoped,audit,result,HttpError}
   router.get(base+'/published-bank-datasets', async (req,res,next) => {
     try {
       const {tenantId:t,entityId:e}=req.params;
+      const periodId=z.uuid().optional().parse(req.query.periodId)??null;
+      const bankAccountId=z.uuid().optional().parse(req.query.bankAccountId)??null;
       const datasets=await scoped(req,t,e,null,async connection => (await connection.query(
-        availableDatasets+" AND p.status='open' ORDER BY d.created_at DESC,d.id LIMIT 100",
-        [t,e,req.principal.id],
+        availableDatasets+" AND p.status='open' AND ($4::uuid IS NULL OR d.period_id=$4) AND ($5::uuid IS NULL OR b.bank_account_id=$5) ORDER BY d.created_at DESC,d.id LIMIT 100",
+        [t,e,req.principal.id,periodId,bankAccountId],
       )).rows.map(({content_fingerprint,settings_version_id,minor_units,...data})=>data));
       result(req,res,datasets);
     } catch(error) {next(error);}
@@ -75,17 +79,48 @@ export function mountPublishedBankRoutes(router, {scoped,audit,result,HttpError}
             || bank.sign_policy!==books.sign_policy) {
           throw new HttpError(422,'BANK_PAIR_SCOPE_MISMATCH','Both sources must use the same bank account, currency, period and sign convention');
         }
+        const reopen=data.reopen;
+        const actor=req.principal.id;
+        if(reopen){
+          const {rows:[access]}=await connection.query("SELECT mizan.has_permission($1,$2,$3,'outputs.reopen',$4) AS allowed",
+            [t,e,actor,bank.bank_account_id]);
+          if(!access.allowed)throw new HttpError(403,'PERMISSION_DENIED','Reopening permission is required for this bank account');
+        }
         const {rows:[prior]}=await connection.query(`
-          SELECT id,output_version_id FROM mizan.reconciliations
-          WHERE tenant_id=$1 AND entity_id=$2 AND bank_dataset_id=$3 AND book_dataset_id=$4
-          ORDER BY created_at DESC LIMIT 1
+          SELECT r.id,r.output_version_id,v.predecessor_id,v.preparer_id,v.reopen_reason,p.content_fingerprint AS predecessor_fingerprint
+          FROM mizan.reconciliations r JOIN mizan.output_versions v
+            ON (v.tenant_id,v.entity_id,v.id)=(r.tenant_id,r.entity_id,r.output_version_id)
+          LEFT JOIN mizan.output_versions p ON (p.tenant_id,p.entity_id,p.id)=(v.tenant_id,v.entity_id,v.predecessor_id)
+          WHERE (r.tenant_id,r.entity_id,r.bank_dataset_id,r.book_dataset_id)=($1,$2,$3,$4)
+          ORDER BY v.version DESC LIMIT 1
         `,[t,e,bank.id,books.id]);
-        if (prior) return {...prior,reused:true};
+        if(prior){
+          if(!reopen||prior.predecessor_id===reopen.predecessorId&&prior.preparer_id===actor
+            &&prior.reopen_reason===reopen.reason&&prior.predecessor_fingerprint===reopen.expectedFingerprint){
+            return {id:prior.id,output_version_id:prior.output_version_id,reused:true};
+          }
+          throw new HttpError(409,'REPLACEMENT_SOURCES_USED','Select two new published source versions for the replacement');
+        }
         if (bank.period_status!=='open') throw new HttpError(409,'PERIOD_NOT_OPEN','Use an open accounting period');
+        const approved=await latestApprovedReconciliation(connection,t,e,bank.period_id,bank.bank_account_id);
+        if(approved&&!reopen)throw new HttpError(409,'REOPEN_REQUIRED','Reopen the approved reconciliation to create a replacement');
+        if(reopen){
+          if(!approved||approved.id!==reopen.predecessorId||approved.content_fingerprint!==reopen.expectedFingerprint){
+            throw new HttpError(409,'STALE_OUTPUT','Reload the latest approved reconciliation before reopening');
+          }
+          const {rowCount:used}=await connection.query(`
+            SELECT 1 FROM mizan.reconciliations WHERE tenant_id=$1 AND entity_id=$2 AND (bank_dataset_id=$3 OR book_dataset_id=$4) LIMIT 1
+          `,[t,e,bank.id,books.id]);
+          if(used||approved.cutoff!==bank.end_date){
+            throw new HttpError(409,'REPLACEMENT_SOURCES_USED','Select two unused published source versions for the original cutoff');
+          }
+        }
         const bankRows=await matchRows(connection,t,e,bank,'bank_transactions');
         const bookRows=await matchRows(connection,t,e,books,'book_transactions');
         const suggestions=suggestBankMatches(bankRows,bookRows);
-        const fingerprint=hash(JSON.stringify([algorithm,bank.id,bank.content_fingerprint,books.id,books.content_fingerprint]));
+        const basis=[algorithm,bank.id,bank.content_fingerprint,books.id,books.content_fingerprint];
+        if(reopen)basis.push(approved.id,reopen.reason);
+        const fingerprint=hash(JSON.stringify(basis));
         const saved=await createBankDraft(connection,{
           scope:{tenant_id:t,entity_id:e},actor:req.principal.id,
           bank:{id:bank.bank_account_id,currency_code:bank.currency_code},
@@ -93,10 +128,11 @@ export function mountPublishedBankRoutes(router, {scoped,audit,result,HttpError}
           sides:{
             bank:{datasetId:bank.id,opening:bank.opening,closing:bank.closing,signPolicy:bank.sign_policy},
             books:{datasetId:books.id,opening:books.opening,closing:books.closing,signPolicy:books.sign_policy},
-          },suggestions,fingerprint,algorithm,complete:true,
+          },suggestions,fingerprint,algorithm,complete:true,reopen:reopen?{...approved,reason:reopen.reason}:undefined,
         });
-        await audit(connection,req,t,e,'reconciliation.imported','reconciliation',saved.id,
-          'Draft from published and validated bank datasets',{bankDatasetId:bank.id,bookDatasetId:books.id,suggestions:suggestions.length});
+        await audit(connection,req,t,e,reopen?'reconciliation.reopened':'reconciliation.imported','reconciliation',saved.id,
+          reopen?.reason??'Draft from published and validated bank datasets',
+          {bankDatasetId:bank.id,bookDatasetId:books.id,suggestions:suggestions.length,predecessorId:reopen?.predecessorId??null});
         return saved;
       },{fresh:true});
       result(req,res,draft,draft.reused?200:201);
