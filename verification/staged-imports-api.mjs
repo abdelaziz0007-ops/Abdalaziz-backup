@@ -17,6 +17,7 @@ import {mountMatchRoutes} from '../server/match-routes.mjs';
 import {mountAuditRoutes} from '../server/audit-routes.mjs';
 import {mountOutputExportRoutes} from '../server/output-export-routes.mjs';
 import {mountOutputCommentRoutes} from '../server/output-comment-routes.mjs';
+import {mountReviewRoutes} from '../server/review-routes.mjs';
 import ExcelJS from 'exceljs';
 
 const {branch} = JSON.parse(await readFile('.neon', 'utf8'));
@@ -119,6 +120,7 @@ try {
     return bytes;
   }}});
   mountFinancialRoutes(app, dependencies);
+  mountReviewRoutes(app, dependencies);
   mountSourcePreviewRoute(app, {...dependencies, configured: () => true,
     storage: {read: async key => Buffer.from(sources.get(key))},
     parse: async (bytes, options) => {
@@ -135,7 +137,7 @@ try {
       }
     }});
   app.use((error, _req, res, _next) => {
-    const status=error.status??({'23514':422,'42501':403,'40001':409}[error.code]??500);
+    const status=error.status??({'23505':409,'23514':422,'42501':403,'40001':409}[error.code]??500);
     if (status===500) console.error('Unexpected SQL or runtime error', error.code ?? error.name, error.message);
     res.status(status).json({code: error.code});
   });
@@ -359,6 +361,13 @@ try {
     return result.value;
   }
   const financialReview=await reviewAction(report.id,'submit',report.content_fingerprint);
+  const supersededId=randomUUID(),supersededFingerprint=hash(supersededId);
+  await connection.query(`
+    INSERT INTO mizan.output_versions(id,tenant_id,entity_id,logical_output_id,version,output_type,period_id,currency_code,
+      settings_version_id,mapping_version_id,preparer_id,content_fingerprint)
+    SELECT $1,tenant_id,entity_id,logical_output_id,version+1,output_type,period_id,currency_code,
+      settings_version_id,mapping_version_id,preparer_id,$3 FROM mizan.output_versions WHERE id=$2
+  `,[supersededId,report.id,supersededFingerprint]);
   const commentsPath='/outputs/'+report.id+'/comments';
   const commentInput={expectedFingerprint:financialReview.fingerprint,body:'Synthetic review comment',
     attachmentIds:[sourceId],requestKey:randomUUID()};
@@ -388,6 +397,10 @@ try {
   assert(replies.comments.some(reply=>reply.parent_id===comment.id));
   passed.push('Version comments protect scanned attachments and notify only the other participant without duplicate retries');
   assert.equal((await reviewAction(report.id,'approve',financialReview.fingerprint,financialReview.id)).status,'approved_locked');
+  await connection.query('SAVEPOINT stale_financial_draft');
+  await assert.rejects(reviewAction(supersededId,'submit',supersededFingerprint),/does not replace the latest approved/);
+  await connection.query('ROLLBACK TO SAVEPOINT stale_financial_draft');
+  await connection.query('RELEASE SAVEPOINT stale_financial_draft');
   passed.push('An independent reviewer can approve and lock financial statements generated from a published source');
 
   const {rows:[initial]}=await connection.query('SELECT content_fingerprint FROM mizan.output_versions WHERE id=$1',[draft.output_version_id]);
@@ -461,6 +474,38 @@ try {
   assert.equal(exportLog.length,2);
   assert(exportLog.every(event=>/^[0-9a-f]{64}$/.test(event.redacted_metadata.sha256)));
   passed.push('Exact approved outputs download as PDF and XLSX with scoped permission, stale-state protection and audited hashes');
+
+  const correctionFile=await fixtureSource('code,name,classification,balance\n'+asset+
+    ',Cash,asset.current,110\n'+equity+',Equity,equity,-110\n');
+  const {staged:replacement}=await request('/source-files/'+correctionFile+'/preview',
+    {template:{id:savedTemplate.id,periodId},stageImport:true},201);
+  const replacementPath='/staged-imports/'+replacement.batchId;
+  const replacementReview=await request(replacementPath);
+  const replacementDataset=await request(replacementPath+'/publish',{...publication,qualityRunId:replacementReview.quality.id});
+  const reopenPath='/datasets/'+replacementDataset.datasetId+'/reports';
+  const reopening={confirmation:true,reopen:{predecessorId:report.id,expectedFingerprint:financialReview.fingerprint,
+    reason:'Use the corrected published trial balance for this period'}};
+  assert.equal((await request(reopenPath,{confirmation:true},409)).code,'REOPEN_REQUIRED');
+  await request(reopenPath,reopening,403);
+  await insert(connection,'access_grants',{tenant_id:t,membership_id:exportMember.id,entity_id:e,permission_code:'outputs.reopen',granted_by:actor});
+  await request(reopenPath,{...reopening,reopen:{...reopening.reopen,expectedFingerprint:'0'.repeat(64)}},409);
+  const reopened=await request(reopenPath,reopening,201);
+  assert.equal(reopened.outputs.length,1);
+  const newReport=reopened.outputs[0];
+  assert.equal(newReport.output_type,'financial_position');
+  assert.equal((await request(reopenPath,reopening)).outputs[0].id,newReport.id);
+  await request(reopenPath,{...reopening,reopen:{...reopening.reopen,reason:'Try to create a conflicting active replacement'}},409);
+  const details=await request('/outputs/'+newReport.id+'/review');
+  assert.equal(details.output.predecessor_id,report.id);
+  assert.equal(details.output.reopen_reason,reopening.reopen.reason);
+  assert.match(details.changes.find(item=>item.label==='assets').difference,/^10(?:\.0+)?$/);
+  const newSubmission=await reviewAction(newReport.id,'submit',details.output.content_fingerprint);
+  assert.equal((await reviewAction(newReport.id,'approve',newSubmission.fingerprint,newSubmission.id)).status,'approved_locked');
+  const originalAfter=await request('/reports/'+report.id);
+  assert.equal(originalAfter.status,'approved_locked');
+  assert.equal(originalAfter.content_fingerprint,financialReview.fingerprint);
+  assert.match(originalAfter.lines.find(line=>line.code==='assets').value,/^100(?:\.0+)?$/);
+  passed.push('Authorized reopening creates a linked replacement from corrected figures and leaves the approved original intact');
 
   await connection.query('ROLLBACK');
   assert.equal((await connection.query('SELECT count(*)::int AS count FROM mizan.import_batches WHERE id=$1',[staged.batchId])).rows[0].count,0);

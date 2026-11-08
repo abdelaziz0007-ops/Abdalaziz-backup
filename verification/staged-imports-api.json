@@ -15,6 +15,7 @@
     "Equal balances alone cannot pass; confirmed coverage enables validation, independent review and immutable bank approval",
     "Audit filters isolate one approval and CSV download records its own audit event without reasons",
     "Exact approved outputs download as PDF and XLSX with scoped permission, stale-state protection and audited hashes",
+    "Authorized reopening creates a linked replacement from corrected figures and leaves the approved original intact",
     "Synthetic records completely rolled back and publication uses a restricted database function"
   ],
   "rolledBack": true,

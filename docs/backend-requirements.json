@@ -389,9 +389,9 @@
       "title": "Freeze approved versions and document reopening",
       "stage": "M",
       "acceptance": "Previous versions remain retrievable; new versions explain their reason and differences",
-      "status": "pending",
-      "evidence": [],
-      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+      "status": "partial",
+      "evidence": ["verification/staged-imports-api.json"],
+      "remaining": "Authorized users can reopen approved financial statements and analysis in an open period from a published trial balance. The original remains approved, the replacement displays its reason and value changes, and review rejects drafts that do not replace the latest approval. Reopening locked periods and bank reconciliations remains pending."
     },
     {
       "id": "FR-038",
