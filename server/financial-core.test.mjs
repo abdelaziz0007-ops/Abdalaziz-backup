@@ -1,5 +1,6 @@
 import { describe,it,expect } from 'vitest';
 import { calculateFinancials,coefficient,header,parseTrialBalance } from './financial-core.mjs';
+import { financialSignals } from './financial-signals.mjs';
 const csv=rows=>header+'\n'+rows.join('\n')+'\n';
 describe('Server financial input and calculations',()=>{
   it('calculates signed balances and includes current earnings in equity exactly once',()=>{
@@ -16,6 +17,15 @@ describe('Server financial input and calculations',()=>{
   it('does not manufacture metrics from missing or nonpositive denominators',()=>{
     const result=calculateFinancials(parseTrialBalance(csv(['100,Cash,asset.current,1','300,Capital,equity,-1']),2),2);
     expect(result.metrics.every(m=>m.value===null||m.code==='debt_to_assets')).toBe(true);
+  });
+  it('uses the saved metric and a strict threshold without flagging unavailable metrics',()=>{
+    const metric=(code,value)=>({id:code,formula_code:'classified-tb-draft-v1:'+code,value,
+      value_state:value===null?'missing':'available',unit:code==='current_ratio'?'ratio':'percent'});
+    const findings=financialSignals([metric('gross_margin','-0.01'),metric('current_ratio','1.00000000'),metric('net_margin',null)]);
+    expect(findings).toMatchObject([
+      {metricId:'gross_margin',observedValue:'-0.01',threshold:'0.00',triggered:true},
+      {metricId:'current_ratio',observedValue:'1.00000000',threshold:'1.00',triggered:false},
+    ]);
   });
   it('rejects unbalanced, duplicate, malicious, out-of-range and ambiguous inputs',()=>{
     for(const input of [csv(['100,Cash,asset.current,2','300,Capital,equity,-1']),csv(['100,Cash,asset.current,1','100,Capital,equity,-1']),csv(['100,=SUM(A1),asset.current,1','300,Capital,equity,-1']),csv(['100,Cash,asset.current,1e2','300,Capital,equity,-100']),csv(['100,Cash,asset.current,10000000000000000000000','300,Capital,equity,-10000000000000000000000']),csv(['100,"Unclosed,asset.current,1','300,Capital,equity,-1'])])expect(()=>parseTrialBalance(input,2)).toThrow();

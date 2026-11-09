@@ -243,6 +243,7 @@ try {
   assert(mapping.published_at);
   const analysis = await request('/reports/' + generated.outputs[0].id);
   assert.equal(analysis.metrics.find(metric=>metric.name==='Net margin').value,null);
+  assert.deepEqual(analysis.signals,[]);
   passed.push('Published trial balance generates three drafts once, freezes mapping and links exact corrected evidence');
 
   const comparativePeriod=randomUUID();
@@ -252,13 +253,26 @@ try {
       (end_date+interval '20 years')::date,$3 FROM mizan.accounting_periods WHERE id=$2
   `,[comparativePeriod,periodId,actor]);
   const comparativeFile=await fixtureSource('code,name,classification,balance\n'+asset+
-    ',Cash,asset.current,125\n'+equity+',Equity,equity,-125\n');
+    ',Cash,asset.current,125\n'+equity+',Equity,equity,100\n'+
+    ['P'+suffix+',Payables,liability.current,-250','R'+suffix+',Revenue,income,-50',
+      'C'+suffix+',Cost,expense.cost,75'].join('\n')+'\n');
   const {staged:later}=await request('/source-files/'+comparativeFile+'/preview',
     {template:{id:savedTemplate.id,periodId:comparativePeriod},stageImport:true},201);
   const laterPath='/staged-imports/'+later.batchId;
   const laterReview=await request(laterPath);
   const laterDataset=await request(laterPath+'/publish',{...publication,qualityRunId:laterReview.quality.id});
   const laterReports=await request('/datasets/'+laterDataset.datasetId+'/reports',reportRequest,201);
+  const laterAnalysis=await request('/reports/'+laterReports.outputs[0].id);
+  const expectedSignals={negative_gross_margin:-50,negative_net_margin:-50,current_ratio_below_one:0.5};
+  assert.equal(laterAnalysis.signals.length,3);
+  for(const signal of laterAnalysis.signals){
+    const metric=laterAnalysis.metrics.find(item=>item.id===signal.metricId);
+    assert.equal(signal.observedValue,metric.value);
+    assert.equal(Number(signal.observedValue),expectedSignals[signal.ruleCode]);
+    assert.equal(signal.ruleVersion,'financial-signals-v1');
+    assert.equal(signal.triggered,true);
+  }
+  passed.push('Saved financial metrics produce linked deterministic alerts and omit unavailable indicators');
   const comparisonPath='/reports/'+laterReports.outputs[1].id+'/comparisons';
   assert((await request(comparisonPath)).some(item=>item.id===report.id));
   const query='?baselineId='+report.id;

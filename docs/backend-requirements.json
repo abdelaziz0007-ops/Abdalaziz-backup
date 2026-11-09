@@ -211,18 +211,18 @@
       "title": "Detect exceptions through explainable rules",
       "stage": "M",
       "acceptance": "Alerts show the rule, threshold, and affected data; exceptions are not labeled as proven fraud",
-      "status": "pending",
-      "evidence": [],
-      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+      "status": "partial",
+      "evidence": ["verification/staged-imports-api.json", "server/financial-core.test.mjs"],
+      "remaining": "Three versioned rules flag negative margins and a current ratio below one using saved metrics. Broader exception coverage and production acceptance remain pending."
     },
     {
       "id": "FR-021",
       "title": "Generate numerical analysis and rule-based explanations",
       "stage": "M",
       "acceptance": "Each quantitative statement links to a calculated metric; arithmetic changes are distinguished from causal explanations",
-      "status": "pending",
-      "evidence": [],
-      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+      "status": "partial",
+      "evidence": ["verification/staged-imports-api.json"],
+      "remaining": "The report links arithmetic explanations to saved metric rows and identifies thresholds and missing inputs. Broader narrative and production acceptance remain pending."
     },
     {
       "id": "FR-022",

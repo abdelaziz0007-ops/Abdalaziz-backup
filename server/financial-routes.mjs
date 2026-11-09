@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { calculateFinancials,classifications,coefficient,hash,money,parseTrialBalance } from './financial-core.mjs';
 import { decryptField,rowContext,sourceStorage } from './financial-storage.mjs';
 import { formatDec,parseDecimal,percentageVarianceDec,subDec } from '../src/lib/decimal.ts';
+import { financialSignals } from './financial-signals.mjs';
 
 const input=z.object({periodId:z.uuid(),fileName:z.string().min(1).max(200).regex(/^[^/\\\u0000-\u001f]+\.csv$/i),csv:z.string().max(524288),basis:z.literal('period'),confirmation:z.literal(true)}).strict();
 const algorithm='classified-tb-draft-v1';
@@ -267,10 +268,10 @@ export function mountFinancialRoutes(router,{scoped,audit,result,HttpError}){
         const report=(await c.query("SELECT v.id,v.output_type,v.version,v.status,v.currency_code,v.period_id,v.content_fingerprint,p.start_date::text,p.end_date::text FROM mizan.output_versions v JOIN mizan.accounting_periods p ON (p.tenant_id,p.entity_id,p.id)=(v.tenant_id,v.entity_id,v.period_id) WHERE v.tenant_id=$1 AND v.entity_id=$2 AND v.id=$3 AND v.output_type IN ('analysis','income_statement','financial_position')",[t,e,id])).rows[0];if(!report)throw notFound();
         const args=[t,e,id];
         const lines=(await c.query('SELECT r.id,i.name AS code,r.value::text,r.value_state FROM mizan.report_lines r JOIN mizan.report_line_items i ON (i.tenant_id,i.entity_id,i.id)=(r.tenant_id,r.entity_id,r.line_item_id) WHERE r.tenant_id=$1 AND r.entity_id=$2 AND r.output_version_id=$3 ORDER BY r.display_order',args)).rows;
-        const metrics=(await c.query('SELECT r.id,f.name,f.unit,f.expression,r.value::text,r.value_state,r.unavailable_reason,r.input_references FROM mizan.metric_results r JOIN mizan.formula_versions f ON (f.tenant_id,f.entity_id,f.id)=(r.tenant_id,r.entity_id,r.formula_version_id) WHERE r.tenant_id=$1 AND r.entity_id=$2 AND r.output_version_id=$3 ORDER BY f.formula_code',args)).rows;
+        const metrics=(await c.query('SELECT r.id,f.formula_code,f.name,f.unit,f.expression,r.value::text,r.value_state,r.unavailable_reason,r.input_references FROM mizan.metric_results r JOIN mizan.formula_versions f ON (f.tenant_id,f.entity_id,f.id)=(r.tenant_id,r.entity_id,r.formula_version_id) WHERE r.tenant_id=$1 AND r.entity_id=$2 AND r.output_version_id=$3 ORDER BY f.formula_code',args)).rows;
         const checks=(await c.query('SELECT code,passed,message,evidence FROM mizan.validation_results WHERE tenant_id=$1 AND entity_id=$2 AND output_version_id=$3 AND validated_fingerprint=$4 ORDER BY code',[...args,report.content_fingerprint])).rows;
         const comparable=report.output_type!=='analysis'&&checks.some(check=>check.code==='completeness'&&check.passed&&check.evidence.algorithm===publishedAlgorithm);
-        return {...report,lines,metrics,comparable,validations:checks.map(({code,passed,message})=>({code,passed,message}))};
+        return {...report,lines,metrics,signals:financialSignals(metrics),comparable,validations:checks.map(({code,passed,message})=>({code,passed,message}))};
       }));
     }catch(error){next(error);}
   });

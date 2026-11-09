@@ -10,7 +10,13 @@ interface ReportSummary {id:string;output_type:string;version:number;status:stri
 interface Dataset {id:string;period_id:string;currency_code:string;version:number;status:string;account_count:number}
 interface SourceValues {accountCode:string;name:string;classification:string;signedDebitBalance:string}
 interface Source {id:string;row_number:number;original_values:SourceValues|null;effective_values?:SourceValues|null;contribution:string;original_name:string;sha256:string;scan_status:string}
-interface Report extends ReportSummary {start_date:string;end_date:string;comparable:boolean;lines:{id:string;code:string;value:string;value_state:string}[];metrics:{id:string;name:string;unit:string;expression:string;value:string|null;unavailable_reason:string|null}[];validations:{code:string;passed:boolean;message:string}[]}
+interface FinancialSignal {ruleVersion:string;ruleCode:string;metricId:string;observedValue:string;threshold:string;unit:string;triggered:boolean}
+interface Report extends ReportSummary {start_date:string;end_date:string;comparable:boolean;lines:{id:string;code:string;value:string;value_state:string}[];metrics:{id:string;name:string;unit:string;expression:string;value:string|null;unavailable_reason:string|null;input_references?:{totals?:Record<string,string>}}[];signals:FinancialSignal[];validations:{code:string;passed:boolean;message:string}[]}
+const explanations:Record<string,{text:[string,string];inputs:string[]}>={
+  negative_gross_margin:{text:['تكلفة الإيرادات تتجاوز الإيرادات المسجّلة.','Cost of revenue exceeds recorded revenue.'],inputs:['revenue','cost']},
+  negative_net_margin:{text:['نتيجة الفترة خسارة صافية.','The period recorded a net loss.'],inputs:['revenue','net_profit']},
+  current_ratio_below_one:{text:['الأصول المتداولة أقل من الالتزامات المتداولة بحسب النسبة المعروضة.','Current assets are lower than current liabilities, based on the displayed ratio.'],inputs:['current_assets','current_liabilities']},
+};
 const labels:Record<string,[string,string]>={income_statement:['قائمة الدخل','Income statement'],financial_position:['المركز المالي','Financial position'],analysis:['التحليل المالي','Financial analysis'],revenue:['الإيرادات','Revenue'],cost:['تكلفة الإيرادات','Cost of revenue'],gross_profit:['مجمل الربح','Gross profit'],operating_expenses:['المصروفات التشغيلية','Operating expenses'],tax:['الضريبة','Tax'],net_profit:['صافي الربح','Net profit'],assets:['الأصول','Assets'],liabilities:['الالتزامات','Liabilities'],equity:['حقوق الملكية شاملة نتيجة الفترة','Equity including period earnings'],current_assets:['الأصول المتداولة','Current assets'],current_liabilities:['الالتزامات المتداولة','Current liabilities'],working_capital:['رأس المال العامل','Working capital']};
 const sample='accountCode,name,classification,signedDebitBalance\n1000,Cash,asset.current,1000\n3000,Capital,equity,-1000\n';
 export const financialLabels=labels;
@@ -81,7 +87,27 @@ export function ConnectedFinance({tenant,entity,periods,onSaved}:{tenant:string;
       {report&&<div className="stack"><h3>{label(report.output_type)} · {report.status==='approved_locked'?l('معتمد ومقفل','Approved and locked'):report.status==='draft'?l('مسودة','Draft'):report.status} · <bdi>{report.currency_code} | {report.start_date} — {report.end_date}</bdi></h3>
         {report.status!=='approved_locked'&&<Notice tone="warning">{l('يظل الإصدار قيد المراجعة حتى اعتماده بشكل مستقل. راجع تفاصيل التحقق أدناه.','This version requires independent approval. See the validation details below.')}</Notice>}
         {report.lines.length>0&&<DataTable label={l('بنود القوائم','Statement lines')} rows={report.lines} rowKey={r=>r.id} columns={[{key:'name',header:l('البند','Line'),render:r=>label(r.code)},{key:'value',header:report.currency_code,render:r=><bdi>{r.value}</bdi>},{key:'source',header:l('الدليل','Evidence'),render:r=><Button onClick={()=>void showSources(r.id,label(r.code))}>{l('صفوف المصدر','Source rows')}</Button>}]}/>}
-        {report.metrics.length>0&&<DataTable label={l('المؤشرات المحسوبة','Calculated metrics')} rows={report.metrics} rowKey={r=>r.id} columns={[{key:'name',header:l('المؤشر','Metric'),render:r=>r.name},{key:'value',header:l('القيمة','Value'),render:r=><bdi>{r.value===null?l('غير متاح','Unavailable'):r.value+(r.unit==='percent'?'%':'')}</bdi>},{key:'formula',header:l('المعادلة والحدود','Formula and limits'),render:r=><><bdi>{r.expression}</bdi>{r.unavailable_reason&&<p>{r.unavailable_reason}</p>}</>}]}/>}
+        {report.metrics.length>0&&<DataTable label={l('المؤشرات المحسوبة','Calculated metrics')} rows={report.metrics} rowKey={r=>r.id} columns={[{key:'name',header:l('المؤشر','Metric'),render:r=><span id={`metric-${r.id}`} tabIndex={-1}>{r.name}</span>},{key:'value',header:l('القيمة','Value'),render:r=><bdi>{r.value===null?l('غير متاح','Unavailable'):r.value+(r.unit==='percent'?'%':'')}</bdi>},{key:'formula',header:l('المعادلة والحدود','Formula and limits'),render:r=><><bdi>{r.expression}</bdi>{r.unavailable_reason&&<p>{r.unavailable_reason}</p>}</>}]}/>}
+        {report.output_type==='analysis'&&<section className="stack">
+          <h4>{l('نتائج قواعد التحليل','Analysis rule results')}</h4>
+          <p>{l('تقارن القواعد المؤشرات المحفوظة بحدودها الحسابية. يشير التنبيه إلى نتيجة تستحق المراجعة، وتحديد سببها يتطلب فحصًا مستقلًا.','Rules compare saved metrics against arithmetic thresholds. A flag identifies a point for review. Establishing its cause requires further investigation.')}</p>
+          {report.signals.length===0&&<p>{l('لا تتوفر مؤشرات كافية لتقييم هذه القواعد.','The metrics needed to evaluate these rules are unavailable.')}</p>}
+          <ul className="stack">{report.signals.map(signal=>{
+            const metric=report.metrics.find(item=>item.id===signal.metricId);
+            const suffix=signal.unit==='percent'?'%':'';
+            const explanation=explanations[signal.ruleCode];
+            const totals=metric?.input_references?.totals;
+            return <li key={signal.ruleCode}>
+              <Button onClick={()=>document.getElementById(`metric-${signal.metricId}`)?.focus()}>{metric?.name??signal.ruleCode}</Button>
+              <p><bdi>{signal.observedValue}{suffix}</bdi> · {l('شرط التنبيه أقل من','Alert threshold below')} <bdi>{signal.threshold}{suffix}</bdi></p>
+              <p>{signal.triggered?l(...(explanation?.text??['تحقق شرط التنبيه.','The alert condition was met.'])):l('لم يتحقق شرط التنبيه.','The alert condition was not met.')}</p>
+              {totals&&explanation&&<dl>{explanation.inputs.filter(key=>totals[key]!==undefined).map(key=>
+                <div key={key}><dt>{label(key)}</dt><dd><bdi>{totals[key]} {report.currency_code}</bdi></dd></div>,
+              )}</dl>}
+              <small><bdi>{signal.ruleVersion} · {signal.ruleCode}</bdi></small>
+            </li>;
+          })}</ul>
+        </section>}
         <details><summary>{l('تفاصيل التحقق','Validation details')}</summary><ul>{report.validations.map(v=><li key={v.code}>{v.passed?'✓':'!'} <bdi>{v.code}: {v.message}</bdi></li>)}</ul></details>
       </div>}
     </Panel>
