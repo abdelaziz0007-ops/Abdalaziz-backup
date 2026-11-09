@@ -1,0 +1,34 @@
+{
+  "checkedAt": "2026-11-09T17:08:44.504Z",
+  "checks": [
+    {
+      "path": "/healthz",
+      "status": 200
+    },
+    {
+      "path": "/api/v1/health",
+      "status": 200
+    },
+    {
+      "path": "/api/v1/me",
+      "status": 401
+    },
+    {
+      "path": "/api/v1/tenants/00000000-0000-4000-8000-000000000000/access",
+      "status": 401
+    },
+    {
+      "path": "/api/v1/tenants/00000000-0000-4000-8000-000000000000/notifications",
+      "status": 401
+    },
+    {
+      "path": "/",
+      "status": 200
+    },
+    {
+      "check": "cross-site authentication rejected",
+      "status": 403
+    }
+  ],
+  "noAccountsCreated": true
+}

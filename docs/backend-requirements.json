@@ -1,6 +1,6 @@
 {
   "scope": "All M and S requirements, explicitly requested by the project owner",
-  "externalConfiguration": "No email, payment, hosting, malware scan, OCR or AI provider has been selected yet. Provider activation is not represented by a mock passing.",
+  "externalConfiguration": "Resend authentication delivery is implemented but not activated. Public hosting, production branch, ClamAV and isolated parser runtime, backup/restore and real-user acceptance are still required. Payment, OCR and AI are not implemented by this launch batch.",
   "requirements": [
     {
       "id": "FR-001",
@@ -10,9 +10,10 @@
       "status": "partial",
       "evidence": [
         "backend/verification/review-membership-api.json",
-        "backend/verification/review-browser.json"
+        "backend/verification/review-browser.json",
+        "backend/verification/beta-launch-review.json"
       ],
-      "remaining": "Email recovery/verification delivery, recovery abuse controls and full identity lifecycle acceptance remain pending."
+      "remaining": "Verification/reset provider callbacks, real forms and tighter rate limits are implemented and unit-tested. Real mail delivery, real-account lifecycle, abuse resistance and production acceptance remain pending."
     },
     {
       "id": "FR-002",
@@ -434,9 +435,10 @@
       "acceptance": "Comments link to an object and version; email notifications do not contain financial files or sensitive data by default",
       "status": "partial",
       "evidence": [
-        "backend/verification/staged-imports-api.json"
+        "backend/verification/staged-imports-api.json",
+        "backend/verification/connected-readonly.json"
       ],
-      "remaining": "Version comments, replies and protected scanned attachment downloads are supported. In-app notifications are scoped to recipients and contain a safe template code. A unified inbox, real storage acceptance and production email delivery remain pending."
+      "remaining": "Unified in-app inbox, recipient isolation, read state, pagination and output deep links are implemented. Real-user acceptance and email delivery of workflow notifications remain pending."
     },
     {
       "id": "FR-040",

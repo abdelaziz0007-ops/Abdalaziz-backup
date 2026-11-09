@@ -1,3 +1,5 @@
+import {runtimeConfig,requestBoundary} from './runtime-config.mjs';
+import {mailConfigured} from './mail.mjs';
 import express from 'express';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
@@ -12,25 +14,20 @@ import { backendRouter } from './backend.mjs';
 // Postgres credentials are loaded only here, never into VITE_* or client code.
 const backendRoot=fileURLToPath(new URL('..',import.meta.url));
 const frontRoot=fileURLToPath(new URL('../../front/',import.meta.url));
-const env=loadEnv('development',backendRoot,'');
+const env=process.env.APP_PROFILE==='production'?{}:loadEnv('development',backendRoot,'');
 for (const [key,value] of Object.entries(env)) if (process.env[key]===undefined) process.env[key]=value;
-const port=Number(process.env.PORT || 5174);
-const profile=process.env.APP_PROFILE||'development';
-if(!['development','production'].includes(profile))throw new Error('Unsupported APP_PROFILE');
-if(profile==='production'&&process.env.LOCAL_DEMO_ARCHIVE==='1')throw new Error('The single-operator demonstration archive cannot run in production');
+const config=runtimeConfig();
+const {port,profile,origin}=config;
+if(config.production&&process.argv.includes('--dev'))throw Error('Development server is forbidden in production');
 const legacyArchive=profile==='development'&&process.env.LOCAL_DEMO_ARCHIVE==='1';
 const pool=legacyArchive&&process.env.DATABASE_URL ? database() : null;
 pool?.on('error',()=>console.error('Postgres idle connection error'));
 const session=randomBytes(32).toString('hex');
 const app=express();
 app.disable('x-powered-by');
-// Single-operator local server. Never expose demo personas as real authorization.
-app.use((req,res,next)=>{
-  if (![ `localhost:${port}`, `127.0.0.1:${port}` ].includes(req.headers.host)) return res.status(403).json({error:'Local host required'});
-  const origin=req.headers.origin;
-  if (origin && origin!==`http://${req.headers.host}`) return res.status(403).json({error:'Cross-origin request denied'});
-  next();
-});
+app.use(requestBoundary(config));
+app.get('/healthz',(_req,res)=>res.json({status:'ok'}));
+app.get('/api/config',(_req,res)=>res.set('Cache-Control','no-store').json({emailEnabled:mailConfigured(),production:config.production}));
 app.use('/api',(req,res,next)=>{res.setHeader('Cache-Control','no-store');next();});
 const backendReady=Boolean(process.env.APP_DATABASE_URL&&process.env.AUTH_DATABASE_URL&&process.env.BETTER_AUTH_SECRET&&process.env.APP_DATA_REGION);
 if(backendReady){
@@ -46,10 +43,10 @@ if(backendReady){
   const origin=process.env.APP_ORIGIN||`http://localhost:${port}`;
   const auth=createIdentity(identityPool,origin,process.env.BETTER_AUTH_SECRET);
   app.all('/api/auth/*splat',(req,res,next)=>{
-    if(['/api/auth/request-password-reset','/api/auth/send-verification-email'].includes(req.path))return res.status(503).json({error:'Email delivery is not configured; no message was sent'});
+    if(!mailConfigured()&&['/api/auth/request-password-reset','/api/auth/send-verification-email'].includes(req.path))return res.status(503).json({error:'Email delivery is not configured; no message was sent'});
     return toNodeHandler(auth)(req,res,next);
   });
-  app.use('/api/v1',backendRouter({pool:appPool,auth,dataRegion:process.env.APP_DATA_REGION}));
+  app.use('/api/v1',backendRouter({pool:appPool,auth,dataRegion:process.env.APP_DATA_REGION,origin}));
 }else{
   app.use(['/api/auth','/api/v1'],(_req,res)=>res.status(503).json({error:{code:'BACKEND_NOT_CONFIGURED',message:'Run npm run backend:setup'}}));
 }
@@ -107,6 +104,6 @@ if(process.argv.includes('--dev')){
   app.use(express.static(resolve(frontRoot,'dist')));
   app.use((_req,res)=>res.sendFile(resolve(frontRoot,'dist/index.html')));
 }
-const server=app.listen(port,'127.0.0.1',()=>console.log(`Mizan ${vite?'development':'built app'}: http://localhost:${port} (local only); ${appPool?'Authenticated backend configured':pool?'Demonstration archive configured':'Database not configured'}`));
+const server=app.listen(port,config.host,()=>console.log(`Mizan ${vite?'development':'built app'}: http://localhost:${port} (${profile}); ${appPool?'Authenticated backend configured':pool?'Demonstration archive configured':'Database not configured'}`));
 async function close(){server.close();await vite?.close();await Promise.all([pool?.end(),appPool?.end(),identityPool?.end()]);process.exit(0);}
 process.on('SIGTERM',close);process.on('SIGINT',close);

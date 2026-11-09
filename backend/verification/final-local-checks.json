@@ -1,0 +1,48 @@
+{
+  "checkedAt": "2026-11-09T17:07:58.969Z",
+  "checks": [
+    {
+      "check": "backend tests",
+      "exitCode": 0,
+      "total": 58,
+      "passed": 58,
+      "failed": 0
+    },
+    {
+      "check": "frontend tests",
+      "exitCode": 0,
+      "total": 63,
+      "passed": 63,
+      "failed": 0
+    },
+    {
+      "check": "TypeScript and Vite build",
+      "exitCode": 0,
+      "warning": "ExcelJS chunk exceeds 500 kB"
+    },
+    {
+      "check": "backend audit",
+      "exitCode": 0,
+      "vulnerabilities": {
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 0,
+        "total": 0
+      }
+    },
+    {
+      "check": "frontend audit",
+      "exitCode": 0,
+      "vulnerabilities": {
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 0,
+        "total": 0
+      }
+    }
+  ]
+}

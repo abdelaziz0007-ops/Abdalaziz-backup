@@ -1,3 +1,4 @@
+import {mountNotificationRoutes} from './notification-routes.mjs';
 import express from 'express';
 import { fromNodeHeaders } from 'better-auth/node';
 import { randomUUID } from 'node:crypto';
@@ -30,7 +31,7 @@ const requireMfa=(principal,fresh=false)=>{
   if(!principal.mfaEnabled||!principal.mfaVerifiedAt||fresh&&Date.now()-Date.parse(principal.mfaVerifiedAt)>15*60*1000)
     throw new HttpError(403,'MFA_REQUIRED',fresh?'Verify a recent authenticator code before this action':'Enable and verify two-factor authentication first');
 };
-export function backendRouter({pool,auth,dataRegion}){
+export function backendRouter({pool,auth,dataRegion,origin}){
   const router=express.Router();
   router.use((req,res,next)=>{req.requestId=randomUUID();res.setHeader('X-Request-ID',req.requestId);res.setHeader('Cache-Control','no-store');next();});
   const result=(req,res,data,status=200)=>res.status(status).json({data,requestId:req.requestId});
@@ -43,13 +44,14 @@ export function backendRouter({pool,auth,dataRegion}){
     try{
       const session=await auth.api.getSession({headers:fromNodeHeaders(req.headers)});
       if(!session?.user||!session?.session)throw new HttpError(401,'AUTHENTICATION_REQUIRED','Sign in to continue');
+      if(process.env.APP_PROFILE==='production'&&!session.user.emailVerified)throw new HttpError(403,'EMAIL_VERIFICATION_REQUIRED','Verify your email before accessing the workspace');
       req.principal=(await pool.query('SELECT mizan_private.sync_identity_session($1,$2) AS value',[session.user.id,session.session.id])).rows[0].value;
       next();
     }catch(error){next(error);}
   });
   // Every state-changing JSON API request needs a browser-origin proof.
   router.use((req,_res,next)=>{
-    if(!['GET','HEAD','OPTIONS'].includes(req.method)&&req.headers.origin!==`${req.protocol}://${req.headers.host}`)
+    if(!['GET','HEAD','OPTIONS'].includes(req.method)&&req.headers.origin!==(origin||`${req.protocol}://${req.headers.host}`))
       return next(new HttpError(403,'ORIGIN_REJECTED','Same-origin requests are required'));
     next();
   });
@@ -81,6 +83,17 @@ export function backendRouter({pool,auth,dataRegion}){
       const data=schemas.workspace.parse(req.body);requireMfa(req.principal,true);
       const value=(await pool.query('SELECT mizan_private.create_workspace_once($1,$2,$3,$4,$5,$6,$7) AS id',[req.principal.id,req.principal.sessionId,data.name,dataRegion,data.administrationConsent,req.requestId,data.idempotencyKey])).rows[0];
       result(req,res,value,201);
+    }catch(e){next(e);}
+  });
+  // Effective permissions are computed by the same database policy used by writes.
+  router.get('/tenants/:tenantId/access',async(req,res,next)=>{
+    try{
+      const tenant=uuid.parse(req.params.tenantId),entity=req.query.entityId?uuid.parse(req.query.entityId):null;
+      result(req,res,await scoped(req,tenant,entity,null,async c=>{
+        const permissions=(await c.query('SELECT code FROM mizan.permissions WHERE mizan.has_permission($1,$2,$3,code) ORDER BY code',[tenant,entity,req.principal.id])).rows.map(row=>row.code);
+        const bankPermissions=entity?(await c.query('SELECT b.id AS bank_account_id,p.code FROM mizan.bank_accounts b CROSS JOIN mizan.permissions p WHERE b.tenant_id=$1 AND b.entity_id=$2 AND mizan.has_permission($1,$2,$3,p.code,b.id) ORDER BY b.id,p.code',[tenant,entity,req.principal.id])).rows:[];
+        return {tenantId:tenant,entityId:entity,permissions,bankPermissions};
+      }));
     }catch(e){next(e);}
   });
   router.get('/tenants/:tenantId/entities',async(req,res,next)=>{
@@ -124,6 +137,7 @@ export function backendRouter({pool,auth,dataRegion}){
       },{fresh:true});result(req,res,value,201);
     }catch(e){next(e);}
   });
+  mountNotificationRoutes(router,{scoped,result,HttpError});
   mountPeriodRoutes(router,{scoped,result,HttpError});
   mountDataLifecycleRoutes(router,{scoped,result,HttpError});
   mountAuditRoutes(router,{scoped,audit,result,HttpError});

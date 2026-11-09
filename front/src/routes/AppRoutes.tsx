@@ -31,6 +31,7 @@ function routeElement(route: (typeof ROUTES)[number]) {
  * /app/overview to /#/app/overview without changing the existing router strategy.
  */
 export function AppRoutes() {
+  const demoEnabled = import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEMO === 'true';
   const shellRoutes = ROUTES.filter((route) => route.path.startsWith("/app/"));
   const outerRoutes = ROUTES.filter((route) => !route.path.startsWith("/app/"));
 
@@ -43,10 +44,10 @@ export function AppRoutes() {
           <Route
             key={route.id}
             path={route.path}
-            element={routeElement(route)}
+            element={!demoEnabled&&['onboarding','recovery-states'].includes(route.pageSlug)?<Navigate to="/workspace" replace />:routeElement(route)}
           />
         ))}
-        <Route path="/app" element={<ProductShell />}>
+        <Route path="/app" element={demoEnabled?<ProductShell />:<Navigate to="/workspace" replace />}>
           <Route index element={<Navigate to="overview" replace />} />
           {shellRoutes.map((route) => (
             <Route

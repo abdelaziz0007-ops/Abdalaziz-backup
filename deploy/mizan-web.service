@@ -1,0 +1,26 @@
+[Unit]
+Description=Mizan web and API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=mizan
+Group=mizan
+WorkingDirectory=/opt/mizan/backend
+Environment=NODE_ENV=production
+Environment=APP_PROFILE=production
+Environment=BIND_HOST=127.0.0.1
+EnvironmentFile=/etc/mizan/web.env
+ExecStart=/usr/bin/node /opt/mizan/backend/server/index.mjs
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

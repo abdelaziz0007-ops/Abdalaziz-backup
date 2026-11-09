@@ -20,7 +20,7 @@ const explanations:Record<string,{text:[string,string];inputs:string[]}>={
 const labels:Record<string,[string,string]>={income_statement:['قائمة الدخل','Income statement'],financial_position:['المركز المالي','Financial position'],analysis:['التحليل المالي','Financial analysis'],revenue:['الإيرادات','Revenue'],cost:['تكلفة الإيرادات','Cost of revenue'],gross_profit:['مجمل الربح','Gross profit'],operating_expenses:['المصروفات التشغيلية','Operating expenses'],tax:['الضريبة','Tax'],net_profit:['صافي الربح','Net profit'],assets:['الأصول','Assets'],liabilities:['الالتزامات','Liabilities'],equity:['حقوق الملكية شاملة نتيجة الفترة','Equity including period earnings'],current_assets:['الأصول المتداولة','Current assets'],current_liabilities:['الالتزامات المتداولة','Current liabilities'],working_capital:['رأس المال العامل','Working capital']};
 const sample='accountCode,name,classification,signedDebitBalance\n1000,Cash,asset.current,1000\n3000,Capital,equity,-1000\n';
 export const financialLabels=labels;
-export function ConnectedFinance({tenant,entity,periods,onSaved}:{tenant:string;entity:string;periods:Period[];onSaved:()=>void}){
+export function ConnectedFinance({tenant,entity,periods,onSaved,canPrepare,canImport}:{canPrepare:boolean;canImport:boolean;tenant:string;entity:string;periods:Period[];onSaved:()=>void}){
   const l=useLanguage(),label=(key:string)=>labels[key]?l(...labels[key]):key;
   const [period,setPeriod]=useState(''),[csv,setCsv]=useState(''),[name,setName]=useState(''),[confirmed,setConfirmed]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState(''),[reports,setReports]=useState<ReportSummary[]>([]),[selected,setSelected]=useState(''),[report,setReport]=useState<Report|null>(null),[sources,setSources]=useState<Source[]>([]),[sourceTitle,setSourceTitle]=useState(''),[revision,setRevision]=useState(0);
   const [datasets,setDatasets]=useState<Dataset[]>([]),[datasetId,setDatasetId]=useState(''),[basisConfirmed,setBasisConfirmed]=useState(false);
@@ -58,8 +58,8 @@ export function ConnectedFinance({tenant,entity,periods,onSaved}:{tenant:string;
   function template(){const url=URL.createObjectURL(new Blob([sample],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='trial-balance-template.csv';a.click();URL.revokeObjectURL(url);}
   const available=datasets.filter(dataset=>periods.some(p=>p.id===dataset.period_id&&p.status==='open'));
   return <div className="stack">
-    <Panel title={l('التقارير من ميزان مراجعة منشور','Reports from a published trial balance')}>
-      {error&&<p role="alert" className="notice danger">{error}</p>}{message&&<p role="status" className="notice success">{message}</p>}
+    {error&&<p role="alert" className="notice danger">{error}</p>}{message&&<p role="status" className="notice success">{message}</p>}
+    {canPrepare&&<Panel title={l('التقارير من ميزان مراجعة منشور','Reports from a published trial balance')}>
       <p>{l('اختر إصدارًا منشورًا لإنشاء قائمة الدخل والمركز المالي والتحليل للفترة. يتطلب الإنشاء تحققًا حديثًا بخطوتين.','Select a published version to create period income, financial position and analysis drafts. Generation requires recent two-step verification.')}</p>
       <label className="form-field">{l('ميزان المراجعة المنشور','Published trial balance')}
         <select value={datasetId} disabled={busy||!available.length} onChange={e=>{setDatasetId(e.target.value);setBasisConfirmed(false);}}>
@@ -74,15 +74,15 @@ export function ConnectedFinance({tenant,entity,periods,onSaved}:{tenant:string;
         {l('أؤكد أن الدخل والمصروفات تخص هذه الفترة وأن حقوق الملكية لا تشمل نتيجة الفترة.','I confirm that income and expenses cover this period and equity excludes these period earnings.')}
       </label>
       <Button variant="primary" disabled={busy||!basisConfirmed||!available.some(dataset=>dataset.id===datasetId)} onClick={()=>void generateReports()}>{l('إنشاء مسودات التقارير','Generate draft reports')}</Button>
-    </Panel>
-    <Panel title={l('الاستيراد المباشر للمسودات','Direct draft import')}>
+    </Panel>}
+    {canImport&&<details><summary>{l('استيراد CSV مباشر كمسودة','Direct CSV draft import')}</summary><Panel title={l('الاستيراد المباشر للمسودات','Direct draft import')}>
       <Notice tone="warning">{l('تبقى مصادر هذا المسار في الحجر إلى حين فحصها ومراجعة اكتمالها.','Sources in this workflow remain quarantined pending scanning and completeness review.')}</Notice>
       <div className="form-grid"><label className="form-field">{l('فترة الاستيراد','Import period')}<select value={period} disabled={busy} onChange={e=>{setPeriod(e.target.value);setConfirmed(false);}}><option value="">{l('اختر فترة مفتوحة','Select an open period')}</option>{periods.filter(p=>p.status==='open').map(p=><option key={p.id} value={p.id}>{p.start_date} — {p.end_date}</option>)}</select></label><label className="form-field">{l('ميزان المراجعة CSV','Trial balance CSV')}<input type="file" accept=".csv,text/csv" disabled={busy} onChange={e=>void upload(e.target.files?.[0])}/></label></div>
       <p>{l('حتى 1000 حساب. الرصيد بإشارة المدين: المدين موجب والدائن سالب. يجب أن يتوازن المجموع، وأن تطابق الكسور دقة عملة المنشأة.','Up to 1000 accounts. Debit balances are positive and credits negative. The total must balance and decimals must match the entity currency.')}</p>
       <p dir="ltr" style={{overflowWrap:'anywhere'}}>asset.current · asset.noncurrent · asset.contra · liability.current · liability.noncurrent · equity · income · expense.cost · expense.operating · expense.tax</p>
       <label className="row"><input type="checkbox" checked={confirmed} disabled={busy} onChange={e=>setConfirmed(e.target.checked)}/>{l('أؤكد تصنيف الحسابات، وأن أرصدة الدخل والمصروف تخص الفترة المختارة فقط، ولا تتضمن حقوق الملكية نتيجة الفترة مرة أخرى.','I confirm the classifications, that income and expenses cover only the selected period, and that equity excludes those period earnings to avoid double counting.')}</label>
       <div className="row"><Button onClick={template}>{l('تنزيل القالب','Download template')}</Button><Button variant="primary" disabled={busy||!period||!csv||!confirmed} onClick={()=>void save()}>{busy?l('جارٍ الحفظ والحساب…','Saving and calculating…'):l('حفظ وحساب المسودات','Save and calculate drafts')}</Button></div>
-    </Panel>
+    </Panel></details>}
     <Panel title={l('النتائج المحفوظة','Saved outputs')}><label className="form-field">{l('اختر إصدارًا محفوظًا','Select a saved version')}<select value={selected} onChange={e=>setSelected(e.target.value)}><option value="">{l('اختر نتيجة','Select output')}</option>{reports.map(r=><option key={r.id} value={r.id}>{label(r.output_type)} · {periods.find(p=>p.id===r.period_id)?.start_date} · v{r.version} · {r.currency_code} · {r.status}</option>)}</select></label>
       {report&&<div className="stack"><h3>{label(report.output_type)} · {report.status==='approved_locked'?l('معتمد ومقفل','Approved and locked'):report.status==='draft'?l('مسودة','Draft'):report.status} · <bdi>{report.currency_code} | {report.start_date} — {report.end_date}</bdi></h3>
         {report.status!=='approved_locked'&&<Notice tone="warning">{l('يظل الإصدار قيد المراجعة حتى اعتماده بشكل مستقل. راجع تفاصيل التحقق أدناه.','This version requires independent approval. See the validation details below.')}</Notice>}

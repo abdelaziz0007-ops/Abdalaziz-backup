@@ -18,7 +18,7 @@ export async function runScanOnce({pool,storage,workerId}){
  return {claimed:true,...final,traceId:job.traceId};
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
- const env=parseEnv(await readFile('.env.local','utf8'));
+ const env=process.env.APP_PROFILE==='production'?{}:parseEnv(await readFile(new URL('../.env.local',import.meta.url),'utf8').catch(error=>{if(error.code==='ENOENT')return '';throw error;}));
  // The worker process receives no owner/application/identity DB URL in its environment.
  for(const key of ['SOURCE_ENCRYPTION_KEY','AWS_ACCESS_KEY_ID','AWS_SECRET_ACCESS_KEY','AWS_ENDPOINT_URL_S3','AWS_REGION','CLAMAV_SOCKET','CLAMAV_HOST','CLAMAV_PORT','CLAMAV_TIMEOUT_MS','CLAMAV_MAX_SIGNATURE_AGE_HOURS'])if(process.env[key]===undefined&&env[key]!==undefined)process.env[key]=env[key];
  const connection=process.env.SCANNER_DATABASE_URL||env.SCANNER_DATABASE_URL;if(!connection)throw Error('Run backend:setup to configure the dedicated scanner role');

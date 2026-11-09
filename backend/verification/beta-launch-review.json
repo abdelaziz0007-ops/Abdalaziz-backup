@@ -1,0 +1,36 @@
+{
+  "date": "2026-11-09",
+  "releaseReady": false,
+  "backendUnitTests": 58,
+  "frontendUnitTests": 57,
+  "typecheck": "passed",
+  "build": "passed with ExcelJS chunk-size warning",
+  "dependencyAudit": "0 reported after override",
+  "database": {
+    "branch": "codex-backend-completion",
+    "migrationChecksums": 29,
+    "runtimeRoles": "API, identity and scanner connected; no elevated role flags",
+    "rlsTables": 103,
+    "totalMizanTables": 110
+  },
+  "storage": "HeadBucket succeeded; no new upload roundtrip",
+  "browser": {
+    "engine": "Chrome headless",
+    "checks": [
+      "signed-out workspace redirects to sign in",
+      "recovery and reset forms render",
+      "production build blocks demo routes",
+      "signup mobile 390px: no overflow"
+    ],
+    "pageErrors": [],
+    "accountsCreated": 0
+  },
+  "notVerified": [
+    "real email delivery",
+    "real-user sign-up, MFA and password reset",
+    "public deployment",
+    "end-to-end file scan and import",
+    "restore and load tests",
+    "full SRS acceptance"
+  ]
+}

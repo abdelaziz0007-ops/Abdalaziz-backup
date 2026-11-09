@@ -1,5 +1,5 @@
 import {useEffect,useRef,useState} from 'react';
-import {backend,BackendError} from '@/lib/backend-client';
+import {backend,backendUpload,BackendError} from '@/lib/backend-client';
 import {Button} from '@/components/ui/Button';
 import {DataTable} from '@/components/ui/DataTable';
 import {Notice,useLanguage} from '@/components/WorkspaceUI';
@@ -18,12 +18,12 @@ export function SourceJobsPanel({tenant,entity,periods}:{tenant:string;entity:st
  const state=(value:string)=>({quarantined:l('محجور بانتظار الفحص','Quarantined pending scan'),clean:l('فحص ناجح','Scan passed'),infected:l('ملف مصاب','Infected file'),rejected:l('مرفوض','Rejected'),queued:l('في الانتظار','Queued'),running:l('قيد الفحص','Scanning'),succeeded:l('اكتملت المهمة','Completed'),failed:l('تعذّرت المهمة','Failed'),cancelled:l('أُلغيت المهمة','Cancelled')}[value]??value);
  useEffect(()=>{setSelected('');setJob(null);setAllowed(true);setError('');},[base]);
  useEffect(()=>{let live=true;setSources([]);backend<Source[]>(base+'/source-files').then(v=>{if(live){setSources(v);setAllowed(true);}}).catch(e=>{if(live){if(e instanceof BackendError&&[403,404].includes(e.status))setAllowed(false);else setError(e.message);}});return()=>{live=false;};},[base,revision]);
- useEffect(()=>{if(!selected){setJob(null);return;}let live=true,timer:ReturnType<typeof setTimeout>;const load=async()=>{try{const value=await backend<Job>(base+'/jobs/'+selected);if(live){setJob(value);if(['queued','running'].includes(value.status))timer=setTimeout(()=>void load(),5000);}}catch(e){if(live)setError(e instanceof Error?e.message:String(e));}};void load();return()=>{live=false;clearTimeout(timer);};},[base,selected,revision]);
+ useEffect(()=>{if(!selected){setJob(null);return;}let live=true,timer:ReturnType<typeof setTimeout>;const load=async()=>{try{const value=await backend<Job>(base+'/jobs/'+selected);if(live){setJob(value);if(['queued','running'].includes(value.status))timer=setTimeout(()=>void load(),5000);else{const updated=await backend<Source[]>(base+'/source-files');if(live)setSources(updated);}}}catch(e){if(live)setError(e instanceof Error?e.message:String(e));}};void load();return()=>{live=false;clearTimeout(timer);};},[base,selected,revision]);
  async function upload(){
   if(!file)return;setBusy(true);setError('');setMessage('');try{
    if(file.size<1||file.size>50*1024*1024||!(/\.(csv|xlsx)$/i.test(file.name)))throw Error(l('اختر CSV أو XLSX بين بايت واحد و50 ميجابايت.','Choose CSV or XLSX between 1 byte and 50 MiB.'));
-   const response=await fetch('/api/v1'+base+'/source-files',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/octet-stream','X-Upload-Name':encodeURIComponent(file.name)},body:file}),value=await response.json();if(!response.ok)throw Error(value.error?.message??l('تعذّر رفع المصدر','Upload failed'));
-   setFile(null);setRevision(v=>v+1);setMessage(l('حُفظ المصدر مشفرًا. الفحص لا يعني نشر البيانات أو اعتمادها.','Encrypted source saved. Scanning does not publish or approve data.'));setSelected(value.data.jobId??'');
+   const value=await backendUpload<{jobId:string|null}>(base+'/source-files',file);
+   setFile(null);setRevision(v=>v+1);setMessage(l('حُفظ المصدر مشفرًا. الفحص لا يعني نشر البيانات أو اعتمادها.','Encrypted source saved. Scanning does not publish or approve data.'));setSelected(value.jobId??'');
   }catch(e){setError(e instanceof Error?e.message:String(e));}finally{setBusy(false);}
  }
  async function control(action:'cancel'|'retry'){

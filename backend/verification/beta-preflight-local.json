@@ -1,0 +1,61 @@
+{
+  "checkedAt": "2026-11-09T14:00:28.744Z",
+  "mode": "read-only; no accounts or financial data created",
+  "checks": [
+    {
+      "name": "production configuration",
+      "ok": false,
+      "detail": "Production APP_ORIGIN requires HTTPS"
+    },
+    {
+      "name": "APP_DATABASE_URL least privilege",
+      "ok": true,
+      "detail": "Connected with restricted role"
+    },
+    {
+      "name": "AUTH_DATABASE_URL least privilege",
+      "ok": true,
+      "detail": "Connected with restricted role"
+    },
+    {
+      "name": "SCANNER_DATABASE_URL least privilege",
+      "ok": true,
+      "detail": "Connected with restricted role"
+    },
+    {
+      "name": "migration checksums",
+      "ok": true,
+      "detail": "29 migrations match"
+    },
+    {
+      "name": "isolated parser image",
+      "ok": false,
+      "detail": "Missing pinned IMPORT_PREVIEW_IMAGE"
+    },
+    {
+      "name": "private source storage configuration",
+      "ok": true,
+      "detail": "Private bucket reachable; encrypted roundtrip still requires acceptance"
+    },
+    {
+      "name": "email configuration",
+      "ok": false,
+      "detail": "Missing RESEND_API_KEY and/or MAIL_FROM"
+    },
+    {
+      "name": "malware scanner configuration",
+      "ok": false,
+      "detail": "Missing CLAMAV_HOST or CLAMAV_SOCKET"
+    }
+  ],
+  "infrastructureChecksPassed": false,
+  "releaseReady": false,
+  "acceptanceRequired": [
+    "Real email verification and reset",
+    "Real account MFA and tenant isolation",
+    "Clean file scan and isolated import",
+    "Malware quarantine",
+    "Backup restoration",
+    "Public HTTPS smoke"
+  ]
+}

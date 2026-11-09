@@ -1,0 +1,5 @@
+# Set MIZAN_DOMAIN in the Caddy service environment to your actual public hostname.
+{$MIZAN_DOMAIN} {
+    encode zstd gzip
+    reverse_proxy 127.0.0.1:5174
+}

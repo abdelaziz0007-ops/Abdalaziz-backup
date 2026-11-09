@@ -26,7 +26,9 @@
     "build": "npm --prefix ../front run build",
     "test": "npm run test:backend && npm --prefix ../front test",
     "test:backend": "vitest run",
-    "backend:test:privacy": "node verification/data-lifecycle-api.mjs"
+    "backend:test:privacy": "node verification/data-lifecycle-api.mjs",
+    "beta:preflight": "node verification/beta-preflight.mjs",
+    "beta:smoke": "node verification/beta-smoke.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1161.0",
@@ -51,5 +53,13 @@
     "jszip": "3.10.2",
     "typescript": "^5.8.0",
     "vitest": "^4.1.12"
+  },
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "overrides": {
+    "exceljs": {
+      "uuid": "11.1.1"
+    }
   }
 }
