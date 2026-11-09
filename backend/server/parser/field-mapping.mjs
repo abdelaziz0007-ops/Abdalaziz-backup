@@ -1,5 +1,5 @@
 import {TableInputError} from './tabular-core.mjs';
-import {parseDecimal,formatDec} from '../../src/lib/decimal.ts';
+import {parseDecimal,formatDec} from '../../shared/decimal.ts';
 const fail=(code,message)=>{throw new TableInputError(code,message);};
 const separators=new Set(['.',',',' ']);
 export function expandNumericText(text){

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { parseDecimal,formatDec } from '../src/lib/decimal.ts';
+import { parseDecimal,formatDec } from '../shared/decimal.ts';
 
 export const hash=value=>createHash('sha256').update(value).digest('hex');
 export class FinancialInputError extends Error { constructor(message){super(message);this.status=422;this.code='FINANCIAL_INPUT_INVALID';} }

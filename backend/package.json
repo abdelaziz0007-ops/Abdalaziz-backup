@@ -1,5 +1,5 @@
 {
-  "name": "financial-workspace",
+  "name": "financial-workspace-backend",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -23,9 +23,10 @@
     "backend:test:scan": "node verification/scan-jobs-api.mjs",
     "db:verify": "node verification/srs-database.mjs",
     "db:verify:production": "node verification/srs-database.mjs --production",
-    "build": "tsc --noEmit && vite build",
-    "preview": "vite preview",
-    "test": "vitest run"
+    "build": "npm --prefix ../front run build",
+    "test": "npm run test:backend && npm --prefix ../front test",
+    "test:backend": "vitest run",
+    "backend:test:privacy": "node verification/data-lifecycle-api.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1161.0",
@@ -40,23 +41,15 @@
     "files-sdk": "^3.1.2",
     "pdfkit": "0.20.2",
     "pg": "^8.23.1",
-    "qrcode": "^1.5.4",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "react-router-dom": "^7.6.0",
     "saxes": "5.0.1",
-    "zod": "^4.6.7"
+    "zod": "^4.6.7",
+    "vite": "^6.3.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/pg": "^8.23.1",
-    "@types/qrcode": "^1.5.6",
-    "@types/react": "^19.1.0",
-    "@types/react-dom": "^19.1.0",
-    "@vitejs/plugin-react": "^4.5.0",
     "jszip": "3.10.2",
     "typescript": "^5.8.0",
-    "vite": "^6.3.0",
     "vitest": "^4.1.12"
   }
 }

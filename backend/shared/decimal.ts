@@ -3,13 +3,13 @@
  * Values are exact decimal STRINGS in fixtures and state; arithmetic is performed
  * on scaled BigInt minor units. Binary floats are NEVER the authority for balances.
  */
-import type { CurrencyCode } from "@/data/types";
-
-export const CURRENCY_PRECISION: Record<CurrencyCode, number> = {
+export const CURRENCY_PRECISION = {
   SAR: 2,
   USD: 2,
   BHD: 3, // DR-003: do not assume 2 decimals universally
 };
+
+type CurrencyCode = keyof typeof CURRENCY_PRECISION;
 
 export interface Dec {
   /** scaled integer of minor units */

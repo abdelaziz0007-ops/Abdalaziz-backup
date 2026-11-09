@@ -1,5 +1,7 @@
 # Backend v1 — identity and workspace foundation
 
+> بعد إعادة تنظيم المشروع، تُشغّل أوامر Neon والخادم وDocker الواردة هنا من داخل `backend`. ثبّت تبعيات `front` أيضًا عند تشغيل الواجهة أو بنائها. راجع [أوامر التشغيل الحالية](plan.md#التشغيل-والتحقق).
+
 This delivery starts the real backend on the existing Node/Express host. It does **not** claim that all SRS workflows are finished. The normalized financial ingestion, calculation, bank matching, review and export write services remain the next implementation batches.
 
 ## Working flows

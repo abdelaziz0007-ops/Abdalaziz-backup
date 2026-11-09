@@ -1,6 +1,7 @@
 import express from 'express';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
+import {fileURLToPath} from 'node:url';
 import { loadEnv } from 'vite';
 import { database } from './database.mjs';
 import { snapshotSchema } from './snapshot-schema.mjs';
@@ -9,7 +10,9 @@ import { toNodeHandler } from 'better-auth/node';
 import { backendRouter } from './backend.mjs';
 
 // Postgres credentials are loaded only here, never into VITE_* or client code.
-const env=loadEnv('development',process.cwd(),'');
+const backendRoot=fileURLToPath(new URL('..',import.meta.url));
+const frontRoot=fileURLToPath(new URL('../../front/',import.meta.url));
+const env=loadEnv('development',backendRoot,'');
 for (const [key,value] of Object.entries(env)) if (process.env[key]===undefined) process.env[key]=value;
 const port=Number(process.env.PORT || 5174);
 const profile=process.env.APP_PROFILE||'development';
@@ -98,11 +101,11 @@ app.use((error,_req,res,_next)=>{
 let vite;
 if(process.argv.includes('--dev')){
   const {createServer}=await import('vite');
-  vite=await createServer({server:{middlewareMode:true,hmr:{port:port+1}}});
+  vite=await createServer({root:frontRoot,server:{middlewareMode:true,hmr:{port:port+1}}});
   app.use(vite.middlewares);
 }else{
-  app.use(express.static(resolve('dist')));
-  app.use((_req,res)=>res.sendFile(resolve('dist/index.html')));
+  app.use(express.static(resolve(frontRoot,'dist')));
+  app.use((_req,res)=>res.sendFile(resolve(frontRoot,'dist/index.html')));
 }
 const server=app.listen(port,'127.0.0.1',()=>console.log(`Mizan ${vite?'development':'built app'}: http://localhost:${port} (local only); ${appPool?'Authenticated backend configured':pool?'Demonstration archive configured':'Database not configured'}`));
 async function close(){server.close();await vite?.close();await Promise.all([pool?.end(),appPool?.end(),identityPool?.end()]);process.exit(0);}

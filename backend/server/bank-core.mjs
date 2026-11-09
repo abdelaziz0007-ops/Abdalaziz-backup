@@ -1,4 +1,4 @@
-import { parseDecimal } from '../src/lib/decimal.ts';
+import { parseDecimal } from '../shared/decimal.ts';
 import { FinancialInputError,money } from './financial-core.mjs';
 export const bankHeader='rowId,postingDate,reference,description,signedAmount,runningBalance';
 export function bankAmount(text,precision){

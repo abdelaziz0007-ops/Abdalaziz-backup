@@ -17,11 +17,11 @@
 
 This system defines foundations, implementation tokens, reusable component contracts, product patterns, screen specifications, accessibility, localization, and governance.
 
-- [Interactive visual reference](index.html): foundations, components, financial reporting, reconciliation, import, and review examples; Arabic/English, light/dark, and density controls.
-- [Design tokens](design-tokens.json): structured primitives, semantic themes, dimensions, typography, motion, and layers.
-- [CSS variables](design-tokens.css): generated implementation variables.
+- [Interactive visual reference](../front/index.html): foundations, components, financial reporting, reconciliation, import, and review examples; Arabic/English, light/dark, and density controls.
+- [Design tokens](../front/design-tokens.json): structured primitives, semantic themes, dimensions, typography, motion, and layers.
+- [CSS variables](../front/design-tokens.css): generated implementation variables.
 - [Contrast audit](contrast-audit.json): computed contrast checks for 38 solid-color pairs.
-- [UI content dictionary](ui-copy.json): sample Arabic/English product language.
+- [UI content dictionary](../front/ui-copy.json): sample Arabic/English product language.
 - [Handoff and validation](HANDOFF.md): delivery map, evidence, and implementation checklist.
 
 The visual reference uses synthetic data and local demonstrations. It does not upload, process, approve, or transmit financial records. It is not a production application or a native Figma library. The component contracts below are the full specification; the visual reference illustrates representative components and core workflows rather than every permutation.

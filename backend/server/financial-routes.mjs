@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { calculateFinancials,classifications,coefficient,hash,money,parseTrialBalance } from './financial-core.mjs';
 import { decryptField,rowContext,sourceStorage } from './financial-storage.mjs';
-import { formatDec,parseDecimal,percentageVarianceDec,subDec } from '../src/lib/decimal.ts';
+import { formatDec,parseDecimal,percentageVarianceDec,subDec } from '../shared/decimal.ts';
 import { financialSignals } from './financial-signals.mjs';
 
 const input=z.object({periodId:z.uuid(),fileName:z.string().min(1).max(200).regex(/^[^/\\\u0000-\u001f]+\.csv$/i),csv:z.string().max(524288),basis:z.literal('period'),confirmation:z.literal(true)}).strict();

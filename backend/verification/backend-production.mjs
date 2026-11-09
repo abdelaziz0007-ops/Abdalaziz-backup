@@ -34,9 +34,9 @@ await files.list({prefix:'__mizan_read_only_probe__/'});
 const anonymousStorage=await fetch(env.AWS_ENDPOINT_URL_S3+'/financial-sources/');assert([401,403].includes(anonymousStorage.status));
 passed.push('Production private bucket accepts authenticated read-only listing and denies anonymous access');
 let assets=0;
-for(const name of await readdir('dist/assets')){
+for(const name of await readdir('../front/dist/assets')){
  if(!/\.(js|css)$/.test(name))continue;
- const text=await readFile('dist/assets/'+name,'utf8');
+ const text=await readFile('../front/dist/assets/'+name,'utf8');
  for(const key of ['DATABASE_URL','DATABASE_URL_UNPOOLED','APP_DATABASE_URL','AUTH_DATABASE_URL','SCANNER_DATABASE_URL','BETTER_AUTH_SECRET','SOURCE_ENCRYPTION_KEY','AWS_SECRET_ACCESS_KEY','AWS_ACCESS_KEY_ID'])assert(!env[key]||!text.includes(env[key]),'Server-only configuration leaked to built assets');assets++;
 }
 passed.push(`No database URLs or auth secret in ${assets} built JS/CSS assets`);

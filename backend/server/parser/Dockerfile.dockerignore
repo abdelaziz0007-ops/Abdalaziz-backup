@@ -6,6 +6,5 @@
 !server/parser/preview-process.mjs
 !server/parser/tabular-core.mjs
 !server/parser/field-mapping.mjs
-!src/
-!src/lib/
-!src/lib/decimal.ts
+!shared/
+!shared/decimal.ts

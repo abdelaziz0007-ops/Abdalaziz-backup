@@ -1,4 +1,4 @@
-import {formatDec, parseDecimal} from '../src/lib/decimal.ts';
+import {formatDec, parseDecimal} from '../shared/decimal.ts';
 import {classifications} from './financial-core.mjs';
 
 const amountFields = {

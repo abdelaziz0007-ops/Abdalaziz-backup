@@ -1,4 +1,4 @@
-import {parseDecimal} from '../src/lib/decimal.ts';
+import {parseDecimal} from '../shared/decimal.ts';
 
 const rules={
   'classified-tb-draft-v1:gross_margin':{code:'negative_gross_margin',threshold:'0.00'},

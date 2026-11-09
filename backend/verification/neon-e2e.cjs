@@ -2,7 +2,7 @@ const {chromium}=require('C:/Users/HP/.cache/codex-runtimes/codex-primary-runtim
 const fs=require('node:fs'),assert=require('node:assert/strict');
 const base=process.env.TEST_BASE_URL||'http://localhost:5180';
 (async()=>{
-  const fixture=JSON.parse(fs.readFileSync('fake-data.json','utf8'));
+  const fixture=JSON.parse(fs.readFileSync('../front/fake-data.json','utf8'));
   const lines=['period,accountCode,name,classification,signedDebitBalance,role'];
   for(const month of ['2026-10','2026-11'])for(const r of fixture.trialBalance){
     const amount=month==='2026-11'?({'1000':'104200.00','4000':'-130000.00'}[r.accountCode]??r.signedDebitBalance):r.signedDebitBalance;

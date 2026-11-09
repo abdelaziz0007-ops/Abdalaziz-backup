@@ -5,6 +5,6 @@ work/
 .env
 .env.*
 !.env.example
-verification/reference-*.png
-verification/pack-page-*.png
+**/verification/reference-*.png
+**/verification/pack-page-*.png
 .neon

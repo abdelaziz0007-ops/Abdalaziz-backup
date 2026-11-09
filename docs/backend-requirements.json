@@ -9,8 +9,8 @@
       "acceptance": "Invitations expire after a configured period and are single-use; administrative and approval accounts require MFA; recovery does not disclose whether an email exists",
       "status": "partial",
       "evidence": [
-        "verification/review-membership-api.json",
-        "verification/review-browser.json"
+        "backend/verification/review-membership-api.json",
+        "backend/verification/review-browser.json"
       ],
       "remaining": "Email recovery/verification delivery, recovery abuse controls and full identity lifecycle acceptance remain pending."
     },
@@ -21,8 +21,8 @@
       "acceptance": "A user cannot access an unauthorized entity, including by changing a request identifier",
       "status": "partial",
       "evidence": [
-        "verification/review-membership-api.json",
-        "verification/administration-scope-api.json"
+        "backend/verification/review-membership-api.json",
+        "backend/verification/administration-scope-api.json"
       ],
       "remaining": "Remaining workspace lifecycle, ownership transfer and full SRS acceptance remain pending."
     },
@@ -33,9 +33,9 @@
       "acceptance": "Unauthorized viewing, downloading, editing, and approval are blocked, with every access path tested",
       "status": "partial",
       "evidence": [
-        "verification/backend-api.json",
-        "verification/administration-scope-api.json",
-        "verification/review-membership-api.json"
+        "backend/verification/backend-api.json",
+        "backend/verification/administration-scope-api.json",
+        "backend/verification/review-membership-api.json"
       ],
       "remaining": "Export, worker and integration access paths require implementation and independent authorization tests."
     },
@@ -54,7 +54,9 @@
       "stage": "M",
       "acceptance": "A locked period rejects direct changes; reopening requires authorization and a reason and creates a new version",
       "status": "partial",
-      "evidence": ["verification/staged-imports-api.json"],
+      "evidence": [
+        "backend/verification/staged-imports-api.json"
+      ],
       "remaining": "Period administrators can lock the current version with a reason and reopen it as a new version with the same dates and settings. Active reviews block locking. Historical outputs stay readable and new imports target the reopened period. Browser and production acceptance remain pending."
     },
     {
@@ -64,8 +66,8 @@
       "acceptance": "Invalid or infected files are rejected; analysis starts only after checks pass; file content is not executed",
       "status": "partial",
       "evidence": [
-        "verification/scan-jobs-api.json",
-        "server/clamav-client.test.mjs"
+        "backend/verification/scan-jobs-api.json",
+        "backend/server/clamav-client.test.mjs"
       ],
       "remaining": "Encrypted typed upload and fail-closed scan jobs work. Real scanner deployment/benign-malicious/archive acceptance, isolated parsing and replacing legacy pre-scan draft analysis remain pending."
     },
@@ -76,9 +78,9 @@
       "acceptance": "The user selects the worksheet, header row, date format, and decimal separator; transformed values are previewed before confirmation",
       "status": "partial",
       "evidence": [
-        "server/parser/tabular-core.test.mjs",
-        "server/parser/field-mapping.test.mjs",
-        "server/source-preview-routes.test.mjs"
+        "backend/server/parser/tabular-core.test.mjs",
+        "backend/server/parser/field-mapping.test.mjs",
+        "backend/server/source-preview-routes.test.mjs"
       ],
       "remaining": "The scoped preview API and UI are wired. Live acceptance requires a real scanner and local Docker engine for end-to-end scan, isolated execution and mapped preview."
     },
@@ -89,9 +91,9 @@
       "acceptance": "Reuse detects changes to required columns and requests review instead of silently remapping",
       "status": "partial",
       "evidence": [
-        "server/parser/tabular-core.test.mjs",
-        "server/parser/field-mapping.test.mjs",
-        "server/source-preview-routes.test.mjs"
+        "backend/server/parser/tabular-core.test.mjs",
+        "backend/server/parser/field-mapping.test.mjs",
+        "backend/server/source-preview-routes.test.mjs"
       ],
       "remaining": "Scoped persistence, immutable versions and reuse with drift rejection are wired and exercised with fixtures. Live save and reuse after a real scan and isolated preview remain pending."
     },
@@ -102,9 +104,9 @@
       "acceptance": "Mandatory fields are validated for each file type, and errors identify source row numbers",
       "status": "partial",
       "evidence": [
-        "server/parser/tabular-core.test.mjs",
-        "server/parser/field-mapping.test.mjs",
-        "verification/staged-imports-api.json"
+        "backend/server/parser/tabular-core.test.mjs",
+        "backend/server/parser/field-mapping.test.mjs",
+        "backend/verification/staged-imports-api.json"
       ],
       "remaining": "Complete selected sheets can be staged and validated. Trial balance, general ledger, bank statement and bank ledger publish into immutable typed datasets. Live scan-to-import and large-file acceptance remain pending."
     },
@@ -123,7 +125,10 @@
       "stage": "M",
       "acceptance": "Blocking errors and warnings are separate; record counts, rejection reasons, and totals before and after exclusions are shown",
       "status": "partial",
-      "evidence": ["server/import-quality.test.mjs", "verification/staged-imports-api.json"],
+      "evidence": [
+        "backend/server/import-quality.test.mjs",
+        "backend/verification/staged-imports-api.json"
+      ],
       "remaining": "Review displays blocking issues, warnings, counts and exact totals before and after exclusions. Live acceptance with scanned files and broader quality rules remain pending."
     },
     {
@@ -133,9 +138,9 @@
       "acceptance": "Original values, changes, actor, and reason are retained; affected validations and calculations rerun",
       "status": "partial",
       "evidence": [
-        "server/parser/tabular-core.test.mjs",
-        "server/parser/field-mapping.test.mjs",
-        "verification/staged-imports-api.json"
+        "backend/server/parser/tabular-core.test.mjs",
+        "backend/server/parser/field-mapping.test.mjs",
+        "backend/verification/staged-imports-api.json"
       ],
       "remaining": "Scoped draft corrections preserve encrypted originals, append actor and reason history and rerun row and batch validation. Typed output recalculation and live acceptance remain pending."
     },
@@ -146,9 +151,9 @@
       "acceptance": "Progress, failure, and cancellation are visible; retries do not duplicate imports or outputs",
       "status": "partial",
       "evidence": [
-        "verification/scan-jobs-api.json",
-        "verification/scan-job-authority.json",
-        "verification/scan-jobs-browser.json"
+        "backend/verification/scan-jobs-api.json",
+        "backend/verification/scan-job-authority.json",
+        "backend/verification/scan-jobs-browser.json"
       ],
       "remaining": "Scan-job leases, fencing, retries, cancellation and suspension revocation work. Reliable import/parser/export job lifecycle and production monitoring/recovery/load acceptance remain pending."
     },
@@ -167,7 +172,9 @@
       "stage": "M",
       "acceptance": "Every unmapped account is visible; splitting an account across line items requires a rule that defines totals and prevents duplication",
       "status": "partial",
-      "evidence": ["verification/staged-imports-api.json"],
+      "evidence": [
+        "backend/verification/staged-imports-api.json"
+      ],
       "remaining": "Published trial balances generate a frozen mapping with one validated classification per account. Editable mapping policies, documented splits and live acceptance remain pending."
     },
     {
@@ -176,7 +183,9 @@
       "stage": "M",
       "acceptance": "Results match ground truth; approval is blocked if balance, mapping, or scope validations fail",
       "status": "partial",
-      "evidence": ["verification/staged-imports-api.json"],
+      "evidence": [
+        "backend/verification/staged-imports-api.json"
+      ],
       "remaining": "Published, balanced trial balances generate versioned drafts with passed validations. Independent approval using live scanned sources and broader ground-truth coverage remain pending."
     },
     {
@@ -185,7 +194,10 @@
       "stage": "M",
       "acceptance": "Period, currency, entity scope, and policies are disclosed; zero denominators do not generate misleading percentages",
       "status": "partial",
-      "evidence": ["verification/staged-imports-api.json", "src/lib/decimal.test.ts"],
+      "evidence": [
+        "backend/verification/staged-imports-api.json",
+        "front/src/lib/decimal.test.ts"
+      ],
       "remaining": "Versioned statement comparisons disclose scope and calculation policy and handle zero and negative baselines. Dashboard, budget and explicit currency conversion comparisons remain pending."
     },
     {
@@ -194,7 +206,9 @@
       "stage": "M",
       "acceptance": "Each metric shows its formula, contributing accounts, and period; missing required inputs produce “Unavailable”",
       "status": "partial",
-      "evidence": ["verification/staged-imports-api.json"],
+      "evidence": [
+        "backend/verification/staged-imports-api.json"
+      ],
       "remaining": "Versioned ratio formulas produce exact values or explicit unavailable reasons. Broader KPI coverage and account-level metric navigation remain pending."
     },
     {
@@ -203,7 +217,9 @@
       "stage": "M",
       "acceptance": "Reviewers can navigate from a line item to available accounts, transactions, or trial-balance rows; the interface does not imply unavailable transaction detail",
       "status": "partial",
-      "evidence": ["verification/staged-imports-api.json"],
+      "evidence": [
+        "backend/verification/staged-imports-api.json"
+      ],
       "remaining": "Statement lines link to original source rows and the specific correction applied. Linked ledger transaction drill-down and live acceptance remain pending."
     },
     {
@@ -212,7 +228,10 @@
       "stage": "M",
       "acceptance": "Alerts show the rule, threshold, and affected data; exceptions are not labeled as proven fraud",
       "status": "partial",
-      "evidence": ["verification/staged-imports-api.json", "server/financial-core.test.mjs"],
+      "evidence": [
+        "backend/verification/staged-imports-api.json",
+        "backend/server/financial-core.test.mjs"
+      ],
       "remaining": "Three versioned rules flag negative margins and a current ratio below one using saved metrics. Broader exception coverage and production acceptance remain pending."
     },
     {
@@ -221,7 +240,9 @@
       "stage": "M",
       "acceptance": "Each quantitative statement links to a calculated metric; arithmetic changes are distinguished from causal explanations",
       "status": "partial",
-      "evidence": ["verification/staged-imports-api.json"],
+      "evidence": [
+        "backend/verification/staged-imports-api.json"
+      ],
       "remaining": "The report links arithmetic explanations to saved metric rows and identifies thresholds and missing inputs. Broader narrative and production acceptance remain pending."
     },
     {
@@ -294,7 +315,7 @@
       "acceptance": "Group members, total, and residual are shown; groups are not automatically approved at launch",
       "status": "partial",
       "evidence": [
-        "verification/manual-allocation-api.json"
+        "backend/verification/manual-allocation-api.json"
       ],
       "remaining": "Manual one-to-many and many-to-one work; bounded rule-driven grouped suggestion search and sum/residual display still need acceptance."
     },
@@ -305,9 +326,9 @@
       "acceptance": "Total allocations cannot exceed a transaction’s amount; the unallocated balance remains visible",
       "status": "verified",
       "evidence": [
-        "server/allocation-plan.test.mjs",
-        "verification/manual-allocation-api.json",
-        "verification/matches-api.json"
+        "backend/server/allocation-plan.test.mjs",
+        "backend/verification/manual-allocation-api.json",
+        "backend/verification/matches-api.json"
       ],
       "remaining": ""
     },
@@ -318,7 +339,7 @@
       "acceptance": "User and reason are recorded; overriding a clear reference conflict requires a reason and supervisor permission",
       "status": "partial",
       "evidence": [
-        "verification/manual-allocation-api.json"
+        "backend/verification/manual-allocation-api.json"
       ],
       "remaining": "Accept/reject/unmatch and supervisor override APIs work; complete administration and review-facing workflow acceptance remains."
     },
@@ -329,8 +350,8 @@
       "acceptance": "Each item has a type, status, owner, amount, sign, reconciliation effect, and supporting source",
       "status": "partial",
       "evidence": [
-        "server/reconciliation-statement.test.mjs",
-        "verification/reconciliation-items-api.json"
+        "backend/server/reconciliation-statement.test.mjs",
+        "backend/verification/reconciliation-items-api.json"
       ],
       "remaining": "Independent scanned evidence upload/download and full item correction/ownership lifecycle remain pending."
     },
@@ -341,8 +362,8 @@
       "acceptance": "Both adjusted balances and the residual difference are calculated; no posted entry is created and source records remain unchanged",
       "status": "partial",
       "evidence": [
-        "server/reconciliation-statement.test.mjs",
-        "verification/reconciliation-items-api.json"
+        "backend/server/reconciliation-statement.test.mjs",
+        "backend/verification/reconciliation-items-api.json"
       ],
       "remaining": "Imported-entry linking, full proposal lifecycle and independently validated published reconciliation acceptance remain pending."
     },
@@ -353,8 +374,8 @@
       "acceptance": "Each item retains its identity and origination date; duplicate inclusion and reuse of previously reconciled transactions are prevented",
       "status": "partial",
       "evidence": [
-        "server/reconciliation-statement.test.mjs",
-        "verification/reconciliation-items-api.json"
+        "backend/server/reconciliation-statement.test.mjs",
+        "backend/verification/reconciliation-items-api.json"
       ],
       "remaining": "Guarded carry-forward is implemented; successful real scanned/approved prior-period carry-forward and imported-entry double-count prevention require end-to-end acceptance."
     },
@@ -365,8 +386,8 @@
       "acceptance": "Counts, absolute values, and denominators are shown; coverage is distinguished from precision, which requires ground truth",
       "status": "partial",
       "evidence": [
-        "server/reconciliation-statement.test.mjs",
-        "verification/reconciliation-items-api.json"
+        "backend/server/reconciliation-statement.test.mjs",
+        "backend/verification/reconciliation-items-api.json"
       ],
       "remaining": "Exact count/absolute-value coverage and unavailable precision are implemented; independent ground truth, sample methodology, confidence intervals and quality-report acceptance remain pending."
     },
@@ -377,10 +398,10 @@
       "acceptance": "Preparers cannot approve their own version; approval fails if critical validation fails or the version changed after submission",
       "status": "partial",
       "evidence": [
-        "verification/review-membership-api.json",
-        "verification/review-browser.json",
-        "verification/administration-scope-api.json",
-        "verification/staged-imports-api.json"
+        "backend/verification/review-membership-api.json",
+        "backend/verification/review-browser.json",
+        "backend/verification/administration-scope-api.json",
+        "backend/verification/staged-imports-api.json"
       ],
       "remaining": "Independent approval and locking work for published financial statements and fully matched bank reconciliations in rollback fixtures. Live scan-to-approval, reconciliation with differences, and complete period-version lifecycle remain pending."
     },
@@ -390,7 +411,9 @@
       "stage": "M",
       "acceptance": "Previous versions remain retrievable; new versions explain their reason and differences",
       "status": "partial",
-      "evidence": ["verification/staged-imports-api.json"],
+      "evidence": [
+        "backend/verification/staged-imports-api.json"
+      ],
       "remaining": "Authorized users can replace approved financial reports and bank reconciliations within an open period or its reopened version. Each replacement records the latest approval as predecessor and shows its reason and balance changes. Bank replacements require two unused published dataset versions. Reuse of the same bank dataset within a period and production acceptance remain pending."
     },
     {
@@ -399,7 +422,9 @@
       "stage": "M",
       "acceptance": "Values match the selected version; entity, period, currency, status, version, and generation date are displayed",
       "status": "partial",
-      "evidence": ["verification/staged-imports-api.json"],
+      "evidence": [
+        "backend/verification/staged-imports-api.json"
+      ],
       "remaining": "Version-bound PDF and XLSX downloads cover stored statements, analysis and reconciliation totals. Direct downloads require explicit export scope and recent MFA and log the file digest. Large asynchronous reports, localized PDF typography and live acceptance remain pending."
     },
     {
@@ -408,7 +433,9 @@
       "stage": "M",
       "acceptance": "Comments link to an object and version; email notifications do not contain financial files or sensitive data by default",
       "status": "partial",
-      "evidence": ["verification/staged-imports-api.json"],
+      "evidence": [
+        "backend/verification/staged-imports-api.json"
+      ],
       "remaining": "Version comments, replies and protected scanned attachment downloads are supported. In-app notifications are scoped to recipients and contain a safe template code. A unified inbox, real storage acceptance and production email delivery remain pending."
     },
     {
@@ -417,7 +444,9 @@
       "stage": "M",
       "acceptance": "Imports, edits, matching, approval, downloads, and permission changes are recorded; client users cannot modify the trail",
       "status": "partial",
-      "evidence": ["verification/staged-imports-api.json"],
+      "evidence": [
+        "backend/verification/staged-imports-api.json"
+      ],
       "remaining": "Authorized administrators can filter scoped audit events and export up to 1,000 events with recent MFA. Downloads record a new event and the CSV omits free-text reasons and metadata. Full lifecycle event coverage and large-history acceptance remain pending."
     },
     {
@@ -435,7 +464,9 @@
       "stage": "M",
       "acceptance": "Request authority and scope are verified; policies cover originals, derivatives, indexes, and providers",
       "status": "partial",
-      "evidence": ["verification/data-lifecycle-api.json"],
+      "evidence": [
+        "backend/verification/data-lifecycle-api.json"
+      ],
       "remaining": "Workspace and entity privacy requests record scope, reason, recent MFA and an independent decision. Actual export, deletion, policy and hold enforcement, provider coverage, and restore-time deletion replay remain pending."
     },
     {
@@ -673,8 +704,8 @@
       "acceptance": "Concurrent allocations exceeding the available amount are prevented through atomic transactions and version checks.",
       "status": "verified",
       "evidence": [
-        "verification/manual-allocation-api.json",
-        "verification/matches-api.json"
+        "backend/verification/manual-allocation-api.json",
+        "backend/verification/matches-api.json"
       ],
       "remaining": ""
     },

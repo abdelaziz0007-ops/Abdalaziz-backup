@@ -1,5 +1,7 @@
 # Exact tabular reader and mapping foundation
 
+> بعد إعادة تنظيم المشروع، تُشغّل أوامر Neon والخادم وDocker الواردة هنا من داخل `backend`. ثبّت تبعيات `front` أيضًا عند تشغيل الواجهة أو بنائها. راجع [أوامر التشغيل الحالية](plan.md#التشغيل-والتحقق).
+
 The source panel exposes a read-only CSV/XLSX preview through `POST /api/v1/tenants/:tenantId/entities/:entityId/source-files/:sourceId/preview`. The endpoint requires `imports.manage`, recent MFA, and a completed scan for that source. It verifies the encrypted original against its stored hash and size before parsing. Before returning rows, it checks access and scan evidence again and records a preview audit event. A mapped preview uses the selected accounting period's currency precision.
 
 ## Local preview runtime
