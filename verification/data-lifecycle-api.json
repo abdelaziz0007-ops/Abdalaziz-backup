@@ -1,0 +1,10 @@
+{
+  "branch": "codex-backend-completion",
+  "checks": [
+    "Privacy-only grant opens the entity, blocks workspace escalation and stale MFA, and deduplicates requests",
+    "Independent authorization is auditable and idempotent and does not execute deletion",
+    "Export requests can be independently rejected with the recorded reason",
+    "Workspace-wide and entity-specific requests are kept in separate scopes"
+  ],
+  "rolledBack": true
+}

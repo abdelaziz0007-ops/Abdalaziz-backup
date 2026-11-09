@@ -8,6 +8,7 @@ import { PublicLayout } from './PublicPages';
 import { DataTable } from '@/components/ui/DataTable';
 import { ConnectedFinance } from './ConnectedFinance';
 import { WorkspaceAudit } from './WorkspaceAudit';
+import {PrivacyRequests} from './PrivacyRequests';
 import {PeriodLifecycle,type PeriodVersion} from './PeriodLifecycle';
 import { ConnectedBank } from './ConnectedBank';
 import {AdministrationPanel} from './AdministrationPanel';
@@ -101,6 +102,8 @@ export function ConnectedWorkspace(){
       {tenant&&entity&&<ReviewWorkspace key={'review'+tenant+entity} tenant={tenant} entity={entity} actor={me.user}/>}
       {tenant&&entity&&<SourceJobsPanel key={'sources'+tenant+entity} tenant={tenant} entity={entity} periods={periods}/>}
 
+      {tenant&&entity&&<PrivacyRequests key={'privacy'+tenant+entity} tenant={tenant} entity={entity} actorId={me.user.id} onSaved={()=>setRevision(value=>value+1)}/>}
+      {tenant&&<PrivacyRequests key={'privacy'+tenant} tenant={tenant} actorId={me.user.id} onSaved={()=>setRevision(value=>value+1)}/>}
       {tenant&&<WorkspaceAudit key={tenant} tenant={tenant} revision={revision}/>}
     </>}
   </div></PublicLayout>;

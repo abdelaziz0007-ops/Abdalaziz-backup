@@ -15,6 +15,7 @@ import { mountAuditRoutes } from './audit-routes.mjs';
 import { mountOutputExportRoutes } from './output-export-routes.mjs';
 import { mountOutputCommentRoutes } from './output-comment-routes.mjs';
 import { mountPeriodRoutes } from './period-routes.mjs';
+import { mountDataLifecycleRoutes } from './data-lifecycle-routes.mjs';
 
 class HttpError extends Error {
   constructor(status,code,message){super(message);this.status=status;this.code=code;}
@@ -124,6 +125,7 @@ export function backendRouter({pool,auth,dataRegion}){
     }catch(e){next(e);}
   });
   mountPeriodRoutes(router,{scoped,result,HttpError});
+  mountDataLifecycleRoutes(router,{scoped,result,HttpError});
   mountAuditRoutes(router,{scoped,audit,result,HttpError});
   mountOutputExportRoutes(router,{scoped,audit,HttpError});
   mountOutputCommentRoutes(router,{scoped,result,audit,HttpError});
