@@ -1,3 +1,5 @@
+import {OwnershipPanel} from './OwnershipPanel';
+import {ConnectedSupport,SupportAccess} from './ConnectedSupport';
 import {hasWorkspacePermission,hasAnyBankPermission,type WorkspaceAccess} from '@/lib/workspace-access';
 import {ConnectedNotifications} from './ConnectedNotifications';
 import {ConnectedShell,type WorkspaceSection} from '@/shell/ConnectedShell';
@@ -123,6 +125,9 @@ export function ConnectedWorkspace(){
     ...(tenant&&(tenantAccess.includes('privacy.manage')||can('privacy.manage'))?[{id:'privacy',ar:'طلبات الخصوصية',en:'Privacy requests',icon:'shield'}]:[]),
     ...(tenant&&tenantAccess.includes('members.manage')?[{id:'audit',ar:'سجل التدقيق',en:'Audit trail',icon:'clock'}]:[]),
     ...(tenant?[{id:'notifications',ar:'الإشعارات',en:'Notifications',icon:'clock'}]:[]),
+    ...(tenant?[{id:'support',ar:'طلبات الدعم',en:'Support requests',icon:'users'}]:[]),
+    {id:'support-access',ar:'وصول الدعم المؤقت',en:'Temporary support access',icon:'shield'},
+    ...(tenant?[{id:'ownership',ar:'ملكية المساحة',en:'Workspace ownership',icon:'shield'}]:[]),
     {id:'account',ar:'حسابي والأمان',en:'Account & security',icon:'shield'}];
   const allowed=sections.some(section=>section.id===view);
   const context=me?.mfaVerified?<div className="form-grid"><label className="form-field">{l('مساحة العمل','Workspace')}<select value={tenant} disabled={busy} onChange={e=>{setTenant(e.target.value);setEntity('');setEntities([]);setPeriods([]);setAccess(null);setTenantAccess([]);}}><option value="">{l('اختر مساحة عمل','Select workspace')}</option>{workspaces.map(w=><option key={w.id} value={w.id}>{w.name}</option>)}</select></label><label className="form-field">{l('المنشأة','Entity')}<select value={entity} disabled={busy||!tenant} onChange={e=>{setEntity(e.target.value);setAccess(null);}}><option value="">{l('اختر منشأة','Select entity')}</option>{entities.map(e=><option key={e.id} value={e.id}>{e.name} · {e.code}</option>)}</select></label></div>:null;
@@ -147,6 +152,9 @@ export function ConnectedWorkspace(){
       {allowed&&view==='privacy'&&<>{hasEntity&&can('privacy.manage')&&<PrivacyRequests key={'privacy'+tenant+entity} tenant={tenant} entity={entity} actorId={me.user.id} onSaved={()=>setRevision(value=>value+1)}/>} {tenantAccess.includes('privacy.manage')&&<PrivacyRequests key={'privacy'+tenant} tenant={tenant} actorId={me.user.id} onSaved={()=>setRevision(value=>value+1)}/>}</>}
       {allowed&&view==='audit'&&<WorkspaceAudit key={tenant} tenant={tenant} revision={revision}/>}
       {allowed&&view==='notifications'&&<ConnectedNotifications key={tenant} tenant={tenant} onOpen={(entityId,outputId)=>{setEntity(entityId);setSearch(params=>{const next=new URLSearchParams(params);next.set('view','review');next.set('entity',entityId);next.set('output',outputId);return next;});}}/>}
+      {allowed&&view==='support'&&<ConnectedSupport key={tenant+entity} tenant={tenant} entity={hasEntity?entity:undefined} actorId={me.user.id} canAuthorize={can('support.authorize')||tenantAccess.includes('support.authorize')}/>}
+      {view==='support-access'&&<SupportAccess/>}
+      {allowed&&view==='ownership'&&<OwnershipPanel key={tenant} tenant={tenant} actorId={me.user.id} onSaved={()=>setRevision(r=>r+1)}/>}
       {view==='account'&&<ConnectedAccount user={me.user} onSaved={refreshMe} onVerify={()=>setSecurity(true)}/>}
     </>}
   </div></ConnectedShell>;

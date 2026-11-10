@@ -1,3 +1,5 @@
+import {mountOwnershipRoutes} from './ownership-routes.mjs';
+import {mountSupportRoutes} from './support-routes.mjs';
 import {mountNotificationRoutes} from './notification-routes.mjs';
 import express from 'express';
 import { fromNodeHeaders } from 'better-auth/node';
@@ -137,6 +139,8 @@ export function backendRouter({pool,auth,dataRegion,origin}){
       },{fresh:true});result(req,res,value,201);
     }catch(e){next(e);}
   });
+  mountOwnershipRoutes(router,{scoped,result,HttpError});
+  mountSupportRoutes(router,{pool,scoped,result,requireMfa,HttpError});
   mountNotificationRoutes(router,{scoped,result,HttpError});
   mountPeriodRoutes(router,{scoped,result,HttpError});
   mountDataLifecycleRoutes(router,{scoped,result,HttpError});

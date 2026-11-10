@@ -1,0 +1,26 @@
+{
+  "checkedAt": "2026-11-10T07:22:42.067Z",
+  "scope": "Missing-session denial only; no accounts created or successful user workflows exercised",
+  "checks": [
+    {
+      "name": "support_grants",
+      "rejected": true,
+      "code": "42501"
+    },
+    {
+      "name": "support_read",
+      "rejected": true,
+      "code": "42501"
+    },
+    {
+      "name": "ownership_status",
+      "rejected": true,
+      "code": "42501"
+    },
+    {
+      "name": "ownership_action",
+      "rejected": true,
+      "code": "42501"
+    }
+  ]
+}
