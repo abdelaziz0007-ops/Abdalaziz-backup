@@ -1,3 +1,4 @@
+import {createReadiness,createShutdown} from './service-lifecycle.mjs';
 import {runtimeConfig,requestBoundary} from './runtime-config.mjs';
 import {mailConfigured} from './mail.mjs';
 import express from 'express';
@@ -39,6 +40,8 @@ const appPool=backendReady?database(process.env.APP_DATABASE_URL):null;
 const identityPool=backendReady?database(process.env.AUTH_DATABASE_URL):null;
 appPool?.on('error',()=>console.error('Application database connection error'));
 identityPool?.on('error',()=>console.error('Identity database connection error'));
+let draining=false;
+app.get('/readyz',createReadiness({pools:[appPool,identityPool],isDraining:()=>draining}));
 if(backendReady){
   const origin=process.env.APP_ORIGIN||`http://localhost:${port}`;
   const auth=createIdentity(identityPool,origin,process.env.BETTER_AUTH_SECRET);
@@ -105,5 +108,6 @@ if(process.argv.includes('--dev')){
   app.use((_req,res)=>res.sendFile(resolve(frontRoot,'dist/index.html')));
 }
 const server=app.listen(port,config.host,()=>console.log(`Mizan ${vite?'development':'built app'}: http://localhost:${port} (${profile}); ${appPool?'Authenticated backend configured':pool?'Demonstration archive configured':'Database not configured'}`));
-async function close(){server.close();await vite?.close();await Promise.all([pool?.end(),appPool?.end(),identityPool?.end()]);process.exit(0);}
+const close=createShutdown({server,markDraining:()=>{draining=true;},exit:code=>process.exit(code),
+  cleanup:async()=>{await vite?.close();await Promise.all([pool?.end(),appPool?.end(),identityPool?.end()]);}});
 process.on('SIGTERM',close);process.on('SIGINT',close);

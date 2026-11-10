@@ -49,3 +49,11 @@
 - اختبار حجر ملف اختبار مكافحة الفيروسات في بيئة قبول معزولة، وفشل الفاحص وإعادة محاولة المهمة.
 
 تبقى الفوترة والخصوصية التنفيذية والدعم وبقية شروط SRS غير المكتملة ظاهرة في plan.md وسجل المتطلبات؛ لا يحوّل هذا الدليل حالتها إلى مكتملة.
+
+## Service probes and shutdown
+
+Use GET /healthz for process liveness and GET /readyz for database connectivity readiness. The latter returns 200 only when both application and identity database roles answer SELECT 1; otherwise 503, including during shutdown. Responses contain no connection details and are not proxy-cacheable. Concurrent probes share one in-flight check, with a one-second result cache and four-second response deadline. This is not a migration, storage, scanner, mail, or end-to-end acceptance check. Keep those checks in the release preflight and real-account acceptance procedure.
+
+SIGTERM/SIGINT withdraw readiness and close the listener, then wait for active HTTP responses before closing Vite and database pools. A 25-second deadline terminates a stalled stop with exit status 1, below the systemd 30-second stop timeout. Cleanup failure also exits 1. Deployment routing must stop sending new requests to the instance before termination; this code alone does not provide zero-downtime deployment.
+
+Validation: backend/server/service-lifecycle.test.mjs covers missing/failed dependencies, concurrent probe coalescing, timeout, shutdown readiness, draining order, repeated signals and forced stop. A production stop/restore exercise remains pending.
