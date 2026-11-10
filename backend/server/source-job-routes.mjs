@@ -1,3 +1,4 @@
+import {billingCapacityError} from './billing-routes.mjs';
 import express from 'express';
 import {randomUUID} from 'node:crypto';
 import {z} from 'zod';
@@ -11,7 +12,7 @@ export function mountSourceJobRoutes(router,{scoped,audit,result,HttpError}){
  mountSourcePreviewRoute(router,{scoped,audit,result,HttpError,storage});
  mountStagedImportRoutes(router,{scoped,audit,result,HttpError});
  const missing=()=>new HttpError(404,'RESOURCE_NOT_FOUND','Source or job not found in this scope');
- const failure=e=>e.code==='P0002'?missing():e.code==='54000'?new HttpError(409,'JOB_CAPACITY_REACHED','Workspace processing capacity is full; wait or cancel an existing job'):e;
+ const failure=e=>e.code==='P0002'?missing():e.code==='54000'?new HttpError(409,'JOB_CAPACITY_REACHED','Workspace processing capacity is full; wait or cancel an existing job'):billingCapacityError(e,HttpError);
  router.post(base+'/source-files',async(req,_res,next)=>{
   try{
    if(req.headers['content-type']!=='application/octet-stream')throw new HttpError(415,'UPLOAD_CONTENT_TYPE','Use application/octet-stream for source uploads');
@@ -30,7 +31,7 @@ export function mountSourceJobRoutes(router,{scoped,audit,result,HttpError}){
     await c.query('SELECT pg_advisory_xact_lock(hashtextextended($1,42))',[e]);const digest=hash(plain);
     let source=(await c.query('SELECT id,deleted_at,scan_status FROM mizan.source_files WHERE tenant_id=$1 AND entity_id=$2 AND sha256=$3',[t,e,digest])).rows[0];
     const reused=Boolean(source);if(source&&(source.deleted_at||['infected','rejected'].includes(source.scan_status)))throw new HttpError(409,'SOURCE_UNAVAILABLE','This source cannot be reused');
-    if(!source){const id=randomUUID(),key=`${t}/${e}/${id}.mzn`;await storage.put(key,plain);await storage.verify(key,digest);await insert(c,'source_files',{id,tenant_id:t,entity_id:e,sha256:digest,original_name:fileName,media_type:xlsx?'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':'text/csv',byte_size:plain.length,object_key:key,object_version:'1',encryption_key_reference:'source-v1',uploaded_by:req.principal.id,scan_status:'quarantined'});source={id};await audit(c,req,t,e,'source.uploaded','source_file',id,'Encrypted original uploaded for scanning',{byteSize:plain.length,format:xlsx?'xlsx':'csv'});}
+    if(!source){await c.query('SELECT mizan_private.scan_capacity_for_upload($1,$2,$3,$4)',[req.principal.id,req.principal.sessionId,t,e]);const id=randomUUID(),key=`${t}/${e}/${id}.mzn`;await storage.put(key,plain);await storage.verify(key,digest);await insert(c,'source_files',{id,tenant_id:t,entity_id:e,sha256:digest,original_name:fileName,media_type:xlsx?'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':'text/csv',byte_size:plain.length,object_key:key,object_version:'1',encryption_key_reference:'source-v1',uploaded_by:req.principal.id,scan_status:'quarantined'});source={id};await audit(c,req,t,e,'source.uploaded','source_file',id,'Encrypted original uploaded for scanning',{byteSize:plain.length,format:xlsx?'xlsx':'csv'});}
     const scan=(await c.query('SELECT mizan_private.enqueue_source_scan($1,$2,$3,$4,$5,$6) AS value',[req.principal.id,req.principal.sessionId,t,e,source.id,req.requestId])).rows[0].value;return {...scan,reusedSource:reused};
    },{fresh:true}),201);
   }catch(error){next(failure(error));}

@@ -1,0 +1,56 @@
+{
+  "checkedAt": "2026-11-10T08:38:49.717Z",
+  "scope": "Quota function body exercised against transaction-local temporary tables; rolled back. No accounts or persistent application records created. Does not prove concurrency or real subscription acceptance.",
+  "checks": [
+    {
+      "name": "no_subscription_beta",
+      "passed": true,
+      "code": null
+    },
+    {
+      "name": "available_capacity",
+      "passed": true,
+      "code": null
+    },
+    {
+      "name": "exhausted_capacity",
+      "passed": true,
+      "code": "P0043"
+    },
+    {
+      "name": "retry_not_double_counted",
+      "passed": true,
+      "code": null
+    },
+    {
+      "name": "cancellation_no_refund",
+      "passed": true,
+      "code": "P0043"
+    },
+    {
+      "name": "suspended_subscription",
+      "passed": true,
+      "code": "P0041"
+    },
+    {
+      "name": "expired_subscription",
+      "passed": true,
+      "code": "P0041"
+    },
+    {
+      "name": "missing_quota",
+      "passed": true,
+      "code": "P0042"
+    },
+    {
+      "name": "zero_allowance",
+      "passed": true,
+      "code": "P0043"
+    },
+    {
+      "name": "unpublished_plan",
+      "passed": true,
+      "code": "P0042"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "checkedAt": "2026-11-10T08:37:20.774Z",
+  "scope": "Read-only denial and privilege checks only; no accounts, subscriptions or invoices created. Paid flows and concurrent quota acceptance untested.",
+  "checks": [
+    {
+      "name": "billing_overview",
+      "passed": true,
+      "code": "42501"
+    },
+    {
+      "name": "upload_capacity",
+      "passed": true,
+      "code": "42501"
+    },
+    {
+      "name": "no_public_execute",
+      "passed": true
+    },
+    {
+      "name": "quota_trigger_enabled",
+      "passed": true
+    }
+  ]
+}

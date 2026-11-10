@@ -2,6 +2,9 @@ export class BackendError extends Error {
   constructor(public code:string,message:string,public status:number,public requestId?:string){super(message);this.name='BackendError';}
 }
 const messages:Record<string,[string,string]>={
+ SUBSCRIPTION_INACTIVE:['الاشتراك غير فعال أو انتهت فترته. راجع مسؤول الفوترة.','Subscription inactive or expired. Contact your billing administrator.'],
+ PLAN_QUOTA_NOT_CONFIGURED:['حصة الفحص في الخطة تحتاج إعداداً من المسؤول.','The plan scan allowance needs administrator configuration.'],
+ SCAN_QUOTA_EXHAUSTED:['استُنفدت حصة مهام الفحص لهذه الفترة.','The scan job allowance for this period is exhausted.'],
  AUTHENTICATION_REQUIRED:['انتهت الجلسة. سجّل الدخول من جديد.','Your session expired. Sign in again.'],
  MFA_REQUIRED:['أكّد رمز المصادقة للمتابعة.','Verify your authenticator code to continue.'],
  PERMISSION_DENIED:['ليس لديك صلاحية لهذا الإجراء.','You do not have permission for this action.'],

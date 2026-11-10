@@ -456,9 +456,12 @@
       "title": "Manage plans, billing, and usage quotas",
       "stage": "M",
       "acceptance": "Limits are enforced before jobs start; duplicate payment events do not duplicate subscriptions or invoices; capacity rejection reasons are shown",
-      "status": "pending",
-      "evidence": [],
-      "remaining": "Acceptance must be exercised against the completed backend; schema existence alone is not completion."
+      "status": "partial",
+      "evidence": [
+        "backend/verification/billing-isolated.json",
+        "backend/verification/billing-readonly.json"
+      ],
+      "remaining": "Implemented permission-scoped billing records UI and published-plan scan_jobs_per_period enforcement before storage upload and queue admission. No-subscription workspaces retain beta concurrency limits. Retry does not double-count an accepted job; cancellation does not refund usage. Temporary-table SQL scenarios pass, but real-account/concurrent acceptance, plan administration, payment provider/webhook idempotency and other quota units remain pending."
     },
     {
       "id": "FR-042",

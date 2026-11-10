@@ -1,3 +1,4 @@
+import {mountBillingRoutes} from './billing-routes.mjs';
 import {mountPrivacyExportRoutes} from './privacy-export.mjs';
 import {mountRetentionRoutes} from './retention-routes.mjs';
 import {mountOwnershipRoutes} from './ownership-routes.mjs';
@@ -146,6 +147,7 @@ export function backendRouter({pool,auth,dataRegion,origin}){
   mountNotificationRoutes(router,{scoped,result,HttpError});
   mountPeriodRoutes(router,{scoped,result,HttpError});
   mountPrivacyExportRoutes(router,{scoped,HttpError});
+  mountBillingRoutes(router,{scoped,result});
   mountRetentionRoutes(router,{scoped,result,HttpError});
   mountDataLifecycleRoutes(router,{scoped,result,HttpError});
   mountAuditRoutes(router,{scoped,audit,result,HttpError});

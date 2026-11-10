@@ -1,3 +1,4 @@
+import {ConnectedBilling} from './ConnectedBilling';
 import {OwnershipPanel} from './OwnershipPanel';
 import {ConnectedSupport,SupportAccess} from './ConnectedSupport';
 import {hasWorkspacePermission,hasAnyBankPermission,type WorkspaceAccess} from '@/lib/workspace-access';
@@ -126,6 +127,7 @@ export function ConnectedWorkspace(){
     ...(tenant&&tenantAccess.includes('members.manage')?[{id:'audit',ar:'سجل التدقيق',en:'Audit trail',icon:'clock'}]:[]),
     ...(tenant?[{id:'notifications',ar:'الإشعارات',en:'Notifications',icon:'clock'}]:[]),
     ...(tenant?[{id:'support',ar:'طلبات الدعم',en:'Support requests',icon:'users'}]:[]),
+    ...(tenant&&tenantAccess.includes('billing.manage')?[{id:'billing',ar:'الاشتراك والاستخدام',en:'Subscription & usage',icon:'settings'}]:[]),
     {id:'support-access',ar:'وصول الدعم المؤقت',en:'Temporary support access',icon:'shield'},
     ...(tenant?[{id:'ownership',ar:'ملكية المساحة',en:'Workspace ownership',icon:'shield'}]:[]),
     {id:'account',ar:'حسابي والأمان',en:'Account & security',icon:'shield'}];
@@ -154,6 +156,7 @@ export function ConnectedWorkspace(){
       {allowed&&view==='notifications'&&<ConnectedNotifications key={tenant} tenant={tenant} onOpen={(entityId,outputId)=>{setEntity(entityId);setSearch(params=>{const next=new URLSearchParams(params);next.set('view','review');next.set('entity',entityId);next.set('output',outputId);return next;});}}/>}
       {allowed&&view==='support'&&<ConnectedSupport key={tenant+entity} tenant={tenant} entity={hasEntity?entity:undefined} actorId={me.user.id} canAuthorize={can('support.authorize')||tenantAccess.includes('support.authorize')}/>}
       {view==='support-access'&&<SupportAccess/>}
+      {allowed&&view==='billing'&&<ConnectedBilling key={tenant} tenant={tenant}/>}
       {allowed&&view==='ownership'&&<OwnershipPanel key={tenant} tenant={tenant} actorId={me.user.id} onSaved={()=>setRevision(r=>r+1)}/>}
       {view==='account'&&<ConnectedAccount user={me.user} onSaved={refreshMe} onVerify={()=>setSecurity(true)}/>}
     </>}
