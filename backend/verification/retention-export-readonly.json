@@ -1,0 +1,49 @@
+{
+  "checkedAt": "2026-11-10T07:30:37.969Z",
+  "scope": "Read-only schema and missing-session checks; no accounts created and no positive acceptance flows executed",
+  "checks": [
+    {
+      "name": "retention_controls",
+      "passed": true,
+      "code": "42501"
+    },
+    {
+      "name": "retention_action",
+      "passed": true,
+      "code": "42501"
+    },
+    {
+      "name": "record_privacy_export",
+      "passed": true,
+      "code": "42501"
+    },
+    {
+      "name": "export_columns_periods",
+      "passed": true
+    },
+    {
+      "name": "export_columns_settings",
+      "passed": true
+    },
+    {
+      "name": "export_columns_outputs",
+      "passed": true
+    },
+    {
+      "name": "export_columns_reportLines",
+      "passed": true
+    },
+    {
+      "name": "export_columns_lineItems",
+      "passed": true
+    },
+    {
+      "name": "export_columns_metrics",
+      "passed": true
+    },
+    {
+      "name": "export_columns_formulas",
+      "passed": true
+    }
+  ]
+}

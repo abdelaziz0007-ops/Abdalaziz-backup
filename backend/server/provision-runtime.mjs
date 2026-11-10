@@ -50,6 +50,8 @@ try{
       GRANT EXECUTE ON FUNCTION mizan_private.check_reconciliation(uuid,uuid,uuid) TO mizan_api_v1;
       GRANT EXECUTE ON FUNCTION mizan_private.change_accounting_period(uuid,uuid,uuid,uuid,uuid,text,text,uuid,uuid) TO mizan_api_v1;
       GRANT SELECT ON mizan.data_lifecycle_requests TO mizan_api_v1;
+      GRANT EXECUTE ON FUNCTION mizan_private.record_privacy_export(uuid,uuid,uuid,uuid,uuid,text,uuid) TO mizan_api_v1;
+      GRANT EXECUTE ON FUNCTION mizan_private.retention_controls(uuid,uuid,uuid,uuid),mizan_private.retention_action(uuid,uuid,uuid,uuid,uuid,text,jsonb,uuid,uuid) TO mizan_api_v1;
       GRANT SELECT ON mizan.support_requests,mizan.support_access_grants,mizan.support_access_events TO mizan_api_v1;
       GRANT EXECUTE ON FUNCTION mizan_private.support_action(uuid,uuid,uuid,uuid,uuid,text,jsonb,uuid,uuid),
       mizan_private.support_grants_for_user(uuid,uuid),mizan_private.support_read_output(uuid,uuid,uuid,uuid,text,uuid),

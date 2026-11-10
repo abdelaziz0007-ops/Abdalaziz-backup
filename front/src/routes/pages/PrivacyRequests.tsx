@@ -1,5 +1,6 @@
+import {RetentionControls} from './RetentionControls';
 import {useEffect,useRef,useState} from 'react';
-import {backend,BackendError} from '@/lib/backend-client';
+import {backend,backendDownload,BackendError} from '@/lib/backend-client';
 import {Button} from '@/components/ui/Button';
 import {Panel,useLanguage} from '@/components/WorkspaceUI';
 
@@ -21,7 +22,7 @@ export function PrivacyRequests({tenant,entity,actorId,onSaved}:{tenant:string;e
   const typeLabels:Record<PrivacyRequest['request_type'],string>={
     export:l('تصدير البيانات','Data export'),delete:l('حذف البيانات','Data deletion'),terminate:l('إنهاء الخدمة','Service termination'),
   };
-  const statuses:Record<string,[string,string]>={requested:['بانتظار القرار','Awaiting decision'],authorized:['مصرّح بالتنفيذ','Authorized'],rejected:['مرفوض','Rejected']};
+  const statuses:Record<string,[string,string]>={requested:['بانتظار القرار','Awaiting decision'],authorized:['مصرّح بالتنفيذ','Authorized'],partially_completed:['مكتمل جزئياً','Partially completed'],rejected:['مرفوض','Rejected']};
   useEffect(()=>{
     let active=true;
     backend<PrivacyRequest[]>(base).then(rows=>{if(active)setItems(rows);}).catch(e=>{
@@ -31,6 +32,11 @@ export function PrivacyRequests({tenant,entity,actorId,onSaved}:{tenant:string;e
     });
     return()=>{active=false;};
   },[base,revision]);
+  async function exportStructured(id:string){
+    setBusy(true);setError('');
+    try{await backendDownload(base+'/'+id+'/structured-export',{},'mizan-partial-financial-export-'+id+'.json');setRevision(v=>v+1);onSaved();}
+    catch(e){setError(e instanceof Error?e.message:String(e));}finally{setBusy(false);}
+  }
   async function save(isDecision:boolean){
     const path=isDecision?base+'/'+selected+'/decision':base;
     const data=isDecision?{action:decision,reason:decisionReason.trim()}:{type,reason:reason.trim()};
@@ -44,7 +50,7 @@ export function PrivacyRequests({tenant,entity,actorId,onSaved}:{tenant:string;e
     finally{setBusy(false);}
   }
   if(denied||!items&&!error)return null;
-  return <Panel title={entity?l('طلبات خصوصية المنشأة','Entity privacy requests'):l('طلبات خصوصية مساحة العمل','Workspace privacy requests')}>
+  return <div className="stack"><RetentionControls key={base} tenant={tenant} entity={entity} actorId={actorId}/><Panel title={entity?l('طلبات خصوصية المنشأة','Entity privacy requests'):l('طلبات خصوصية مساحة العمل','Workspace privacy requests')}>
     <p>{l('يسجّل هذا المسار الطلب وقرار المراجع المستقل. التصدير أو الحذف إجراء منفصل يخضع لسياسة الاحتفاظ.','This workflow records the request and the independent decision. Data export or deletion is a separate step governed by retention policy.')}</p>
     {error&&<p role="alert" className="notice danger">{error}</p>}
     <form className="stack" onSubmit={event=>{event.preventDefault();void save(false);}}>
@@ -68,6 +74,7 @@ export function PrivacyRequests({tenant,entity,actorId,onSaved}:{tenant:string;e
     {items&&items.length>0&&<ul className="stack">{items.map(item=><li key={item.id}>
       <strong>{typeLabels[item.request_type]}</strong> · {statuses[item.status]?l(...statuses[item.status]):item.status} · <bdi>{item.id.slice(0,8)} · {new Date(item.created_at).toLocaleString()}</bdi>
       <p>{item.reason}</p>{item.decision_reason&&<p>{item.decision_reason}</p>}
+      {entity&&item.request_type==='export'&&['authorized','partially_completed'].includes(item.status)&&<div><p>{l('تنزيل جزئي للقوائم والمؤشرات والفترات والإعدادات بصيغة JSON. لا يشمل الملفات الأصلية أو بيانات الاستيراد أو التسويات أو نسخ المزوّدين. يحتاج صلاحية عرض وتصدير مالي؛ يبقى الطلب غير مكتمل.','Partial JSON download of statements, metrics, periods and settings. Excludes original files, import data, reconciliations and provider copies. Requires financial view and export permissions; the request remains incomplete.')}</p><Button disabled={busy} onClick={()=>void exportStructured(item.id)}>{l('تنزيل البيانات المالية المنظمة — جزئي','Download structured financial data — partial')}</Button></div>}
     </li>)}</ul>}
-  </Panel>;
+  </Panel></div>;
 }

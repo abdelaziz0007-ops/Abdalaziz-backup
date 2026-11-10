@@ -1,0 +1,25 @@
+{
+  "checkedAt": "2026-11-10T07:33:19.977Z",
+  "backendTests": {
+    "passed": 80
+  },
+  "frontendTests": {
+    "passed": 63
+  },
+  "typescript": "passed",
+  "productionBuild": "passed",
+  "warnings": [
+    "ExcelJS bundle exceeds 500 kB"
+  ],
+  "databaseMigrations": [
+    "033_retention_controls.sql",
+    "034_privacy_export_record.sql"
+  ],
+  "databaseEvidence": "retention-export-readonly.json",
+  "limits": [
+    "No positive real-account acceptance",
+    "No browser acceptance for authenticated screens",
+    "Partial financial export only",
+    "Deletion worker and retention policy execution not implemented"
+  ]
+}

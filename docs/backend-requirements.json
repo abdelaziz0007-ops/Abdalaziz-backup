@@ -467,9 +467,10 @@
       "acceptance": "Request authority and scope are verified; policies cover originals, derivatives, indexes, and providers",
       "status": "partial",
       "evidence": [
-        "backend/verification/data-lifecycle-api.json"
+        "backend/verification/data-lifecycle-api.json",
+        "backend/verification/retention-export-readonly.json"
       ],
-      "remaining": "Workspace and entity privacy requests record scope, reason, recent MFA and an independent decision. Actual export, deletion, policy and hold enforcement, provider coverage, and restore-time deletion replay remain pending."
+      "remaining": "Implemented versioned explicit retention policies, scoped legal holds with independent release, and a database hold guard on deletion execution status. Authorized entity requests can download a bounded partial structured financial JSON snapshot with decimal preservation and audited digest; request remains partially_completed. Full original/provider export, asynchronous large exports, actual deletion and policy execution, restore-time replay, and real-account acceptance remain pending."
     },
     {
       "id": "FR-043",

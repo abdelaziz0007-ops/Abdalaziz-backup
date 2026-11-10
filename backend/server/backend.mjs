@@ -1,3 +1,5 @@
+import {mountPrivacyExportRoutes} from './privacy-export.mjs';
+import {mountRetentionRoutes} from './retention-routes.mjs';
 import {mountOwnershipRoutes} from './ownership-routes.mjs';
 import {mountSupportRoutes} from './support-routes.mjs';
 import {mountNotificationRoutes} from './notification-routes.mjs';
@@ -58,11 +60,11 @@ export function backendRouter({pool,auth,dataRegion,origin}){
     next();
   });
   router.use(express.json({limit:'1mb'}));
-  async function scoped(req,tenantId,entityId,permission,run,{fresh=false}={}){
+  async function scoped(req,tenantId,entityId,permission,run,{fresh=false,snapshot=false}={}){
     uuid.parse(tenantId);if(entityId)uuid.parse(entityId);requireMfa(req.principal,fresh);
     const c=await pool.connect();
     try{
-      await c.query('BEGIN');
+      await c.query(snapshot?'BEGIN ISOLATION LEVEL REPEATABLE READ':'BEGIN');
       await c.query("SET LOCAL statement_timeout='10s'; SET LOCAL lock_timeout='3s'");
       const context=(await c.query('SELECT mizan_private.workspace_context($1,$2) AS value',[req.principal.id,tenantId])).rows[0].value;
       if(!context||entityId&&!context.entityIds.includes(entityId))throw new HttpError(404,'RESOURCE_NOT_FOUND','Workspace or entity not found');
@@ -143,6 +145,8 @@ export function backendRouter({pool,auth,dataRegion,origin}){
   mountSupportRoutes(router,{pool,scoped,result,requireMfa,HttpError});
   mountNotificationRoutes(router,{scoped,result,HttpError});
   mountPeriodRoutes(router,{scoped,result,HttpError});
+  mountPrivacyExportRoutes(router,{scoped,HttpError});
+  mountRetentionRoutes(router,{scoped,result,HttpError});
   mountDataLifecycleRoutes(router,{scoped,result,HttpError});
   mountAuditRoutes(router,{scoped,audit,result,HttpError});
   mountOutputExportRoutes(router,{scoped,audit,HttpError});
