@@ -1,3 +1,4 @@
+import {mountGroupedSuggestionRoutes} from './grouped-suggestions.mjs';
 import {randomUUID} from 'node:crypto';
 import {z} from 'zod';
 import {hash} from './financial-core.mjs';
@@ -6,6 +7,7 @@ import {allocationPlan} from './allocation-plan.mjs';
 import {lockedReconciliation,requireEditable,evolveReconciliation} from './reconciliation-domain.mjs';
 const input=z.object({requestKey:z.uuid(),expectedFingerprint:z.string().regex(/^[0-9a-f]{64}$/),reason:z.string().trim().min(8).max(500),overrideReferenceConflict:z.boolean(),pairs:z.array(z.object({bankTransactionId:z.uuid(),bookTransactionId:z.uuid(),amount:z.string().max(40)}).strict()).min(1).max(100)}).strict();
 export function mountManualMatchRoutes(router,{scoped,audit,result,HttpError}){
+ mountGroupedSuggestionRoutes(router,{scoped,result,HttpError});
  router.post('/tenants/:tenantId/entities/:entityId/reconciliations/:reconciliationId/manual-matches',async(req,res,next)=>{
   try{const data=input.parse(req.body),{tenantId:t,entityId:e,reconciliationId:r}=req.params;z.uuid().parse(r);result(req,res,await scoped(req,t,e,null,async c=>{
    const rec=await lockedReconciliation(c,req,t,e,r,HttpError),requestHash=hash(JSON.stringify({actor:req.principal.id,reconciliationId:r,...data}));

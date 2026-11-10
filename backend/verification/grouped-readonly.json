@@ -1,0 +1,18 @@
+{
+  "checkedAt": "2026-11-10T14:54:50.227Z",
+  "scope": "Read-only SQL execution using application role and nonexistent scope; no accounts or movements created. Positive authenticated workflow not verified.",
+  "checks": [
+    {
+      "name": "scoped query 1",
+      "passed": true
+    },
+    {
+      "name": "scoped query 2",
+      "passed": true
+    },
+    {
+      "name": "scoped query 3",
+      "passed": true
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+import {rejectDirectImport} from './direct-import-gate.mjs';
 import {randomUUID,createHmac} from 'node:crypto';
 import {z} from 'zod';
 import {insert,bulk} from './financial-routes.mjs';
@@ -30,7 +31,7 @@ export function mountBankRoutes(router,{scoped,audit,result,HttpError}){
    await audit(c,req,t,e,'bank_account.created','bank_account',id,'Explicit bank ledger enrollment',{currency:settings.currency_code});return {id};
   },{fresh:true}),201);}catch(error){next(error);}
  });
- router.post(base+'/reconciliation-imports',async(req,res,next)=>{
+ router.post(base+'/reconciliation-imports',rejectDirectImport,async(req,res,next)=>{
   try{const data=pair.parse(req.body),{tenantId:t,entityId:e}=req.params;result(req,res,await scoped(req,t,e,null,async c=>{
    await permission(c,req,t,e,data.bankAccountId,'imports.manage');await permission(c,req,t,e,data.bankAccountId,'outputs.prepare');
    if(!storage)throw new HttpError(503,'SOURCE_STORAGE_UNAVAILABLE','Private source storage is not configured');

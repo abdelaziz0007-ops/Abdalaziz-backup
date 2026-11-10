@@ -1,3 +1,4 @@
+import {rejectDirectImport} from './direct-import-gate.mjs';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { calculateFinancials,classifications,coefficient,hash,money,parseTrialBalance } from './financial-core.mjs';
@@ -207,7 +208,7 @@ export function mountFinancialRoutes(router,{scoped,audit,result,HttpError}){
       result(req,res,value,value.reused?200:201);
     }catch(error){next(error);}
   });
-  router.post(base+'/imports/trial-balance',async(req,res,next)=>{
+  router.post(base+'/imports/trial-balance',rejectDirectImport,async(req,res,next)=>{
     try{
       const data=input.parse(req.body),{tenantId:t,entityId:e}=req.params;
       const value=await scoped(req,t,e,'imports.manage',async c=>{

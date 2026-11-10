@@ -68,9 +68,10 @@
       "status": "partial",
       "evidence": [
         "backend/verification/scan-jobs-api.json",
-        "backend/server/clamav-client.test.mjs"
+        "backend/server/clamav-client.test.mjs",
+        "backend/server/direct-import-gate.test.mjs"
       ],
-      "remaining": "Encrypted typed upload and fail-closed scan jobs work. Real scanner deployment/benign-malicious/archive acceptance, isolated parsing and replacing legacy pre-scan draft analysis remain pending."
+      "remaining": "Direct pre-scan CSV import endpoints retired with HTTP 410 and removed from UI. New reports/reconciliations use the scanned publication workflow. Real scanner deployment, isolated parser runtime and clean/infected/archive acceptance remain pending."
     },
     {
       "id": "FR-007",
@@ -316,9 +317,11 @@
       "acceptance": "Group members, total, and residual are shown; groups are not automatically approved at launch",
       "status": "partial",
       "evidence": [
-        "backend/verification/manual-allocation-api.json"
+        "backend/verification/manual-allocation-api.json",
+        "backend/server/grouped-suggestions.test.mjs",
+        "backend/verification/grouped-readonly.json"
       ],
-      "remaining": "Manual one-to-many and many-to-one work; bounded rule-driven grouped suggestion search and sum/residual display still need acceptance."
+      "remaining": "Bounded same-date/nonempty-reference exact remaining-amount search, source-row evidence and manual review UI implemented. One-to-many/many-to-one alternatives never auto-confirm. Limits and incomplete search disclosed. Positive authenticated real-source acceptance and broader matching policies remain pending."
     },
     {
       "id": "FR-030",
