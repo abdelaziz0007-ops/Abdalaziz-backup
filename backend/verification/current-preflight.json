@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-11-10T14:51:03.437Z",
+  "checkedAt": "2026-11-10T21:58:37.745Z",
   "mode": "read-only; no accounts or financial data created",
   "checks": [
     {
@@ -9,23 +9,23 @@
     },
     {
       "name": "APP_DATABASE_URL least privilege",
-      "ok": true,
-      "detail": "Connected with restricted role"
+      "ok": false,
+      "detail": "Check failed; verify configuration and service availability"
     },
     {
       "name": "AUTH_DATABASE_URL least privilege",
-      "ok": true,
-      "detail": "Connected with restricted role"
+      "ok": false,
+      "detail": "Check failed; verify configuration and service availability"
     },
     {
       "name": "SCANNER_DATABASE_URL least privilege",
-      "ok": true,
-      "detail": "Connected with restricted role"
+      "ok": false,
+      "detail": "Check failed; verify configuration and service availability"
     },
     {
       "name": "migration checksums",
-      "ok": true,
-      "detail": "35 migrations match"
+      "ok": false,
+      "detail": "Check failed; verify configuration and service availability"
     },
     {
       "name": "isolated parser image",

@@ -450,9 +450,10 @@
       "acceptance": "Imports, edits, matching, approval, downloads, and permission changes are recorded; client users cannot modify the trail",
       "status": "partial",
       "evidence": [
-        "backend/verification/staged-imports-api.json"
+        "backend/verification/staged-imports-api.json",
+        "backend/server/audit-routes.test.mjs"
       ],
-      "remaining": "Authorized administrators can filter scoped audit events and export up to 1,000 events with recent MFA. Downloads record a new event and the CSV omits free-text reasons and metadata. Full lifecycle event coverage and large-history acceptance remain pending."
+      "remaining": "Scoped keyset pagination and bounded 50,000-event/20-MiB snapshot export implemented with microsecond cursors, formula-safe CSV and audited exact-byte digest. Query verification blocked by database authentication failure (28P01). Full lifecycle coverage, live export acceptance, async/unbounded history remain pending."
     },
     {
       "id": "FR-041",
@@ -593,9 +594,11 @@
       "id": "NFR-011",
       "title": "Observability",
       "acceptance": "Trace IDs for requests and jobs; alerts for failed imports and exports, queue delays, and isolation errors",
-      "status": "pending",
-      "evidence": [],
-      "remaining": "Requires measured operational acceptance, not a configuration claim."
+      "status": "partial",
+      "evidence": [
+        "backend/server/request-telemetry.test.mjs"
+      ],
+      "remaining": "Server-generated request IDs and sanitized structured HTTP duration/status/outcome logs now cover public, authentication and API requests. Existing API audit uses the same ID. External alert delivery, queue/export failure monitoring and production acceptance remain pending."
     },
     {
       "id": "NFR-012",

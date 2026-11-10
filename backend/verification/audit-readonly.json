@@ -1,0 +1,11 @@
+{
+  "checkedAt": "2026-11-10T22:00:13.789Z",
+  "scope": "Attempted read-only verification; connection failed before SQL execution. No users or audit events created.",
+  "checks": [
+    {
+      "name": "application-role connection",
+      "passed": false,
+      "code": "28P01"
+    }
+  ]
+}

@@ -38,7 +38,7 @@ const requireMfa=(principal,fresh=false)=>{
 };
 export function backendRouter({pool,auth,dataRegion,origin}){
   const router=express.Router();
-  router.use((req,res,next)=>{req.requestId=randomUUID();res.setHeader('X-Request-ID',req.requestId);res.setHeader('Cache-Control','no-store');next();});
+  router.use((req,res,next)=>{req.requestId??=randomUUID();res.setHeader('X-Request-ID',req.requestId);res.setHeader('Cache-Control','no-store');next();});
   const result=(req,res,data,status=200)=>res.status(status).json({data,requestId:req.requestId});
   router.get('/health',async(req,res)=>{
     try{await pool.query('SELECT 1');result(req,res,{status:'ok',database:'connected',apiVersion:'v1'});}

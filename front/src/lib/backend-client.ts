@@ -2,6 +2,8 @@ export class BackendError extends Error {
   constructor(public code:string,message:string,public status:number,public requestId?:string){super(message);this.name='BackendError';}
 }
 const messages:Record<string,[string,string]>={
+ AUDIT_EXPORT_LIMIT:['قلّص نطاق التاريخ أو الفلاتر؛ تجاوز التصدير حد الحجم أو العدد أو زمن المعالجة. لم يُنزّل ملف جزئي.','Narrow the date range or filters: the export exceeded its size, count or processing limit. No partial file was downloaded.'],
+ INVALID_CURSOR:['تعذر فتح صفحة السجل. أعد البحث من الصفحة الأولى.','Unable to open this audit page. Restart the search from its first page.'],
  SUBSCRIPTION_INACTIVE:['الاشتراك غير فعال أو انتهت فترته. راجع مسؤول الفوترة.','Subscription inactive or expired. Contact your billing administrator.'],
  PLAN_QUOTA_NOT_CONFIGURED:['حصة الفحص في الخطة تحتاج إعداداً من المسؤول.','The plan scan allowance needs administrator configuration.'],
  SCAN_QUOTA_EXHAUSTED:['استُنفدت حصة مهام الفحص لهذه الفترة.','The scan job allowance for this period is exhausted.'],

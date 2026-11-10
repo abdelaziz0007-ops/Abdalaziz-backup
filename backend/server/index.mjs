@@ -1,3 +1,4 @@
+import {requestTelemetry} from './request-telemetry.mjs';
 import {createReadiness,createShutdown} from './service-lifecycle.mjs';
 import {runtimeConfig,requestBoundary} from './runtime-config.mjs';
 import {mailConfigured} from './mail.mjs';
@@ -26,6 +27,7 @@ pool?.on('error',()=>console.error('Postgres idle connection error'));
 const session=randomBytes(32).toString('hex');
 const app=express();
 app.disable('x-powered-by');
+app.use(requestTelemetry());
 app.use(requestBoundary(config));
 app.get('/healthz',(_req,res)=>res.json({status:'ok'}));
 app.get('/api/config',(_req,res)=>res.set('Cache-Control','no-store').json({emailEnabled:mailConfigured(),production:config.production}));
