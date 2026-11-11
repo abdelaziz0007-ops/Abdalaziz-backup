@@ -53,3 +53,7 @@ Real account registration/verification/reset/MFA, two-party permissions and appr
 ## Previous batch validation
 
 105 backend tests and 63 frontend tests passed. TypeScript passed. Production build passed with the existing ExcelJS chunk warning. The XLSX roundtrip test initially exceeded its 15-second deadline during concurrent build; rerunning the full frontend suite after the build passed without changing the timeout. Three grouped-search SQL statements executed in a read-only transaction with the application role and nonexistent scope. This validates SQL execution, not a positive authenticated journey. No accounts or financial data were created.
+
+## 11 November: exact output exports
+
+Removed SQL decimal truncation from output exports; amounts remain exact strings. Exported missing and not-applicable states are distinct from zero. XLSX includes state and PDF now includes entity name and measured row heights. Export response supplies its SHA-256 and reads a consistent snapshot. 135 backend tests passed; a two-page English PDF fixture was visually inspected. No live database acceptance was performed; prior credential failure remains unresolved. Arabic typography and async exports remain open. See backend/verification/output-format-checks.json.

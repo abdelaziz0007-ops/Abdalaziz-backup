@@ -9,14 +9,14 @@ const titles={revenue:'Revenue',cost:'Cost of revenue',gross_profit:'Gross profi
   tax:'Tax',net_profit:'Net profit',assets:'Assets',liabilities:'Liabilities',equity:'Equity including period earnings',
   current_assets:'Current assets',current_liabilities:'Current liabilities',working_capital:'Working capital'};
 
-async function readExportRows(c,t,e,output){
-  const args=[t,e,output.id,output.minor_units];
+export async function readExportRows(c,t,e,output){
+  const args=[t,e,output.id];
   if(output.output_type==='reconciliation'){
     const {rows:[r]}=await c.query(`
-      SELECT trunc(r.bank_opening_balance,$4)::text AS bank_opening,trunc(r.book_opening_balance,$4)::text AS books_opening,
-        trunc(r.bank_closing_balance,$4)::text AS bank_closing,trunc(r.book_closing_balance,$4)::text AS books_closing,
-        trunc(r.bank_closing_balance+a.bank,$4)::text AS bank_adjusted,trunc(r.book_closing_balance+a.books,$4)::text AS books_adjusted,
-        trunc(r.bank_closing_balance+a.bank-r.book_closing_balance-a.books,$4)::text AS residual
+      SELECT (r.bank_opening_balance)::text AS bank_opening,(r.book_opening_balance)::text AS books_opening,
+        (r.bank_closing_balance)::text AS bank_closing,(r.book_closing_balance)::text AS books_closing,
+        (r.bank_closing_balance+a.bank)::text AS bank_adjusted,(r.book_closing_balance+a.books)::text AS books_adjusted,
+        (r.bank_closing_balance+a.bank-r.book_closing_balance-a.books)::text AS residual
       FROM mizan.reconciliations r CROSS JOIN LATERAL (
         SELECT coalesce(sum(i.signed_amount) FILTER(WHERE i.effect_side='bank'),0) AS bank,
           coalesce(sum(i.signed_amount) FILTER(WHERE i.effect_side='books'),0) AS books
@@ -29,22 +29,22 @@ async function readExportRows(c,t,e,output){
       ['Bank opening balance',r.bank_opening],['Books opening balance',r.books_opening],
       ['Bank closing balance',r.bank_closing],['Books closing balance',r.books_closing],
       ['Adjusted bank balance',r.bank_adjusted],['Adjusted books balance',r.books_adjusted],['Residual difference',r.residual],
-    ].map(([label,value])=>({label,value,unit:output.currency_code}));
+    ].map(([label,value])=>({label,value,unit:output.currency_code,state:'available'}));
   }
   if(output.output_type==='analysis'){
     return (await c.query(`
-      SELECT f.name AS label,trunc(m.value,2)::text AS value,f.unit,
+      SELECT f.name AS label,m.value::text AS value,m.value_state AS state,f.unit,
         concat_ws(' | ',f.expression,m.unavailable_reason) AS note
       FROM mizan.metric_results m JOIN mizan.formula_versions f
         ON (f.tenant_id,f.entity_id,f.id)=(m.tenant_id,m.entity_id,m.formula_version_id)
-      WHERE (m.tenant_id,m.entity_id,m.output_version_id)=($1,$2,$3) ORDER BY f.formula_code,m.id
+      WHERE (m.tenant_id,m.entity_id,m.output_version_id)=($1,$2,$3) ORDER BY f.formula_code,m.id LIMIT 10001
     `,args.slice(0,3))).rows;
   }
   return (await c.query(`
-    SELECT i.name AS code,trunc(l.value,$4)::text AS value,l.currency_code AS unit
+    SELECT i.name AS code,l.value::text AS value,l.value_state AS state,l.unavailable_reason AS note,l.currency_code AS unit
     FROM mizan.report_lines l JOIN mizan.report_line_items i
       ON (i.tenant_id,i.entity_id,i.id)=(l.tenant_id,l.entity_id,l.line_item_id)
-    WHERE (l.tenant_id,l.entity_id,l.output_version_id)=($1,$2,$3) ORDER BY l.display_order,l.id
+    WHERE (l.tenant_id,l.entity_id,l.output_version_id)=($1,$2,$3) ORDER BY l.display_order,l.id LIMIT 10001
   `,args)).rows.map(({code,...row})=>({...row,label:titles[code]??code}));
 }
 
@@ -78,11 +78,12 @@ export function mountOutputExportRoutes(router,{scoped,audit,HttpError}){
         const snapshot={...output,generatedAt:new Date().toISOString()};
         const rows=await readExportRows(c,t,e,snapshot);
         const bytes=await (format==='pdf'?outputPdf:outputWorkbook)(snapshot,rows);
+        const sha256=hash(bytes);
         await audit(c,req,t,e,'output.exported','output',output.id,'Downloaded an exact saved output version',
-          {format,version:output.version,status:output.status,fingerprint:output.content_fingerprint,sha256:hash(bytes)});
-        return {bytes,filename:`mizan-${output.output_type}-v${output.version}-${output.id}.${format}`};
-      },{fresh:true});
-      res.set('Cache-Control','no-store').attachment(file.filename).type(mime[format]).send(file.bytes);
+          {format,version:output.version,status:output.status,fingerprint:output.content_fingerprint,sha256});
+        return {bytes,sha256,filename:`mizan-${output.output_type}-v${output.version}-${output.id}.${format}`};
+      },{fresh:true,snapshot:true});
+      res.set('Cache-Control','no-store').set('X-Content-SHA256',file.sha256).attachment(file.filename).type(mime[format]).send(file.bytes);
     }catch(error){next(error);}
   });
 }

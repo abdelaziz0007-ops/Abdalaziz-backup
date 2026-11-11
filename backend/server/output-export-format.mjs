@@ -1,3 +1,4 @@
+import {exportRows,exportValue} from './output-export-contract.mjs';
 import ExcelJS from 'exceljs';
 import PDFDocument from 'pdfkit';
 
@@ -9,6 +10,7 @@ const colors={ink:'183248',muted:'465A69',accent:'087868',wash:'EEF6F4'};
 
 function metadata(output){
   return [
+    ['Legal entity',output.legal_name],
     ['Entity ID',output.entity_id],
     ['Reporting period',output.start_date+' to '+output.end_date],
     ['Currency',output.currency_code],
@@ -21,15 +23,16 @@ function metadata(output){
 }
 
 export async function outputWorkbook(output,rows){
+  rows=exportRows(rows);
   const book=new ExcelJS.Workbook();
   book.creator='Mizan Financial Workspace';
   book.created=new Date(output.generatedAt);
   const info=book.addWorksheet('Version');
   info.columns=[{width:26},{width:76}];
-  info.addRows([['Report',captions[output.output_type]],['Legal entity',output.legal_name],...metadata(output)]);
+  info.addRows([['Report',captions[output.output_type]],...metadata(output)]);
   const sheet=book.addWorksheet('Values',{views:[{state:'frozen',ySplit:1}]});
-  sheet.columns=[{header:'Line or metric',width:40},{header:'Exact value',width:34},{header:'Unit',width:14},{header:'Explanation',width:68}];
-  sheet.addRows(rows.map(row=>[row.label,row.value??'Unavailable',row.unit,row.note??'']));
+  sheet.columns=[{header:'Line or metric',width:40},{header:'Exact value',width:34},{header:'Unit',width:14},{header:'Explanation',width:68},{header:'Value state',width:20}];
+  sheet.addRows(rows.map(row=>[row.label,exportValue(row),row.unit,row.note??'',row.state]));
   sheet.getColumn(2).numFmt='@';
   sheet.getColumn(2).alignment={horizontal:'right'};
   sheet.getColumn(4).alignment={wrapText:true,vertical:'top'};
@@ -44,6 +47,7 @@ export async function outputWorkbook(output,rows){
 }
 
 export function outputPdf(output,rows){
+  rows=exportRows(rows);
   return new Promise((resolve,reject)=>{
     const doc=new PDFDocument({size:'A4',margin:44,info:{Title:captions[output.output_type],Author:'Mizan Financial Workspace'}});
     const chunks=[];
@@ -67,14 +71,19 @@ export function outputPdf(output,rows){
     columns();
     for(const row of rows){
       doc.font('Helvetica').fontSize(10);
-      const display=(row.value??'Unavailable')+(row.value!==null&&row.unit?' '+row.unit:'');
-      const detailHeight=row.note?doc.fontSize(8).heightOfString(row.note,{width:width-16})+7:0;
-      const height=22+detailHeight;
+      const display=exportValue(row)+(row.value!==null&&row.unit?' '+row.unit:'');
+      const labelWidth=width-224;
+      const labelHeight=doc.font('Helvetica').fontSize(10).heightOfString(row.label,{width:labelWidth});
+      const valueHeight=doc.font('Courier').fontSize(10).heightOfString(display,{width:194});
+      const mainHeight=Math.max(22,labelHeight+8,valueHeight+8);
+      const detailHeight=row.note?doc.font('Helvetica').fontSize(8).heightOfString(row.note,{width:width-16})+7:0;
+      const height=mainHeight+detailHeight;
+      if(height>doc.page.height-44-48-25)throw Error('Export row is too tall for a PDF page; use XLSX');
       if(doc.y+height>doc.page.height-48){doc.addPage();columns();}
       const y=doc.y;
-      doc.fillColor('#'+colors.ink).fontSize(10).text(row.label,left+8,y+4,{width:300});
+      doc.fillColor('#'+colors.ink).font('Helvetica').fontSize(10).text(row.label,left+8,y+4,{width:labelWidth});
       doc.font('Courier').text(display,right-202,y+4,{width:194,align:'right'});
-      if(row.note)doc.font('Helvetica').fontSize(8).fillColor('#'+colors.muted).text(row.note,left+8,y+20,{width:width-16});
+      if(row.note)doc.font('Helvetica').fontSize(8).fillColor('#'+colors.muted).text(row.note,left+8,y+mainHeight,{width:width-16});
       doc.moveTo(left,y+height).lineTo(right,y+height).strokeColor('#DCE5E6').stroke();
       doc.y=y+height+4;
     }

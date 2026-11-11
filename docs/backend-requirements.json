@@ -427,9 +427,11 @@
       "acceptance": "Values match the selected version; entity, period, currency, status, version, and generation date are displayed",
       "status": "partial",
       "evidence": [
-        "backend/verification/staged-imports-api.json"
+        "backend/verification/staged-imports-api.json",
+        "backend/server/output-export-format.test.mjs",
+        "backend/verification/output-format-checks.json"
       ],
-      "remaining": "Version-bound PDF and XLSX downloads cover stored statements, analysis and reconciliation totals. Direct downloads require explicit export scope and recent MFA and log the file digest. Large asynchronous reports, localized PDF typography and live acceptance remain pending."
+      "remaining": "Exact saved decimal text is exported without SQL truncation, missing/not-applicable states remain distinct, and XLSX roundtrip preserves values and formula-like text as strings. PDF includes legal entity and measured row heights; a two-page English fixture was visually reviewed. Export uses repeatable-read and returns SHA-256 header. Live SQL/authenticated acceptance is blocked by prior database credential failure; Arabic typography and asynchronous large exports remain pending."
     },
     {
       "id": "FR-039",

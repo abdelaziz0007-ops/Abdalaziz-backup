@@ -1,0 +1,31 @@
+{
+  "checkedAt": "2026-11-10T22:10:49.528Z",
+  "backendTests": 135,
+  "passed": true,
+  "workbookRoundtrip": [
+    "large decimal text",
+    "zero",
+    "missing",
+    "not applicable",
+    "formula-like text remains string",
+    "legal entity metadata"
+  ],
+  "pdfVisualReview": {
+    "pages": [
+      1,
+      2
+    ],
+    "language": "English",
+    "fixture": "verification/output-format-preview.mjs",
+    "findings": "Repeated headers, wrapped labels and long exact values inspected; no row overlap observed.",
+    "rendererWarnings": [
+      "No display font for Symbol",
+      "No display font for ArialUnicode"
+    ]
+  },
+  "limitations": [
+    "No positive authenticated database export tested; prior 28P01 connection blocker unresolved",
+    "Arabic PDF typography not validated",
+    "Asynchronous large exports remain pending"
+  ]
+}
