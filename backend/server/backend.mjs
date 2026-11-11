@@ -1,3 +1,4 @@
+import {mountMetricEvidenceRoutes} from './metric-evidence.mjs';
 import {mountBillingRoutes} from './billing-routes.mjs';
 import {mountPrivacyExportRoutes} from './privacy-export.mjs';
 import {mountRetentionRoutes} from './retention-routes.mjs';
@@ -154,6 +155,7 @@ export function backendRouter({pool,auth,dataRegion,origin}){
   mountOutputExportRoutes(router,{scoped,audit,HttpError});
   mountOutputCommentRoutes(router,{scoped,result,audit,HttpError});
   mountFinancialRoutes(router,{scoped,audit,result,HttpError});
+  mountMetricEvidenceRoutes(router,{scoped,result,HttpError});
   mountBankRoutes(router,{scoped,audit,result,HttpError});
   mountMatchRoutes(router,{scoped,audit,result,HttpError});
   mountManualMatchRoutes(router,{scoped,audit,result,HttpError});

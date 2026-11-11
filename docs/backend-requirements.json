@@ -209,9 +209,10 @@
       "acceptance": "Each metric shows its formula, contributing accounts, and period; missing required inputs produce “Unavailable”",
       "status": "partial",
       "evidence": [
-        "backend/verification/staged-imports-api.json"
+        "backend/verification/staged-imports-api.json",
+        "backend/server/metric-evidence.test.mjs"
       ],
-      "remaining": "Versioned ratio formulas produce exact values or explicit unavailable reasons. Broader KPI coverage and account-level metric navigation remain pending."
+      "remaining": "Added account contribution evidence for four known formula versions, using frozen output mapping and linked trial-balance dataset. Exact component sums are compared with saved inputs, unsupported formulas and splits remain unavailable, and unscanned/deleted source evidence is withheld. Live SQL and authenticated visual acceptance remain blocked by 28P01; broader metrics, opening-balance inputs and transaction-level drill-down remain pending."
     },
     {
       "id": "FR-019",

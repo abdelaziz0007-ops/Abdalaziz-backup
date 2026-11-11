@@ -1,9 +1,9 @@
 {
-  "checkedAt": "2026-11-10T22:00:13.789Z",
-  "scope": "Attempted read-only verification; connection failed before SQL execution. No users or audit events created.",
+  "checkedAt": "2026-11-11T08:46:19.811Z",
+  "scope": "Read-only application-role queries with nonexistent tenant; no users or audit events created. Positive authenticated exports remain unverified.",
   "checks": [
     {
-      "name": "application-role connection",
+      "name": "application-role SQL verification",
       "passed": false,
       "code": "28P01"
     }

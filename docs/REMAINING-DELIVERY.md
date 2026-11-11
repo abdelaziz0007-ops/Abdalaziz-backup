@@ -57,3 +57,9 @@ Real account registration/verification/reset/MFA, two-party permissions and appr
 ## 11 November: exact output exports
 
 Removed SQL decimal truncation from output exports; amounts remain exact strings. Exported missing and not-applicable states are distinct from zero. XLSX includes state and PDF now includes entity name and measured row heights. Export response supplies its SHA-256 and reads a consistent snapshot. 135 backend tests passed; a two-page English PDF fixture was visually inspected. No live database acceptance was performed; prior credential failure remains unresolved. Arabic typography and async exports remain open. See backend/verification/output-format-checks.json.
+
+## 11 November: metric account evidence
+
+Four supported metrics now expose signed account contributions, source row numbers and file hashes using the saved output mapping and dataset. Component sums are compared against saved inputs using exact arithmetic. Deleted or non-clean sources are withheld; unsupported formulas, weights or incomplete mappings are explicitly unavailable. This is trial-balance evidence, not ledger transaction detail or a replacement for approval gates.
+
+148 backend and 63 frontend tests passed, with TypeScript and production build. A new application-role connection attempt still returned 28P01 on 11 November. Positive SQL and authenticated visual acceptance remain unverified. Broader metric support, averages/opening balances and transaction drill-down remain open.
