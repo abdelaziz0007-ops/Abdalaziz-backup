@@ -7,6 +7,11 @@ export function runtimeConfig(env = process.env) {
   const origin = env.APP_ORIGIN || 'http://localhost:' + port;
   const url = new URL(origin);
   if (url.origin !== origin || url.username || url.password) throw Error('APP_ORIGIN must be an origin without path or credentials');
+  const backendOrigin = env.BACKEND_ORIGIN || '';
+  if (backendOrigin) {
+    const backendUrl = new URL(backendOrigin);
+    if (backendUrl.protocol !== 'https:' || backendUrl.origin !== backendOrigin || backendUrl.username || backendUrl.password) throw Error('BACKEND_ORIGIN must be an HTTPS origin');
+  }
   if (production) {
     if (url.protocol !== 'https:') throw Error('Production APP_ORIGIN requires HTTPS');
     if (env.LOCAL_DEMO_ARCHIVE === '1') throw Error('Demo archive is forbidden in production');
@@ -18,11 +23,11 @@ export function runtimeConfig(env = process.env) {
     if (!/^[0-9a-f]{64}$/.test(env.SOURCE_ENCRYPTION_KEY)) throw Error('SOURCE_ENCRYPTION_KEY must be 32 bytes in hex');
     if (!/^sha256:[0-9a-f]{64}$/.test(env.IMPORT_PREVIEW_IMAGE)) throw Error('IMPORT_PREVIEW_IMAGE must be a pinned local image ID');
   }
-  return {profile, production, port, origin, host: production ? (env.BIND_HOST || '0.0.0.0') : '127.0.0.1'};
+  return {profile, production, port, origin, backendOrigin, apiOnly: env.API_ONLY === '1', host: production ? (env.BIND_HOST || '0.0.0.0') : '127.0.0.1'};
 }
 
 export function requestBoundary(config) {
-  const allowedHosts = config.production ? [new URL(config.origin).host] : ['localhost:' + config.port, '127.0.0.1:' + config.port];
+  const allowedHosts = config.production ? [new URL(config.origin).host, ...(config.backendOrigin ? [new URL(config.backendOrigin).host] : [])] : ['localhost:' + config.port, '127.0.0.1:' + config.port];
   return (req, res, next) => {
     res.setHeader('X-Content-Type-Options','nosniff');
     res.setHeader('Referrer-Policy','no-referrer');

@@ -23,3 +23,18 @@ describe('production boundary',()=>{
   }finally{await new Promise(r=>server.close(r));}
  });
 });
+
+it('supports an explicit Render host but keeps the frontend origin mandatory for writes',async()=>{
+ const app=express();app.use(requestBoundary({production:true,origin:'https://mizan.vercel.app',backendOrigin:'https://mizan-api.onrender.com',port:5174}));app.all('/',(_req,res)=>res.json({ok:true}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));const base='http://127.0.0.1:'+server.address().port;
+ try{
+  expect((await fetch(base,{headers:{host:'mizan-api.onrender.com'}})).status).toBe(200);
+  expect((await fetch(base,{method:'POST',headers:{host:'mizan-api.onrender.com',origin:'https://mizan.vercel.app'}})).status).toBe(200);
+  for(const origin of ['https://mizan-api.onrender.com','https://evil.example'])expect((await fetch(base,{method:'POST',headers:{host:'mizan-api.onrender.com',origin}})).status).toBe(403);
+  expect((await fetch(base,{headers:{host:'evil.example','x-forwarded-host':'mizan-api.onrender.com'}})).status).toBe(403);
+ }finally{await new Promise(r=>server.close(r));}
+});
+it('rejects unsafe backend origin configuration',()=>{
+ for(const origin of ['http://example.com','https://example.com/path','https://user:pass@example.com'])expect(()=>runtimeConfig({BACKEND_ORIGIN:origin})).toThrow('BACKEND_ORIGIN');
+ expect(runtimeConfig({BACKEND_ORIGIN:'https://api.example.com',API_ONLY:'1'}).apiOnly).toBe(true);
+});

@@ -1,0 +1,50 @@
+# Preparation template, NOT a launch-ready deployment.
+# Isolated parser and ClamAV runtime must be resolved before production use.
+services:
+  - type: web
+    name: mizan-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm ci --omit=dev
+    startCommand: node server/index.mjs
+    healthCheckPath: /readyz
+    autoDeployTrigger: off
+    envVars:
+      - key: NODE_VERSION
+        value: 24.22.1
+      - key: APP_PROFILE
+        value: production
+      - key: API_ONLY
+        value: "1"
+      - key: APP_DATA_REGION
+        value: aws-us-east-2
+      - key: APP_ORIGIN
+        sync: false
+      - key: BACKEND_ORIGIN
+        sync: false
+      - key: APP_DATABASE_URL
+        sync: false
+      - key: AUTH_DATABASE_URL
+        sync: false
+      - key: SCANNER_DATABASE_URL
+        sync: false
+      - key: BETTER_AUTH_SECRET
+        sync: false
+      - key: SOURCE_ENCRYPTION_KEY
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_ENDPOINT_URL_S3
+        sync: false
+      - key: AWS_REGION
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      - key: IMPORT_PREVIEW_IMAGE
+        sync: false
+      - key: CLAMAV_SOCKET
+        sync: false

@@ -105,6 +105,8 @@ if(process.argv.includes('--dev')){
   const {createServer}=await import('vite');
   vite=await createServer({root:frontRoot,server:{middlewareMode:true,hmr:{port:port+1}}});
   app.use(vite.middlewares);
+}else if(config.apiOnly){
+  app.use((_req,res)=>res.status(404).json({error:'API service; open the frontend URL'}));
 }else{
   app.use(express.static(resolve(frontRoot,'dist')));
   app.use((_req,res)=>res.sendFile(resolve(frontRoot,'dist/index.html')));

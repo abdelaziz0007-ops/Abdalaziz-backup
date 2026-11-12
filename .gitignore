@@ -8,3 +8,7 @@ work/
 **/verification/reference-*.png
 **/verification/pack-page-*.png
 .neon
+
+# Local CLI credentials and account state
+.config/
+.vercel/
