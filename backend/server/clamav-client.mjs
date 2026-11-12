@@ -28,14 +28,18 @@ async function exchange(command,plain,env){
   return await received;
  }catch(error){socket.destroy();throw error instanceof ScanError?error:new ScanError('SCANNER_UNAVAILABLE');}
 }
-export async function scanSource(plain,env=process.env,now=Date.now()){
- if(!Buffer.isBuffer(plain)||plain.length===0||plain.length>50*1024*1024)throw new ScanError('SCAN_SIZE_INVALID');
+export async function scannerHealth(env=process.env,now=Date.now()){
  const version=await exchange('VERSION',null,env),match=/^ClamAV ([0-9]+\.[0-9]+\.[0-9]+[^/\r\n]*)\/([0-9]+)\/(.+)$/.exec(version);
  if(!match)throw new ScanError('SCANNER_VERSION_UNAVAILABLE');
  const signatureDate=Date.parse(match[3]),hours=Number(env.CLAMAV_MAX_SIGNATURE_AGE_HOURS||24);
  if(!Number.isFinite(signatureDate)||!Number.isFinite(hours)||hours<1||hours>168||signatureDate>now+300000||now-signatureDate>hours*3600000)throw new ScanError('SCANNER_SIGNATURES_STALE');
+ return {scannerVersion:version,signatureDate:new Date(signatureDate).toISOString()};
+}
+export async function scanSource(plain,env=process.env,now=Date.now()){
+ if(!Buffer.isBuffer(plain)||plain.length===0||plain.length>50*1024*1024)throw new ScanError('SCAN_SIZE_INVALID');
+ const health=await scannerHealth(env,now);
  const response=await exchange('INSTREAM',plain,env);
- if(response==='stream: OK')return {status:'clean',scannerVersion:version,signatureDate:new Date(signatureDate).toISOString()};
- if(/^stream: .{1,256} FOUND$/.test(response))return {status:'infected',scannerVersion:version,signatureDate:new Date(signatureDate).toISOString()};
+ if(response==='stream: OK')return {status:'clean',...health};
+ if(/^stream: .{1,256} FOUND$/.test(response))return {status:'infected',...health};
  throw new ScanError(/size limit/i.test(response)?'SCANNER_SIZE_LIMIT':'SCANNER_SCAN_FAILED');
 }

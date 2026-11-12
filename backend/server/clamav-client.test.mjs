@@ -1,6 +1,6 @@
 import {it,expect} from 'vitest';
 import {createServer} from 'node:net';
-import {scanSource} from './clamav-client.mjs';
+import {scanSource,scannerHealth} from './clamav-client.mjs';
 const now=Date.parse('2026-11-04T00:00:00Z');
 async function fixture(version,reply,run){
  const streams=[];const server=createServer(socket=>{let data=Buffer.alloc(0);socket.on('data',chunk=>{data=Buffer.concat([data,chunk]);if(data.subarray(0,9).toString()==='zVERSION\0'){socket.end(version+'\0');return;}if(data.subarray(0,10).toString()!=='zINSTREAM\0')return;let offset=10;const parts=[];while(data.length>=offset+4){const size=data.readUInt32BE(offset);offset+=4;if(size===0){streams.push(Buffer.concat(parts));socket.end(reply+'\0');return;}if(data.length<offset+size)return;parts.push(data.subarray(offset,offset+size));offset+=size;}});});
@@ -19,4 +19,11 @@ it('fails closed for missing configuration, public destinations and stale/unavai
 });
 it('rejects daemon errors and size-limit responses instead of interpreting them as clean',async()=>{
  for(const response of ['INSTREAM size limit exceeded. ERROR','stream: Cannot scan ERROR'])await fixture('ClamAV 1.4.3/99999/Tue Nov 03 23:00:00 2026',response,async env=>{await expect(scanSource(Buffer.from('x'),env,now)).rejects.toMatchObject({code:response.startsWith('INSTREAM')?'SCANNER_SIZE_LIMIT':'SCANNER_SCAN_FAILED'});});
+});
+
+it('checks daemon and signatures without transmitting file data',async()=>{
+ await fixture('ClamAV 1.4.3/99999/Tue Nov 03 23:00:00 2026','stream: OK',async(env,streams)=>{
+  expect((await scannerHealth(env,now)).signatureDate).toBe(new Date('Tue Nov 03 23:00:00 2026').toISOString());
+  expect(streams).toEqual([]);
+ });
 });

@@ -7,10 +7,12 @@ import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {runtimeConfig} from '../server/runtime-config.mjs';
 import {database} from '../server/database.mjs';
+import {scannerHealth} from '../server/clamav-client.mjs';
+import {safePreflightError} from './preflight-errors.mjs';
 const local=process.argv.includes('--local');
 if(local)for(const [key,value] of Object.entries(loadEnv('development',fileURLToPath(new URL('..',import.meta.url)),'')))if(process.env[key]===undefined)process.env[key]=value;
 const checks=[];
-async function check(name,fn){try{const detail=await fn();checks.push({name,ok:true,detail});}catch(error){checks.push({name,ok:false,detail: error.safeMessage || 'Check failed; verify configuration and service availability'});}}
+async function check(name,fn){try{const detail=await fn();checks.push({name,ok:true,detail});}catch(error){checks.push({name,ok:false,detail: error.safeMessage || safePreflightError(error)});}}
 await check('production configuration',()=>{try{runtimeConfig({...process.env,APP_PROFILE:'production'});return 'Required values present; service connectivity is checked separately';}catch(e){throw {safeMessage:e.message};}});
 for(const key of ['APP_DATABASE_URL','AUTH_DATABASE_URL','SCANNER_DATABASE_URL'])await check(key+' least privilege',async()=>{
  if(!process.env[key])throw {safeMessage:'Missing '+key};
@@ -30,12 +32,13 @@ await check('migration checksums',async()=>{
   return names.length+' migrations match';
  }finally{await pool.end();}
 });
+await check('container runtime',async()=>{await promisify(execFile)('docker',['--context','default','info','--format','{{.ServerVersion}}'],{timeout:10000,windowsHide:true});return 'Docker daemon reachable';});
 await check('isolated parser image',async()=>{
  if(!/^sha256:[0-9a-f]{64}$/.test(process.env.IMPORT_PREVIEW_IMAGE||''))throw {safeMessage:'Missing pinned IMPORT_PREVIEW_IMAGE'};
  await promisify(execFile)('docker',['--context','default','image','inspect',process.env.IMPORT_PREVIEW_IMAGE],{timeout:10000,windowsHide:true});return 'Local image exists';
 });
 await check('private source storage configuration',async()=>{const keys=['AWS_ACCESS_KEY_ID','AWS_SECRET_ACCESS_KEY','AWS_ENDPOINT_URL_S3','AWS_REGION','SOURCE_ENCRYPTION_KEY'];const missing=keys.filter(k=>!process.env[k]);if(missing.length)throw {safeMessage:'Missing '+missing.join(', ')};const client=new S3Client({region:process.env.AWS_REGION,endpoint:process.env.AWS_ENDPOINT_URL_S3,forcePathStyle:true});try{await client.send(new HeadBucketCommand({Bucket:'financial-sources'}),{abortSignal:AbortSignal.timeout(15000)});return 'Private bucket reachable; encrypted roundtrip still requires acceptance';}finally{client.destroy();}});
 await check('email configuration',()=>{if(!process.env.RESEND_API_KEY||!process.env.MAIL_FROM)throw {safeMessage:'Missing RESEND_API_KEY and/or MAIL_FROM'};return 'Configured; real delivery not yet accepted';});
-await check('malware scanner configuration',()=>{if(!process.env.CLAMAV_HOST&&!process.env.CLAMAV_SOCKET)throw {safeMessage:'Missing CLAMAV_HOST or CLAMAV_SOCKET'};return 'Configured; signatures and quarantine still require acceptance';});
+await check('malware scanner health',async()=>{const health=await scannerHealth({...process.env,CLAMAV_TIMEOUT_MS:'5000'});return 'Scanner reachable; signatures dated '+health.signatureDate+'; quarantine still requires acceptance';});
 console.log(JSON.stringify({checkedAt:new Date().toISOString(),mode:'read-only; no accounts or financial data created',checks,infrastructureChecksPassed:checks.every(c=>c.ok),releaseReady:false,acceptanceRequired:['Real email verification and reset','Real account MFA and tenant isolation','Clean file scan and isolated import','Malware quarantine','Backup restoration','Public HTTPS smoke']},null,2));
 if(checks.some(c=>!c.ok))process.exitCode=1;

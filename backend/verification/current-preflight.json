@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-11-10T21:58:37.745Z",
+  "checkedAt": "2026-11-12T07:37:25.914Z",
   "mode": "read-only; no accounts or financial data created",
   "checks": [
     {
@@ -10,22 +10,27 @@
     {
       "name": "APP_DATABASE_URL least privilege",
       "ok": false,
-      "detail": "Check failed; verify configuration and service availability"
+      "detail": "Database credentials rejected (28P01); refresh credentials for the existing database roles"
     },
     {
       "name": "AUTH_DATABASE_URL least privilege",
       "ok": false,
-      "detail": "Check failed; verify configuration and service availability"
+      "detail": "Database credentials rejected (28P01); refresh credentials for the existing database roles"
     },
     {
       "name": "SCANNER_DATABASE_URL least privilege",
       "ok": false,
-      "detail": "Check failed; verify configuration and service availability"
+      "detail": "Database credentials rejected (28P01); refresh credentials for the existing database roles"
     },
     {
       "name": "migration checksums",
       "ok": false,
-      "detail": "Check failed; verify configuration and service availability"
+      "detail": "Service hostname could not be resolved"
+    },
+    {
+      "name": "container runtime",
+      "ok": false,
+      "detail": "Required executable is unavailable"
     },
     {
       "name": "isolated parser image",
@@ -34,8 +39,8 @@
     },
     {
       "name": "private source storage configuration",
-      "ok": true,
-      "detail": "Private bucket reachable; encrypted roundtrip still requires acceptance"
+      "ok": false,
+      "detail": "Check failed; verify configuration and service availability"
     },
     {
       "name": "email configuration",
@@ -43,7 +48,7 @@
       "detail": "Missing RESEND_API_KEY and/or MAIL_FROM"
     },
     {
-      "name": "malware scanner configuration",
+      "name": "malware scanner health",
       "ok": false,
       "detail": "Missing CLAMAV_HOST or CLAMAV_SOCKET"
     }
